@@ -30,7 +30,7 @@ const cfg = {
     copy({
         targets: [
           { src: 'manifest.json', dest: 'build' },
-          { src: 'styles.css', dest: 'build' },
+          { src: 'README.md', dest: 'build' },
         ]
       })
   ]

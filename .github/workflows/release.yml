@@ -30,7 +30,7 @@ jobs:
     - name: Package
       run: |
         mkdir ${{ github.event.repository.name }}
-        cp main.js manifest.json README.md ${{ github.event.repository.name }}
+        cp ./build/main.js ./build/manifest.json ./build/README.md ${{ github.event.repository.name }}
         zip -r ${{ github.event.repository.name }}.zip ${{ github.event.repository.name }}
     # Create the release on github
     - name: Create Release
@@ -63,7 +63,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./main.js
+        asset_path: ./build/main.js
         asset_name: main.js
         asset_content_type: text/javascript
     # Upload the manifest.json
@@ -74,7 +74,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./manifest.json
+        asset_path: manifest.json
         asset_name: manifest.json
         asset_content_type: application/json
     # Upload the style.css
