@@ -14,6 +14,7 @@
     "obsidian-md-plugin"
   ],
   "author": "ebullient",
+  "repository": "github.com:ebullient/obsidian-manage-completed-tasks",
   "license": "AGPL-3.0-only",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^18.1.0",
