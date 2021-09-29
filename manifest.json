@@ -1,10 +1,10 @@
 {
-	"id": "obsidian-sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.1",
-	"minAppVersion": "0.9.12",
-	"description": "This is a sample plugin for Obsidian. This plugin demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md/about",
+	"id": "obsidian-manage-completed-tasks",
+	"name": "Manage Completed Tasks",
+	"version": "0.1.0",
+	"minAppVersion": "0.12.10",
+	"description": "Manage completed tasks within a document",
+	"author": "ebullient",
+	"authorUrl": "https://github.com/ebullient",
 	"isDesktopOnly": false
 }

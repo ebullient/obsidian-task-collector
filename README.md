@@ -1,57 +1,52 @@
-## Obsidian Sample Plugin
+# Obsidian: Manage Completed Tasks
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Yet another plugin to manage completed tasks. ;)
 
-This project uses Typescript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in Typescript Definition format, which contains TSDoc comments describing what it does.
+## Commands
 
-**Note:** The Obsidian API is still in early alpha and is subject to change at any time!
+- **Mark item complete**  
+    1. If the current line is a task, and it matches the configuration for an incomplete task (where values other than ' ' are valid), it will mark the item as complete ('x'). 
+    2. Optional: Remove characters matching a configured regular expression from the task, e.g. remove a #task or #todo tag.
+    3. Optional: Append a formatted date string to the task
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Changes the default font color to red using `styles.css`.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+- **Move completed tasks to configured heading**  
+    For the current document (open, in edit mode), move any completed tasks into the specified section. It will insert the items after the header (most recently moved will be first). The section heading will be created if it isn't present, and will stop at the next heading or `---` separator.
+## Settings
 
-### First time developing plugins?
+### Completing tasks
 
-Quick starting guide for new plugin devs:
+- **Incomplete task data**  
+    Specify the set of characters that mark incomplete tasks.
+    - default: ` ` (space)
+    - example: `> ?!` (a space is included alongside other values)
+    - Note: This allows checkboxes with other single character values to be treated as incomplete (so they can be completed).
 
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+- **Append date to completed task**
+    - default: (empty string, disabled)
+    - example: `[(]YYYY-MM-DD[)]`, results in `(2021-09-27)`
+    - When a [moment.js date format](https://momentjs.com/docs/#/displaying/format/) is specified, the current date/time will be appended to the task description when marking it complete.
 
-### Releasing new releases
+- **Remove text in completed task**  
+    Remove text matching this [regular expression](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions) from the completed item. 
+    - default: (empty string, disabled)
+    - example: `#(task|todo)` (remove #task or #todo tags)
+    - The global flag, 'g' is applied to a per-line match.
+    - *Be careful!* Test your expression before using it. There are several [online](https://www.regextester.com/) [tools](https://regex.observepoint.com/) that can help, though I would watch what you share in those boxes.
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments.
-- Publish the release.
 
-### Adding your plugin to the community plugin list
+### Moving completed tasks to a sub-section
 
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+- **Completed area header**  
+    Heading to contain completed items. The plugin will move/insert completed items under this heading. 
+    - default: `## Log`
+    - Notes:
+      - The heading will be created at the end of the document if it does not exist.
+      - The heading can not be empty. The default value will be used if an empty string is configured. 
 
-### How to use
+## Credits
 
-- Clone this repo.
-- `npm i` or `yarn` to install dependencies
-- `npm run dev` to start compilation in watch mode.
-
-### Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-### API Documentation
-
-See https://github.com/obsidianmd/obsidian-api
+- [Completed Area Plugin](https://github.com/DahaWong/obsidian-completed) -- general premise of moving completed tasks to a different area within the document (delimited by a heading).
+- [JeppeKlitgaard/ObsidianTweaks](https://github.com/JeppeKlitgaard/ObsidianTweaks/) -- simple/clear event triggers
+- [ivan-lednev/obsidian-task-archiver](https://github.com/ivan-lednev/obsidian-task-archiver) -- Treatment of sub-elements
+- [Darakah/obsidian-timelines](https://github.com/Darakah/obsidian-timelines) -- Editor select/replace
+- [Customizable Sidebar](https://github.com/phibr0/obsidian-customizable-sidebar) -- GH Action
