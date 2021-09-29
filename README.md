@@ -33,7 +33,6 @@ Yet another plugin to manage completed tasks. ;)
     - The global flag, 'g' is applied to a per-line match.
     - *Be careful!* Test your expression before using it. There are several [online](https://www.regextester.com/) [tools](https://regex.observepoint.com/) that can help, though I would watch what you share in those boxes.
 
-
 ### Moving completed tasks to a sub-section
 
 - **Completed area header**  
@@ -44,6 +43,13 @@ Yet another plugin to manage completed tasks. ;)
       - The heading can not be empty. The default value will be used if an empty string is configured. 
       - Completed tasks will be moved along with its sub items (nested lists, text, or quotes). Things may go astray if you have mixed/inconsistent whitespace, so have the undo button ready. If a completed item has a nested-incomplete child, the child (and any text following) will remain.
 
+## Right-click editor menu items
+
+- **Toggle: Add menu item for completing task**  
+  Add an item to the right-click menu in edit mode to mark an item complete
+
+- **Toggle: Add menu item for moving completed tasks**  
+  Add an item to the right-click menu in edit mode to move completed tasks
 ## Credits
 
 - [Completed Area Plugin](https://github.com/DahaWong/obsidian-completed) -- general premise of moving completed tasks to a different area within the document (delimited by a heading).

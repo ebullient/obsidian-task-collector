@@ -1,18 +1,21 @@
-import { timeStamp } from 'console';
-import { App, Editor, moment, MarkdownView, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, moment, MarkdownView, Plugin, PluginSettingTab, Setting, Command } from 'obsidian';
 
-interface ManageCompletedTasksSettings {
+interface TaskCollectorSettings {
     completedAreaHeader: string;
     removeExpression: string;
     appendDateFormat: string;
     incompleteTaskValues: string;
+    rightClickComplete: boolean;
+    rightClickMove: boolean;
 }
 
-const DEFAULT_SETTINGS: ManageCompletedTasksSettings = {
+const DEFAULT_SETTINGS: TaskCollectorSettings = {
     completedAreaHeader: '## Log',
     removeExpression: '',
     appendDateFormat: '',
-    incompleteTaskValues: ''
+    incompleteTaskValues: '',
+    rightClickComplete: false,
+    rightClickMove: false
 }
 
 interface CompiledTasksSettings {
@@ -20,37 +23,69 @@ interface CompiledTasksSettings {
     incompleteTaskRegExp: RegExp;
 }
 
-export default class ManageCompletedTasks extends Plugin {
-    settings: ManageCompletedTasksSettings;
+export default class TaskCollector extends Plugin {
+    settings: TaskCollectorSettings;
     initSettings: CompiledTasksSettings;
 
+
     async onload() {
-        console.log('loading Manage Completed Tasks');
+        console.log('loading Task Collector (TC): %o', this.app);
         await this.loadSettings();
 
-        this.addSettingTab(new ManageCompletedTasksSettingsTab(this.app, this));
+        this.addSettingTab(new TaskCollectorSettingsTab(this.app, this));
 
-        this.addCommand({
-            id: "manage-completed-tasks-mark-done",
+        const completeTaskCommand: Command = {
+            id: "task-collector-mark-done",
             name: "Mark item complete",
             icon: "check-small",
             editorCallback: (editor: Editor, view: MarkdownView) => {
                 this.completeTaskOnCurrentLine(editor);
             }
-        });
+        };
 
-        this.addCommand({
-            id: "manage-completed-tasks-move-completed-tasks",
-            name: "Move completed tasks to configured heading",
+        const moveTaskCommand: Command = {
+            id: "task-collector-move-completed-tasks",
+            name: "Move all completed tasks to configured heading",
             icon: "check-in-circle",
             editorCallback: async (editor: Editor, view: MarkdownView) => {
                 this.moveCompletedTasksInFile(editor);
             },
-        });
+        };
+
+        this.addCommand(completeTaskCommand);
+        this.addCommand(moveTaskCommand);
+
+        if (this.settings.rightClickComplete || this.settings.rightClickMove) {
+            this.registerEvent(
+                this.app.workspace.on("editor-menu", (menu) => {
+                    if (this.settings.rightClickComplete) {
+                        menu.addItem((item) => item
+                            .setTitle("(TC) Mark task complete")
+                            .setIcon(completeTaskCommand.icon)
+                            .onClick(() => {
+                                //@ts-ignore
+                                this.app.commands.executeCommandById(completeTaskCommand.id);
+                            })
+                        );
+                    }
+
+                    if (this.settings.rightClickMove) {
+                        menu.addItem((item) => item
+                            .setTitle("(TC) Move completed tasks")
+                            .setIcon(moveTaskCommand.icon)
+                            .onClick(() => {
+                                //@ts-ignore
+                                this.app.commands.executeCommandById(moveTaskCommand.id);
+                            })
+                        );
+                    }
+                })
+            );
+        }
     }
 
     onunload() {
-        console.log('unloading Manage Completed Tasks');
+        console.log('unloading Task Collector');
     }
 
     async loadSettings() {
@@ -59,7 +94,7 @@ export default class ManageCompletedTasks extends Plugin {
             removeRegExp: this.tryCreateRemoveRegex(this.settings.removeExpression),
             incompleteTaskRegExp: this.tryCreateIncompleteRegex(this.settings.incompleteTaskValues)
         }
-        console.log('loaded Manage Completed Tasks settings: %o, %o', this.settings, this.initSettings);
+        console.log('loaded TC settings: %o, %o', this.settings, this.initSettings);
     }
 
     async saveSettings() {
@@ -69,7 +104,7 @@ export default class ManageCompletedTasks extends Plugin {
             removeRegExp: this.tryCreateRemoveRegex(this.settings.removeExpression),
             incompleteTaskRegExp: this.tryCreateIncompleteRegex(this.settings.incompleteTaskValues)
         }
-        console.log('updated Manage Completed Tasks settings: %o, %o', this.settings, this.initSettings);
+        console.log('updated TC settings: %o, %o', this.settings, this.initSettings);
     }
 
     tryCreateRemoveRegex(param: string): RegExp {
@@ -87,7 +122,7 @@ export default class ManageCompletedTasks extends Plugin {
 
         // Does this line indicate an incomplete task?
         var incompleteTask = this.initSettings.incompleteTaskRegExp.exec(lineText);
-        if ( incompleteTask ) {
+        if (incompleteTask) {
             console.log("Matching %o, found %o", lineText, incompleteTask);
             let completed = lineText.replace(this.initSettings.incompleteTaskRegExp, '$1x$2');
 
@@ -98,7 +133,7 @@ export default class ManageCompletedTasks extends Plugin {
 
             if (this.settings.appendDateFormat) {
                 // if there is text to append, append it
-                if ( !completed.endsWith(' ') ) {
+                if (!completed.endsWith(' ')) {
                     completed += ' ';
                 }
                 completed += moment().format(this.settings.appendDateFormat);
@@ -114,8 +149,8 @@ export default class ManageCompletedTasks extends Plugin {
         const source = editor.getValue();
         const lines = source.split("\n");
 
-        if ( !source.contains(HEADER) ) {
-            if ( lines[lines.length - 1].trim() !== '' ) {
+        if (!source.contains(HEADER)) {
+            if (lines[lines.length - 1].trim() !== '') {
                 lines.push('');
             }
             lines.push(HEADER);
@@ -129,8 +164,8 @@ export default class ManageCompletedTasks extends Plugin {
         let completedItemsIndex = lines.length;
 
         for (const line of lines) {
-            if ( inCompletedSection ) {
-                if ( line.startsWith("#") || line.trim() === '---' ) {
+            if (inCompletedSection) {
+                if (line.startsWith("#") || line.trim() === '---') {
                     inCompletedSection = false;
                     remaining.push(line);
                 } else {
@@ -139,14 +174,14 @@ export default class ManageCompletedTasks extends Plugin {
             } else {
                 const taskMatch = line.match(/^(\s*)- \[(.)\]/);
                 console.log(taskMatch);
-                if ( line.trim() === HEADER ) {
+                if (line.trim() === HEADER) {
                     inCompletedSection = true;
                     completedItemsIndex = remaining.push(line);
                     remaining.push("%%%COMPLETED_ITEMS_GO_HERE%%%");
-                } else if ( this.isCompletedTask(taskMatch) ) {
+                } else if (this.isCompletedTask(taskMatch)) {
                     inTask = true;
                     newTasks.push(line);
-                } else if ( inTask && !taskMatch && line.match(`^( {2,}|\\t)`) ) {
+                } else if (inTask && !taskMatch && line.match(`^( {2,}|\\t)`)) {
                     newTasks.push(line);
                 } else {
                     inTask = false;
@@ -158,25 +193,25 @@ export default class ManageCompletedTasks extends Plugin {
             remaining, completedItemsIndex, completedSection, newTasks);
 
         let result = remaining.slice(0, completedItemsIndex).concat(...newTasks).concat(...completedSection);
-        if ( completedItemsIndex < remaining.length - 1 ) {
-            result = result.concat(remaining.slice(completedItemsIndex +1));
+        if (completedItemsIndex < remaining.length - 1) {
+            result = result.concat(remaining.slice(completedItemsIndex + 1));
         }
         console.log("Result: %o", result);
         editor.setValue(result.join("\n"));
     }
 
     isCompletedTask(taskMatch: RegExpMatchArray): boolean {
-        if ( taskMatch ) {
+        if (taskMatch) {
             return taskMatch[2] === 'x' || taskMatch[2] === 'X';
         }
         return false;
     }
 }
 
-class ManageCompletedTasksSettingsTab extends PluginSettingTab {
-    plugin: ManageCompletedTasks;
+class TaskCollectorSettingsTab extends PluginSettingTab {
+    plugin: TaskCollector;
 
-    constructor(app: App, plugin: ManageCompletedTasks) {
+    constructor(app: App, plugin: TaskCollector) {
         super(app, plugin);
         this.plugin = plugin;
     }
@@ -184,6 +219,8 @@ class ManageCompletedTasksSettingsTab extends PluginSettingTab {
     display(): void {
         let { containerEl } = this;
         containerEl.empty();
+
+        containerEl.createEl("h2", { text: "Completing tasks" });
 
         new Setting(containerEl)
             .setName("Append date to completed task")
@@ -233,6 +270,7 @@ class ManageCompletedTasksSettingsTab extends PluginSettingTab {
                 })
             );
 
+        containerEl.createEl("h2", { text: "Moving tasks" });
 
         new Setting(containerEl)
             .setName("Completed area header")
@@ -246,6 +284,27 @@ class ManageCompletedTasksSettingsTab extends PluginSettingTab {
                 })
             );
 
+        containerEl.createEl("h2", { text: "Right-click Menu items" });
+
+        new Setting(containerEl)
+            .setName("Add menu item for completing task")
+            .setDesc("Add an item to the right-click menu in edit mode to mark an item complete")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.rightClickComplete)
+                .onChange(async value => {
+                    this.plugin.settings.rightClickComplete = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName("Add menu item for moving completed tasks")
+            .setDesc("Add an item to the right-click menu in edit mode to move completed tasks")
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.rightClickMove)
+                .onChange(async value => {
+                    this.plugin.settings.rightClickMove = value;
+                    await this.plugin.saveSettings();
+                }));
 
     }
 }

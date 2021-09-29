@@ -1,7 +1,7 @@
 {
-	"id": "obsidian-manage-completed-tasks",
-	"name": "Manage Completed Tasks",
-	"version": "0.1.0",
+	"id": "obsidian-task-collector",
+	"name": "Task Collector (TC)",
+	"version": "0.2.0",
 	"minAppVersion": "0.12.10",
 	"description": "Manage completed tasks within a document",
 	"author": "ebullient",
