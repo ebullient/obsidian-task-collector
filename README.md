@@ -42,6 +42,7 @@ Yet another plugin to manage completed tasks. ;)
     - Notes:
       - The heading will be created at the end of the document if it does not exist.
       - The heading can not be empty. The default value will be used if an empty string is configured. 
+      - Completed tasks will be moved along with its sub items (nested lists, text, or quotes). Things may go astray if you have mixed/inconsistent whitespace, so have the undo button ready. If a completed item has a nested-incomplete child, the child (and any text following) will remain.
 
 ## Credits
 
