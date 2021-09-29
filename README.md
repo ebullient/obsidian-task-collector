@@ -1,4 +1,4 @@
-# Obsidian: Manage Completed Tasks
+# Obsidian: Task Collector
 
 Yet another plugin to manage completed tasks. ;)
 
