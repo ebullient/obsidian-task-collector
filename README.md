@@ -3,6 +3,13 @@
 
 Yet another plugin to manage completed tasks. ;)
 
+## How to install
+
+1. Go to **Community Plugins** in your [Obsidian](https://www.obsidian.md) settings and **disable** Safe Mode
+2. Click on **Browse** and search for "task collector"
+3. Click install
+4. "Enable" the plugin directly after installation, or use the toggle on the community plugins tab to enable the plugin after it has been installed.
+
 ## Commands
 
 - **Complete item**  
@@ -17,12 +24,14 @@ Yet another plugin to manage completed tasks. ;)
 
 - **Move completed tasks to configured heading**  
     For the current document (open, in edit mode), move any completed (or canceled) tasks into the specified section. It will insert the items after the header (most recently moved will be first). The section heading will be created if it isn't present, and will stop at the next heading or `---` separator.
+    
 ## Settings
 
 ### Completing tasks
 
-- **Support canceled tasks**  
+- Toggle **Support canceled tasks**  
   Use a `-` to indicate a canceled tasks. Canceled tasks are processed in the same way as completed tasks using options below.
+  - default: disabled
 
 - **Append date to completed task**
     - default: (empty string, disabled)
@@ -34,7 +43,7 @@ Yet another plugin to manage completed tasks. ;)
     - default: (empty string, disabled)
     - example: `#(task|todo)` (remove #task or #todo tags)
     - The global flag, 'g' is applied to a per-line match.
-    - *Be careful!* Test your expression before using it. There are several [online](https://www.regextester.com/) [tools](https://regex.observepoint.com/) can help.
+    - *Be careful!* Test your expression before using it. There are several [online](https://www.regextester.com/) [tools](https://regex.observepoint.com/) that can help.
 
 - **Incomplete task indicators**  
     Specify the set of characters that indicate incomplete tasks.
@@ -52,15 +61,15 @@ Yet another plugin to manage completed tasks. ;)
       - The heading will be created at the end of the document if it does not exist.
       - When scanning the document for completed (or canceled) tasks, the contents from this configured header to the next heading or separator (---) will be ignored.
       - Completed (or canceled) tasks will be moved along with their sub items (nested lists, text, or quotes). 
-      - If a completed item has a nested-incomplete child, the child (and any text following) will remain in the original location.
+      - If a completed item has an incomplete child task, the child (and any text following) will remain in the original location.
 
 ## Right-click editor menu items
 
 - **Toggle: Add menu item for completing task**  
-  Add an item to the right-click menu in edit mode to mark the task on the current line complete. If canceled items are supported, an additional menu item will be added to cancel the task on the current line.
+  Add an item to the _right-click menu in edit mode_ to mark the task on the current line complete. If canceled items are supported, an additional menu item will be added to cancel the task on the current line.
 
 - **Toggle: Add menu item for moving completed tasks**  
-  Add an item to the right-click menu in edit mode to move all completed (or canceled) tasks.
+  Add an item to the _right-click menu in edit mode_ to move all completed (or canceled) tasks to the Completed area.
   
 ## Credits
 
