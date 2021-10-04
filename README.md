@@ -1,4 +1,5 @@
 # Obsidian: Task Collector
+[![GitHub tag (Latest by date)](https://img.shields.io/github/v/tag/ebullient/obsidian-task-collector)](https://github.com/ebullient/obsidian-task-collector/releases) ![GitHub all releases](https://img.shields.io/github/downloads/ebullient/obsidian-task-collector/total?color=success)
 
 Yet another plugin to manage completed tasks. ;)
 
