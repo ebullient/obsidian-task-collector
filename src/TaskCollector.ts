@@ -110,7 +110,7 @@ export class TaskCollector {
         // Does this line indicate an incomplete task?
         const incompleteTask = this.initSettings.incompleteTaskRegExp.exec(lineText);
         if (incompleteTask) {
-            const marked = this.updateTaskLine(lineText, mark)
+            const marked = this.updateTaskLine(lineText, mark);
             editor.setLine(anchor.line, marked);
         }
     }
@@ -136,6 +136,17 @@ export class TaskCollector {
             marked = marked.replace(this.initSettings.resetRegExp, '');
         }
         return marked;
+    }
+
+    resetTaskOnCurrentLine(editor: Editor): void {
+        const anchor = editor.getCursor("from");
+        const lineText = editor.getLine(anchor.line);
+
+        // Does this line indicate an incomplete task?
+        if (this.completedOrCanceled.exec(lineText)) {
+            const marked = this.resetTaskLine(lineText);
+            editor.setLine(anchor.line, marked);
+        }
     }
 
     resetAllTasks(editor: Editor): void {
