@@ -16,18 +16,54 @@ export class TaskCollector {
 
         if ( settings.appendDateFormat ) {
             // YYYY-MM-DD or DD MM, YYYY or .. [(]YYYY-MM-DD[)] where the stuff in the brackets is literal
-            momentMatchString = settings.appendDateFormat
-                    .replace(/\[/g,'')
-                    .replace(/\]/g, '')
-                    .replace(/(?<!\\)\(/, '\\(')  // escape a naked (
-                    .replace(/(?<!\\)\)/, '\\)')  // escape a naked )
-                    .replace('YYYY', '\\d{4}')   // 4-digit year
-                    .replace('YY',   '\\d{2}')   // 2-digit year
-                    .replace('DD',   '\\d{2}')   // day of month, padded
-                    .replace('D',    '\\d{1,2}') // day of month, not padded
+            const literals = [];
+            let foundLiteral = false;
+            let literal = '';
+
+            momentMatchString = '';
+            for (const c of settings.appendDateFormat) {
+                if ( c == '[' ) {
+                    foundLiteral = true;
+                } else if ( foundLiteral ) {
+                    if ( c == ']' ) {
+                        const i = literals.push(literal);
+                        literal = '';
+                        momentMatchString += `%$${i-1}$%`;
+                        foundLiteral = false;
+                    } else {
+                        literal += c;
+                    }
+                } else {
+                    momentMatchString += c;
+                }
+            }
+
+            // Now let's replace moment date formatting
+            momentMatchString = momentMatchString
+                    .replace('YYYY', '\\d{4}')      // 4-digit year
+                    .replace('YY',   '\\d{2}')      // 2-digit year
+                    .replace('DD',   '\\d{2}')      // day of month, padded
+                    .replace('D',    '\\d{1,2}')    // day of month, not padded
                     .replace('MMM',  '[A-Za-z]{3}') // month, abbrv
-                    .replace('MM',   '\\d{2}')   // month, padded
-                    .replace('M',    '\\d{1,2}'); // month, not padded
+                    .replace('MM',   '\\d{2}')      // month, padded
+                    .replace('M',    '\\d{1,2}')    // month, not padded
+                    .replace('HH',   '\\d{2}')      // 24-hour, padded
+                    .replace('H',    '\\d{1,2}')    // 24-hour, not padded
+                    .replace('hh',   '\\d{2}')      // 12-hour, padded
+                    .replace('h',    '\\d{1,2}')    // 12-hour, not padded
+                    .replace('mm',   '\\d{2}')      // minute, padded
+                    .replace('m',    '\\d{1,2}')    // minute, not padded
+
+            if ( literals.length > 0 ) {
+                for(let i = 0; i < literals.length; i++) {
+                    momentMatchString = momentMatchString.replace(`%$${i}$%`, literals[i]);
+                }
+            }
+
+            // final fixes to convert to regex
+            momentMatchString = momentMatchString
+                .replace(/(?<!\\)\(/, '\\(')    // escape a naked (
+                .replace(/(?<!\\)\)/, '\\)')    // escape a naked )
         }
 
         this.initSettings = {
