@@ -8,9 +8,10 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
     plugin: TaskCollectorPlugin;
     taskCollector: TaskCollector;
 
-    constructor(app: App, plugin: TaskCollectorPlugin) {
+    constructor(app: App, plugin: TaskCollectorPlugin, taskCollector: TaskCollector) {
         super(app, plugin);
         this.plugin = plugin;
+        this.taskCollector = taskCollector;
     }
 
     display(): void {

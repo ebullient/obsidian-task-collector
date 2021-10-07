@@ -13,17 +13,23 @@ Yet another plugin to manage completed tasks. ;)
 ## Commands
 
 - **Complete item**  
-    1. If the current line is a task, and it matches the configuration for an incomplete task (where values other than ' ' are valid), it will mark the item as complete ('x'). 
+    1. If the current line is a task, and it matches the configuration for an incomplete task (where values other than ` ` are valid), it will mark the item as complete (`x`). 
     2. Optional: Remove characters matching a configured regular expression from the task, e.g. remove a #task or #todo tag.
     3. Optional: Append a formatted date string to the task
 
 - **Cancel item** (if enabled)  
-    1. If the current line is a task, and it matches the configuration for an incomplete task (where values other than ' ' are valid), it will mark the item as canceled ('-'). 
-    2. Optional: Remove characters matching a configured regular expression from the task, e.g. remove a #task or #todo tag.
+    1. If the current line is a task, and it matches the configuration for an incomplete task (where values other than ` ` are valid), it will mark the item as canceled (`-`). 
+    2. Optional: Remove characters matching a configured regular expression from the task, e.g. remove a `#task` or `#todo` tag.
     3. Optional: Append a formatted date string to the task
 
 - **Move completed tasks to configured heading**  
-    For the current document (open, in edit mode), move any completed (or canceled) tasks into the specified section. It will insert the items after the header (most recently moved will be first). The section heading will be created if it isn't present, and will stop at the next heading or `---` separator.
+    For the current document (open, in edit mode), move any completed (or canceled) tasks into the specified section. It will insert the items after the header (most recent at the top). The section heading will be created if it isn't present, and will stop at the next heading or `---` separator.
+    
+- **Complete all tasks**
+    For the current document (open, in edit mode), apply the **Complete item** command to all tasks matching the configuration for an incomplete task (where values other than ` ` are valid) as complete (`x`). 
+
+-  **Reset all completed tasks**
+    For the current document (open, in edit mode), find each completed item that is not in the completed area, and mark it as incomplete (` `). If an append date format string is configured, appended dates that match the configured format will be recognized and removed.
     
 ## Settings
 
@@ -70,6 +76,10 @@ Yet another plugin to manage completed tasks. ;)
 
 - **Toggle: Add menu item for moving completed tasks**  
   Add an item to the _right-click menu in edit mode_ to move all completed (or canceled) tasks to the Completed area.
+  
+- **Toggle: Add menu items for marking or clearing all tasks**  
+  Add two items to the _right-click menu in edit mode_ : one to complete
+  all incomplete tasks in the document, and the other to reset or clear the status of all completed items in the document outside of the completed area.
   
 ## Credits
 
