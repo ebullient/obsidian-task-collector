@@ -89,3 +89,4 @@ Yet another plugin to manage completed tasks. ;)
 - [Darakah/obsidian-timelines](https://github.com/Darakah/obsidian-timelines) -- Editor select/replace
 - [Customizable Sidebar](https://github.com/phibr0/obsidian-customizable-sidebar) -- GH Action
 - [Dataview](https://github.com/blacksmithgu/obsidian-dataview) -- Jest/Testing
+- [Bootstrap Icons](https://icons.getbootstrap.com/)
