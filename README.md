@@ -12,31 +12,35 @@ Yet another plugin to manage completed tasks. ;)
 
 ## Commands
 
-- **Complete item**  
-    1. If the current line is a task, and it matches the configuration for an incomplete task (where values other than ` ` are valid), it will mark the item as complete (`x`). 
+- **Complete Task**  
+    1. If the current line is a task, and it matches the configuration for an incomplete task (where values other than ` ` are valid), it will mark the item as complete (`[x]`). 
     2. Optional: Remove characters matching a configured regular expression from the task, e.g. remove a #task or #todo tag.
     3. Optional: Append a formatted date string to the task
 
-- **Cancel item** (if enabled)  
-    1. If the current line is a task, and it matches the configuration for an incomplete task (where values other than ` ` are valid), it will mark the item as canceled (`-`). 
+- **Cancel Task** (if enabled)  
+    1. If the current line is a task, and it matches the configuration for an incomplete task (where values other than ` ` are valid), it will mark the item as canceled (`[-]`). 
     2. Optional: Remove characters matching a configured regular expression from the task, e.g. remove a `#task` or `#todo` tag.
     3. Optional: Append a formatted date string to the task
+
+-  **Reset Task**
+    1. If the current line is a task, and it matches the configuration for a completed task (`[x]` or `[-]` if support for canceled tasks is enabled), it will reset it (`[ ]`). 
+    2. If an append date format string is configured, appended text that matches the configured format will be removed.
 
 - **Move completed tasks to configured heading**  
     For the current document (open, in edit mode), move any completed (or canceled) tasks into the specified section. It will insert the items after the header (most recent at the top). The section heading will be created if it isn't present, and will stop at the next heading or `---` separator.
     
 - **Complete all tasks**
-    For the current document (open, in edit mode), apply the **Complete item** command to all tasks matching the configuration for an incomplete task (where values other than ` ` are valid) as complete (`x`). 
+    For the current document (open, in edit mode), apply the **Complete item** command to all tasks matching the configuration for an incomplete task as complete (`[x]`). 
 
 -  **Reset all completed tasks**
-    For the current document (open, in edit mode), find each completed item that is not in the completed area, and mark it as incomplete (` `). If an append date format string is configured, appended dates that match the configured format will be recognized and removed.
+    For the current document (open, in edit mode), find each completed item that is not in the completed area, and mark it as incomplete (`[ ]`). If an append date format string is configured, appended text that matches the configured format will be removed.
     
 ## Settings
 
 ### Completing tasks
 
 - Toggle **Support canceled tasks**  
-  Use a `-` to indicate a canceled tasks. Canceled tasks are processed in the same way as completed tasks using options below.
+  Use a `[-]` to indicate a canceled tasks. Canceled tasks are processed in the same way as completed tasks using options below.
   - default: disabled
 
 - **Append date to completed task**
@@ -55,7 +59,7 @@ Yet another plugin to manage completed tasks. ;)
     Specify the set of characters that indicate incomplete tasks.
     - default: ` ` (space)
     - example: `> ?!` (a space is included along with other values)
-    - The "Complete task" and "Cancel task" commands are careful to work only with incomplete tasks. This setting allows checkboxes with other single character values to be treated as incomplete tasks. 
+    - The "Complete task" and "Cancel task" commands are careful to work only with incomplete tasks. This setting allows checkboxes with other single character values to be treated as incomplete tasks. This is often used for bujo style tasks, e.g. `[>]` for deferred items or `[/]` for items in progress.
 
 ### Moving completed tasks to a sub-section
 
@@ -65,7 +69,7 @@ Yet another plugin to manage completed tasks. ;)
     - Notes:
       - The default value will be used if the command is invoked and the configured value is empty. 
       - The heading will be created at the end of the document if it does not exist.
-      - When scanning the document for completed (or canceled) tasks, the contents from this configured header to the next heading or separator (---) will be ignored.
+      - When scanning the document for completed (or canceled) tasks, the contents from this configured header to the next heading or separator (`---`) will be ignored.
       - Completed (or canceled) tasks will be moved along with their sub items (nested lists, text, or quotes). 
       - If a completed item has an incomplete child task, the child (and any text following) will remain in the original location.
 
