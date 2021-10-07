@@ -78,3 +78,4 @@ Yet another plugin to manage completed tasks. ;)
 - [ivan-lednev/obsidian-task-archiver](https://github.com/ivan-lednev/obsidian-task-archiver) -- Treatment of sub-elements
 - [Darakah/obsidian-timelines](https://github.com/Darakah/obsidian-timelines) -- Editor select/replace
 - [Customizable Sidebar](https://github.com/phibr0/obsidian-customizable-sidebar) -- GH Action
+- [Dataview](https://github.com/blacksmithgu/obsidian-dataview) -- Jest/Testing

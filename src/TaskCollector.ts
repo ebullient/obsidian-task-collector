@@ -12,11 +12,11 @@ export class TaskCollector {
 
     updateSettings(settings: TaskCollectorSettings): void {
         this.settings = settings;
-        let resetRegExp = null;
+        let momentMatchString = null;
 
         if ( settings.appendDateFormat ) {
             // YYYY-MM-DD or DD MM, YYYY or .. [(]YYYY-MM-DD[)] where the stuff in the brackets is literal
-            const matchString = settings.appendDateFormat
+            momentMatchString = settings.appendDateFormat
                     .replace(/\[/g,'')
                     .replace(/\]/g, '')
                     .replace(/(?<!\\)\(/, '\\(')  // escape a naked (
@@ -28,12 +28,11 @@ export class TaskCollector {
                     .replace('MMM',  '[A-Za-z]{3}') // month, abbrv
                     .replace('MM',   '\\d{2}')   // month, padded
                     .replace('M',    '\\d{1,2}'); // month, not padded
-            resetRegExp = this.tryCreateResetRegex(matchString + '$');
         }
 
         this.initSettings = {
             removeRegExp: this.tryCreateRemoveRegex(this.settings.removeExpression),
-            resetRegExp: resetRegExp,
+            resetRegExp: this.tryCreateResetRegex(momentMatchString),
             incompleteTaskRegExp: this.tryCreateIncompleteRegex(this.settings.incompleteTaskValues)
         }
         console.log('loaded TC settings: %o, %o', this.settings, this.initSettings);
@@ -44,12 +43,12 @@ export class TaskCollector {
     }
 
     tryCreateResetRegex(param: string): RegExp {
-        return param ? new RegExp(param) : null;
+        return param ? new RegExp(param + '$') : null;
     }
 
     tryCreateIncompleteRegex(param: string): RegExp {
-        return param ? new RegExp(`^(\\s*- \\[)[${param}](\\] .*)$`)
-            : new RegExp(`^(\\s*- \\[) (\\] .*)$`);
+        return param ? new RegExp(`^(\\s*- \\[)[${param}](\\].*)$`)
+            : new RegExp(`^(\\s*- \\[) (\\].*)$`);
     }
 
     updateTaskLine(lineText: string, mark: string): string {
