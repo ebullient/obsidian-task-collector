@@ -22,17 +22,17 @@ Yet another plugin to manage completed tasks. ;)
     2. Optional: Remove characters matching a configured regular expression from the task, e.g. remove a `#task` or `#todo` tag.
     3. Optional: Append a formatted date string to the task
 
--  **Reset Task**
+-  **Reset Task** (as of 0.5.0)
     1. If the current line is a task, and it matches the configuration for a completed task (`[x]` or `[-]` if support for canceled tasks is enabled), it will reset it (`[ ]`). 
     2. If an append date format string is configured, appended text that matches the configured format will be removed.
 
 - **Move completed tasks to configured heading**  
     For the current document (open, in edit mode), move any completed (or canceled) tasks into the specified section. It will insert the items after the header (most recent at the top). The section heading will be created if it isn't present, and will stop at the next heading or `---` separator.
     
-- **Complete all tasks**
+- **Complete all tasks** (as of 0.4.0)
     For the current document (open, in edit mode), apply the **Complete item** command to all tasks matching the configuration for an incomplete task as complete (`[x]`). 
 
--  **Reset all completed tasks**
+-  **Reset all completed tasks** (as of 0.4.0)
     For the current document (open, in edit mode), find each completed item that is not in the completed area, and mark it as incomplete (`[ ]`). If an append date format string is configured, appended text that matches the configured format will be removed.
     
 ## Settings
@@ -81,7 +81,7 @@ Yet another plugin to manage completed tasks. ;)
 - **Toggle: Add menu item for moving completed tasks**  
   Add an item to the _right-click menu in edit mode_ to move all completed (or canceled) tasks to the Completed area.
   
-- **Toggle: Add menu items for marking or clearing all tasks**  
+- **Toggle: Add menu items for marking or clearing all tasks**  (as of 0.4.0)
   Add two items to the _right-click menu in edit mode_ : one to complete
   all incomplete tasks in the document, and the other to reset or clear the status of all completed items in the document outside of the completed area.
   
