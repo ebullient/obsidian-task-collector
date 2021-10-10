@@ -1,6 +1,6 @@
 {
   "name": "obsidian-task-collector",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Manage completed tasks within a document in Obsidian (https://obsidian.md)",
   "main": "main.js",
   "scripts": {
