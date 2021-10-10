@@ -22,8 +22,8 @@ test('Test default settings', () => {
     expect(tc.initSettings.removeRegExp).toBeNull();
     expect(tc.initSettings.resetRegExp).toBeNull();
 
-    expect('- [ ]').toMatch(tc.initSettings.incompleteTaskRegExp);
-    expect('- [>]').not.toMatch(tc.initSettings.incompleteTaskRegExp);
+    expect('- [ ] ').toMatch(tc.initSettings.incompleteTaskRegExp);
+    expect('- [>] ').not.toMatch(tc.initSettings.incompleteTaskRegExp);
 
     expect('- [x] something').toEqual(tc.updateTaskLine('- [ ] something', 'x'));
     expect('- [>] something').toEqual(tc.updateTaskLine('- [>] something', 'x'));
@@ -36,8 +36,8 @@ test('Correctly matches > when included in incomplete pattern', () => {
 
     expect(tc.initSettings.removeRegExp).toBeNull();
     expect(tc.initSettings.resetRegExp).toBeNull();
-    expect('- [ ]').toMatch(tc.initSettings.incompleteTaskRegExp);
-    expect('- [>]').toMatch(tc.initSettings.incompleteTaskRegExp);
+    expect('- [ ] ').toMatch(tc.initSettings.incompleteTaskRegExp);
+    expect('- [>] ').toMatch(tc.initSettings.incompleteTaskRegExp);
 
     expect('- [x] something').toEqual(tc.updateTaskLine('- [>] something', 'x'));
 });

@@ -7,7 +7,7 @@ export class TaskCollector {
     completedOrCanceled: RegExp;
 
     constructor(private app: App) {
-        this.completedOrCanceled = new RegExp(`^(\\s*- \\[)[-xX](\\] .*)$`);
+        this.completedOrCanceled = new RegExp(/^(\s*- \[)[xX-](\] .*)$/);
     }
 
     updateSettings(settings: TaskCollectorSettings): void {
@@ -62,8 +62,8 @@ export class TaskCollector {
 
             // final fixes to convert to regex
             momentMatchString = momentMatchString
-                .replace(/(?<!\\)\(/, '\\(')    // escape a naked (
-                .replace(/(?<!\\)\)/, '\\)')    // escape a naked )
+                .replace(/\(/, '\\(')    // escape a naked (
+                .replace(/\)/, '\\)')    // escape a naked )
         }
 
         this.initSettings = {
@@ -83,8 +83,8 @@ export class TaskCollector {
     }
 
     tryCreateIncompleteRegex(param: string): RegExp {
-        return param ? new RegExp(`^(\\s*- \\[)[${param}](\\].*)$`)
-            : new RegExp(`^(\\s*- \\[) (\\].*)$`);
+        return param ? new RegExp(`^(\\s*- \\[)[${param}](\\] .*)$`)
+            : new RegExp(/^(\s*- \[) (\] .*)$/);
     }
 
     updateTaskLine(lineText: string, mark: string): string {
@@ -207,11 +207,11 @@ export class TaskCollector {
                 remaining.push("%%%COMPLETED_ITEMS_GO_HERE%%%");
             } else {
                 const taskMatch = line.match(/^(\s*)- \[(.)\]/);
-                console.log(taskMatch);
+                // console.log(taskMatch);
                 if (this.isCompletedTask(taskMatch)) {
                     inTask = true;
                     newTasks.push(line);
-                } else if (inTask && !taskMatch && line.match(`^( {2,}|\\t)`)) {
+                } else if (inTask && !taskMatch && line.match(/^( {2,}|\\t)/)) {
                     newTasks.push(line);
                 } else {
                     inTask = false;
