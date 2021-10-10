@@ -14,7 +14,7 @@ export class TaskCollector {
         this.settings = settings;
         let momentMatchString = null;
 
-        if ( settings.appendDateFormat ) {
+        if (settings.appendDateFormat) {
             // YYYY-MM-DD or DD MM, YYYY or .. [(]YYYY-MM-DD[)] where the stuff in the brackets is literal
             const literals = [];
             let foundLiteral = false;
@@ -22,13 +22,13 @@ export class TaskCollector {
 
             momentMatchString = '';
             for (const c of settings.appendDateFormat) {
-                if ( c == '[' ) {
+                if (c == '[') {
                     foundLiteral = true;
-                } else if ( foundLiteral ) {
-                    if ( c == ']' ) {
+                } else if (foundLiteral) {
+                    if (c == ']') {
                         const i = literals.push(literal);
                         literal = '';
-                        momentMatchString += `%$${i-1}$%`;
+                        momentMatchString += `%$${i - 1}$%`;
                         foundLiteral = false;
                     } else {
                         literal += c;
@@ -40,22 +40,22 @@ export class TaskCollector {
 
             // Now let's replace moment date formatting
             momentMatchString = momentMatchString
-                    .replace('YYYY', '\\d{4}')      // 4-digit year
-                    .replace('YY',   '\\d{2}')      // 2-digit year
-                    .replace('DD',   '\\d{2}')      // day of month, padded
-                    .replace('D',    '\\d{1,2}')    // day of month, not padded
-                    .replace('MMM',  '[A-Za-z]{3}') // month, abbrv
-                    .replace('MM',   '\\d{2}')      // month, padded
-                    .replace('M',    '\\d{1,2}')    // month, not padded
-                    .replace('HH',   '\\d{2}')      // 24-hour, padded
-                    .replace('H',    '\\d{1,2}')    // 24-hour, not padded
-                    .replace('hh',   '\\d{2}')      // 12-hour, padded
-                    .replace('h',    '\\d{1,2}')    // 12-hour, not padded
-                    .replace('mm',   '\\d{2}')      // minute, padded
-                    .replace('m',    '\\d{1,2}')    // minute, not padded
+                .replace('YYYY', '\\d{4}')     // 4-digit year
+                .replace('YY', '\\d{2}')       // 2-digit year
+                .replace('DD', '\\d{2}')       // day of month, padded
+                .replace('D', '\\d{1,2}')      // day of month, not padded
+                .replace('MMM', '[A-Za-z]{3}') // month, abbrv
+                .replace('MM', '\\d{2}')       // month, padded
+                .replace('M', '\\d{1,2}')      // month, not padded
+                .replace('HH', '\\d{2}')       // 24-hour, padded
+                .replace('H', '\\d{1,2}')      // 24-hour, not padded
+                .replace('hh', '\\d{2}')       // 12-hour, padded
+                .replace('h', '\\d{1,2}')      // 12-hour, not padded
+                .replace('mm', '\\d{2}')       // minute, padded
+                .replace('m', '\\d{1,2}')      // minute, not padded
 
-            if ( literals.length > 0 ) {
-                for(let i = 0; i < literals.length; i++) {
+            if (literals.length > 0) {
+                for (let i = 0; i < literals.length; i++) {
                     momentMatchString = momentMatchString.replace(`%$${i}$%`, literals[i]);
                 }
             }
@@ -103,15 +103,31 @@ export class TaskCollector {
         return marked;
     }
 
-    markTaskOnCurrentLine(editor: Editor, mark: string): void {
-        const anchor = editor.getCursor("from");
-        const lineText = editor.getLine(anchor.line);
+    markTaskOnLine(editor: Editor, mark: string, i: number): void {
+        const lineText = editor.getLine(i);
 
         // Does this line indicate an incomplete task?
         const incompleteTask = this.initSettings.incompleteTaskRegExp.exec(lineText);
         if (incompleteTask) {
             const marked = this.updateTaskLine(lineText, mark);
-            editor.setLine(anchor.line, marked);
+            editor.setLine(i, marked);
+        }
+    }
+
+    markTaskOnCurrentLine(editor: Editor, mark: string): void {
+        if (editor.somethingSelected()) {
+            const cursorStart = editor.getCursor("from")
+            const cursorEnd = editor.getCursor("to");
+            for (let i = cursorStart.line; i <= cursorEnd.line; i++) {
+                this.markTaskOnLine(editor, mark, i);
+            }
+            editor.setSelection(cursorStart, {
+                line: cursorEnd.line,
+                ch: editor.getLine(cursorEnd.line).length
+            });
+        } else {
+            const anchor = editor.getCursor("from");
+            this.markTaskOnLine(editor, mark, anchor.line);
         }
     }
 
@@ -138,14 +154,30 @@ export class TaskCollector {
         return marked;
     }
 
-    resetTaskOnCurrentLine(editor: Editor): void {
-        const anchor = editor.getCursor("from");
-        const lineText = editor.getLine(anchor.line);
+    resetTaskOnLine(editor: Editor, i: number): void {
+        const lineText = editor.getLine(i);
 
         // Does this line indicate an incomplete task?
         if (this.completedOrCanceled.exec(lineText)) {
             const marked = this.resetTaskLine(lineText);
-            editor.setLine(anchor.line, marked);
+            editor.setLine(i, marked);
+        }
+    }
+
+    resetTaskOnCurrentLine(editor: Editor): void {
+        if (editor.somethingSelected()) {
+            const cursorStart = editor.getCursor("from")
+            const cursorEnd = editor.getCursor("to");
+            for (let i = cursorStart.line; i <= cursorEnd.line; i++) {
+                this.resetTaskOnLine(editor, i);
+            }
+            editor.setSelection(cursorStart, {
+                line: cursorEnd.line,
+                ch: editor.getLine(cursorEnd.line).length
+            });
+        } else {
+            const anchor = editor.getCursor("from");
+            this.resetTaskOnLine(editor, anchor.line);
         }
     }
 
@@ -232,7 +264,7 @@ export class TaskCollector {
     isCompletedTask(taskMatch: RegExpMatchArray): boolean {
         if (taskMatch) {
             return taskMatch[2] === 'x' || taskMatch[2] === 'X'
-                || ( this.settings.supportCanceledTasks && taskMatch[2] == '-');
+                || (this.settings.supportCanceledTasks && taskMatch[2] == '-');
         }
         return false;
     }
