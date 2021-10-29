@@ -1,6 +1,6 @@
 import { App, moment, PluginSettingTab, Setting } from 'obsidian';
-import { TaskCollectorSettings, DEFAULT_SETTINGS } from './TaskCollectorSettings';
-import { TaskCollector } from './TaskCollector';
+import { TaskCollectorSettings, DEFAULT_SETTINGS } from './taskcollector-Settings';
+import { TaskCollector } from './taskcollector-TaskCollector';
 import TaskCollectorPlugin from "./main";
 
 
@@ -18,8 +18,6 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        containerEl.createEl("h2", { text: "Completing tasks" });
-
         const tempSettings: TaskCollectorSettings = Object.assign(this.taskCollector.settings);
         console.log("Displaying task collector settings: %o ==> %o", this.taskCollector.settings, tempSettings);
 
@@ -33,6 +31,8 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     this.taskCollector.updateSettings(tempSettings);
                     await this.plugin.saveSettings();
                 }));
+
+        containerEl.createEl("h2", { text: "Completing tasks" });
 
         new Setting(containerEl)
             .setName("Append date to completed task")
@@ -75,17 +75,17 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("Incomplete task indicators")
-            .setDesc("Specify the set of single characters (usually a space) that mark incomplete tasks.")
+            .setDesc("Specify the set of single characters (a space by default) that indicate incomplete tasks.")
             .addText((text) => text
                 .setPlaceholder("> !?")
                 .setValue(tempSettings.incompleteTaskValues)
                 .onChange(async (value) => {
-                    tempSettings.incompleteTaskValues = value;
-                    if ( value.contains('x')) {
+                    if ( value.contains('x') || value.contains('X') ) {
                         console.log(`Set of characters should not contain the marker for completed tasks: ${value}`);
                     } else if ( tempSettings.supportCanceledTasks && value.contains('-')) {
                         console.log(`Set of characters should not contain the marker for canceled tasks: ${value}`);
                     } else {
+                        tempSettings.incompleteTaskValues = value;
                         this.taskCollector.updateSettings(tempSettings);
                         await this.plugin.saveSettings();
                     }
@@ -111,7 +111,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("Add menu item for completing a task")
-            .setDesc("  Add an item to the right-click menu in edit mode to mark the task on the current line complete. If canceled items are supported, an additional menu item will be added to cancel the task on the current line.")
+            .setDesc("Add an item to the right-click menu in edit mode to *mark the task on the current line (or tasks within the current selection)* complete. If canceled items are supported, an additional menu item will be added to mark selected tasks as canceled.")
             .addToggle(toggle => toggle
                 .setValue(tempSettings.rightClickComplete)
                 .onChange(async value => {
@@ -121,8 +121,19 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
+                .setName("Add menu items for completing all tasks")
+                .setDesc("Add an item to the right-click menu in edit mode to *mark all tasks* in the current document complete.")
+                .addToggle(toggle => toggle
+                    .setValue(tempSettings.rightClickToggleAll)
+                    .onChange(async value => {
+                        tempSettings.rightClickToggleAll = value;
+                        this.taskCollector.updateSettings(tempSettings);
+                        await this.plugin.saveSettings();
+                    }));
+
+        new Setting(containerEl)
             .setName("Add menu item for moving all completed tasks")
-            .setDesc("Add an item to the right-click menu in edit mode to move all completed (or canceled) tasks.")
+            .setDesc("Add an item to the right-click menu in edit mode to *move all completed (or canceled) tasks*.")
             .addToggle(toggle => toggle
                 .setValue(tempSettings.rightClickMove)
                 .onChange(async value => {
@@ -131,15 +142,16 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
+
         new Setting(containerEl)
-                .setName("Add menu items for marking or clearing all tasks")
-                .setDesc("Add two additional items to the right click menu: one to mark all incomplete items complete, and another to mark all items as incomplete. This bulk toggle will ignore items in the completed area.")
-                .addToggle(toggle => toggle
-                    .setValue(tempSettings.rightClickToggleAll)
-                    .onChange(async value => {
-                        tempSettings.rightClickToggleAll = value;
-                        this.taskCollector.updateSettings(tempSettings);
-                        await this.plugin.saveSettings();
-                    }));
+                    .setName("Include menu items for resetting tasks")
+                    .setDesc("Include menu items for resetting tasks (e.g. complete, cancel, and reset individual/selected tasks; complete/reset all tasks)")
+                    .addToggle(toggle => toggle
+                        .setValue(tempSettings.rightClickReset)
+                        .onChange(async value => {
+                            tempSettings.rightClickReset = value;
+                            this.taskCollector.updateSettings(tempSettings);
+                            await this.plugin.saveSettings();
+                        }));
     }
 }

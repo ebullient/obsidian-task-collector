@@ -6,6 +6,7 @@ export interface TaskCollectorSettings {
     supportCanceledTasks: boolean;
     rightClickComplete: boolean;
     rightClickMove: boolean;
+    rightClickReset: boolean;
     rightClickToggleAll: boolean
 }
 
@@ -17,6 +18,7 @@ export const DEFAULT_SETTINGS: TaskCollectorSettings = {
     supportCanceledTasks: false,
     rightClickComplete: false,
     rightClickMove: false,
+    rightClickReset: false,
     rightClickToggleAll: false
 }
 
@@ -24,5 +26,6 @@ export interface CompiledTasksSettings {
     removeRegExp: RegExp;
     resetRegExp: RegExp;
     incompleteTaskRegExp: RegExp;
+    rightClickTaskMenu: boolean;
 }
 

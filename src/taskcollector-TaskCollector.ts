@@ -1,5 +1,5 @@
 import { App, Editor, moment } from 'obsidian';
-import { TaskCollectorSettings, CompiledTasksSettings } from './TaskCollectorSettings';
+import { TaskCollectorSettings, CompiledTasksSettings } from './taskcollector-Settings';
 
 export class TaskCollector {
     settings: TaskCollectorSettings;
@@ -66,10 +66,12 @@ export class TaskCollector {
                 .replace(/\)/, '\\)')    // escape a naked )
         }
 
+        const rightClickTaskMenu = (this.settings.rightClickComplete || this.settings.rightClickMove);
         this.initSettings = {
             removeRegExp: this.tryCreateRemoveRegex(this.settings.removeExpression),
             resetRegExp: this.tryCreateResetRegex(momentMatchString),
-            incompleteTaskRegExp: this.tryCreateIncompleteRegex(this.settings.incompleteTaskValues)
+            incompleteTaskRegExp: this.tryCreateIncompleteRegex(this.settings.incompleteTaskValues),
+            rightClickTaskMenu: rightClickTaskMenu
         }
         console.log('loaded TC settings: %o, %o', this.settings, this.initSettings);
     }
