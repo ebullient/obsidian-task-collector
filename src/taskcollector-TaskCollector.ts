@@ -245,7 +245,7 @@ export class TaskCollector {
                 if (this.isCompletedTask(taskMatch)) {
                     inTask = true;
                     newTasks.push(line);
-                } else if (inTask && !taskMatch && line.match(/^( {2,}|\\t)/)) {
+                } else if (inTask && !taskMatch && line.match(/^( {2,}|\t)/)) {
                     newTasks.push(line);
                 } else {
                     inTask = false;
