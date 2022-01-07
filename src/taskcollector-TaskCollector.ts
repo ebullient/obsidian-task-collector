@@ -17,25 +17,21 @@ export class TaskCollector {
         if (settings.appendDateFormat) {
             // YYYY-MM-DD or DD MM, YYYY or .. [(]YYYY-MM-DD[)] where the stuff in the brackets is literal
             const literals = [];
-            let foundLiteral = false;
-            let literal = '';
 
-            momentMatchString = '';
-            for (const c of settings.appendDateFormat) {
-                if (c == '[') {
-                    foundLiteral = true;
-                } else if (foundLiteral) {
-                    if (c == ']') {
-                        const i = literals.push(literal);
-                        literal = '';
-                        momentMatchString += `%$${i - 1}$%`;
-                        foundLiteral = false;
-                    } else {
-                        literal += c;
-                    }
-                } else {
-                    momentMatchString += c;
-                }
+            const regex1 = RegExp('(\\[.*?\\]\\]?)', 'g');
+            let match;
+            let i = 0;
+
+            momentMatchString = settings.appendDateFormat;
+            while ((match = regex1.exec(momentMatchString)) !== null) {
+                momentMatchString = momentMatchString.replace(match[0], `%$${i}$%`);
+                literals.push(match[0]
+                    .substring(1, match[0].length - 1)
+                    .replace(/\(/g, '\\(')   // escape a naked (
+                    .replace(/\)/g, '\\)')   // escape a naked )
+                    .replace(/\[/g, "\\[")   // escape a naked [
+                    .replace(/\]/g, "\\]")); // escape a naked ]
+                i++;
             }
 
             // Now let's replace moment date formatting
@@ -52,18 +48,13 @@ export class TaskCollector {
                 .replace('hh', '\\d{2}')       // 12-hour, padded
                 .replace('h', '\\d{1,2}')      // 12-hour, not padded
                 .replace('mm', '\\d{2}')       // minute, padded
-                .replace('m', '\\d{1,2}')      // minute, not padded
+                .replace('m', '\\d{1,2}');     // minute, not padded
 
             if (literals.length > 0) {
                 for (let i = 0; i < literals.length; i++) {
                     momentMatchString = momentMatchString.replace(`%$${i}$%`, literals[i]);
                 }
             }
-
-            // final fixes to convert to regex
-            momentMatchString = momentMatchString
-                .replace(/\(/, '\\(')    // escape a naked (
-                .replace(/\)/, '\\)')    // escape a naked )
         }
 
         const rightClickTaskMenu = (this.settings.rightClickComplete || this.settings.rightClickMove);
@@ -248,7 +239,7 @@ export class TaskCollector {
                 const taskMatch = line.match(/^(\s*)- \[(.)\]/);
                 // console.log(taskMatch);
                 if (this.isCompletedTask(taskMatch)) {
-                    if (this.settings.completedAreaRemoveCheckbox) {    
+                    if (this.settings.completedAreaRemoveCheckbox) {
                         line = this.removeCheckboxFromLine(line);
                     }
                     inTask = true;
