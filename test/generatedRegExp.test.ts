@@ -156,6 +156,24 @@ describe('Set an append date', () => {
         expect('- [ ] something #todo ').toEqual(tc.resetTaskLine(completed));
     });
 
+    test('Correctly matches dataview annotated string [completion::2021-08-15]', () => {
+        const tc = new TaskCollector(new App());
+        config.appendDateFormat = '[[completion::]YYYY-MM-DD[]]';
+        tc.updateSettings(config);
+
+        expect('- [x] I finished this on [completion::2021-08-15]').toMatch(tc.initSettings.resetRegExp);
+
+        expect('- [x] something (6 Oct, 2021)').not.toMatch(tc.initSettings.resetRegExp);
+        expect('- [x] something 6 Oct, 2021').not.toMatch(tc.initSettings.resetRegExp);
+        expect('- [x] 6 Oct, 2021, something else').not.toMatch(tc.initSettings.resetRegExp);
+        expect('- [x] 2021-10-06 something else').not.toMatch(tc.initSettings.resetRegExp);
+
+        const completed = tc.updateTaskLine('- [ ] something #todo', 'x');
+        console.log(completed);
+        expect(completed).toMatch(tc.initSettings.resetRegExp);
+        expect('- [ ] something #todo ').toEqual(tc.resetTaskLine(completed));
+    });
+
     test('Remove completed or canceled checkboxes when completedAreaRemoveCheckbox is enabled', () => {
         const tc = new TaskCollector(new App());
         config.completedAreaRemoveCheckbox = true;
