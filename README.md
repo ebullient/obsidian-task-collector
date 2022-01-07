@@ -73,6 +73,10 @@ Yet another plugin to manage completed tasks. ;)
       - Completed (or canceled) tasks will be moved along with their sub items (nested lists, text, or quotes). 
       - If a completed item has an incomplete child task, the child (and any text following) will remain in the original location.
 
+- **Remove checkbox**
+    Removes the checkboxes from completed (or canceled) tasks during the move to the completed area.
+    - default: `false`
+    
 ## Right-click editor menu items
 
 - **Toggle: Add menu item for completing task**  

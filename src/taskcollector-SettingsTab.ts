@@ -107,6 +107,17 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 })
             );
 
+        new Setting(containerEl)
+            .setName("Remove checkbox")
+            .setDesc(`Removes the checkbox from completed (or canceled) tasks during the move to the completed area. The default is: '${DEFAULT_SETTINGS.completedAreaRemoveCheckbox}'.`)
+            .addToggle(toggle => toggle
+                .setValue(tempSettings.completedAreaRemoveCheckbox)
+                .onChange(async value => {
+                    tempSettings.completedAreaRemoveCheckbox = value;
+                    this.taskCollector.updateSettings(tempSettings);
+                    await this.plugin.saveSettings();
+                }));
+
         containerEl.createEl("h2", { text: "Right-click Menu items" });
 
         new Setting(containerEl)

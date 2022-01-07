@@ -208,6 +208,11 @@ export class TaskCollector {
         editor.setValue(result.join("\n"));
     }
 
+    removeCheckboxFromLine(line: string): string {
+        const lineWithoutCheckbox = line.replace(/(?<=([-] ))\[.\] /, '');
+        return lineWithoutCheckbox;
+    }
+
     moveCompletedTasksInFile(editor: Editor): void {
         const LOG_HEADING = this.settings.completedAreaHeader || '## Log';
         const source = editor.getValue();
@@ -227,7 +232,7 @@ export class TaskCollector {
         let inTask = false;
         let completedItemsIndex = lines.length;
 
-        for (const line of lines) {
+        for (let line of lines) {
             if (inCompletedSection) {
                 if (line.startsWith("#") || line.trim() === '---') {
                     inCompletedSection = false;
@@ -243,6 +248,9 @@ export class TaskCollector {
                 const taskMatch = line.match(/^(\s*)- \[(.)\]/);
                 // console.log(taskMatch);
                 if (this.isCompletedTask(taskMatch)) {
+                    if (this.settings.completedAreaRemoveCheckbox) {    
+                        line = this.removeCheckboxFromLine(line);
+                    }
                     inTask = true;
                     newTasks.push(line);
                 } else if (inTask && !taskMatch && line.match(/^( {2,}|\t)/)) {

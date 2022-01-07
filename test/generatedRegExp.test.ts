@@ -155,5 +155,20 @@ describe('Set an append date', () => {
         expect(completed).toMatch(tc.initSettings.resetRegExp);
         expect('- [ ] something #todo ').toEqual(tc.resetTaskLine(completed));
     });
+
+    test('Remove completed or canceled checkboxes when completedAreaRemoveCheckbox is enabled', () => {
+        const tc = new TaskCollector(new App());
+        config.completedAreaRemoveCheckbox = true;
+        tc.updateSettings(config);
+
+        const lineWithCompletedTask = '- [x] something'
+        const lineWithCancledTask = '- [-] something'
+        const lineIncompletedTask = '- [ ] something'
+        const lineWithoutCheckbox = '- something';
+        expect(tc.removeCheckboxFromLine(lineWithCompletedTask)).toEqual(lineWithoutCheckbox);
+        expect(tc.removeCheckboxFromLine(lineWithCancledTask)).toEqual(lineWithoutCheckbox);
+        expect(tc.removeCheckboxFromLine(lineIncompletedTask)).toEqual(lineWithoutCheckbox);
+
+    });
 });
 
