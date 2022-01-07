@@ -50,17 +50,23 @@ export class TaskCollectorPlugin extends Plugin {
             id: "task-collector-mark-all-done",
             name: "Complete all tasks",
             icon: "tc-complete-all-items",
-            editorCallback: (editor: Editor, view: MarkdownView) => {
-                this.taskCollector.markAllTasks(editor, 'x');
-            }
+            callback: async () => {
+                const activeFile = this.app.workspace.getActiveFile();
+                const source = await this.app.vault.read(activeFile);
+                const result = this.taskCollector.markAllTasks(source, 'x');
+                this.app.vault.modify(activeFile, result);
+        }
         };
 
         const clearAllTasksCommand: Command = {
             id: "task-collector-clear-all-items",
             name: "Reset all completed tasks",
             icon: "tc-clear-all-items",
-            editorCallback: (editor: Editor, view: MarkdownView) => {
-                this.taskCollector.resetAllTasks(editor);
+            callback: async () => {
+                const activeFile = this.app.workspace.getActiveFile();
+                const source = await this.app.vault.read(activeFile);
+                const result = this.taskCollector.resetAllTasks(source);
+                this.app.vault.modify(activeFile, result);
             }
         };
 
@@ -68,8 +74,11 @@ export class TaskCollectorPlugin extends Plugin {
             id: "task-collector-move-completed-tasks",
             name: "Move all completed tasks to configured heading",
             icon: "tc-move-all-checked-items",
-            editorCallback: async (editor: Editor, view: MarkdownView) => {
-                this.taskCollector.moveCompletedTasksInFile(editor);
+            callback: async () => {
+                const activeFile = this.app.workspace.getActiveFile();
+                const source = await this.app.vault.read(activeFile);
+                const result = this.taskCollector.moveCompletedTasksInFile(source);
+                this.app.vault.modify(activeFile, result);
             },
         };
 

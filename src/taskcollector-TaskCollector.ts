@@ -5,9 +5,11 @@ export class TaskCollector {
     settings: TaskCollectorSettings;
     initSettings: CompiledTasksSettings;
     completedOrCanceled: RegExp;
+    stripTask: RegExp;
 
     constructor(private app: App) {
         this.completedOrCanceled = new RegExp(/^(\s*- \[)[xX-](\] .*)$/);
+        this.stripTask = new RegExp(/^(\s*-) \[[xX-]\] (.*)$/);
     }
 
     updateSettings(settings: TaskCollectorSettings): void {
@@ -80,6 +82,10 @@ export class TaskCollector {
             : new RegExp(/^(\s*- \[) (\] .*)$/);
     }
 
+    removeCheckboxFromLine(lineText: string): string {
+        return lineText.replace(this.stripTask, '$1 $2')
+    }
+
     updateTaskLine(lineText: string, mark: string): string {
         let marked = lineText.replace(this.initSettings.incompleteTaskRegExp, '$1' + mark + '$2');
         if (this.initSettings.removeRegExp) {
@@ -124,8 +130,7 @@ export class TaskCollector {
         }
     }
 
-    markAllTasks(editor: Editor, mark: string): void {
-        const source = editor.getValue();
+    markAllTasks(source: string, mark: string): string {
         const lines = source.split("\n");
         const result: string[] = [];
 
@@ -136,7 +141,7 @@ export class TaskCollector {
                 result.push(line);
             }
         }
-        editor.setValue(result.join("\n"));
+        return result.join("\n");
     }
 
     resetTaskLine(lineText: string): string {
@@ -174,9 +179,8 @@ export class TaskCollector {
         }
     }
 
-    resetAllTasks(editor: Editor): void {
+    resetAllTasks(source: string): string {
         const LOG_HEADING = this.settings.completedAreaHeader || '## Log';
-        const source = editor.getValue();
         const lines = source.split("\n");
 
         const result: string[] = [];
@@ -196,17 +200,11 @@ export class TaskCollector {
                 result.push(line);
             }
         }
-        editor.setValue(result.join("\n"));
+        return result.join("\n");
     }
 
-    removeCheckboxFromLine(line: string): string {
-        const lineWithoutCheckbox = line.replace(/(?<=([-] ))\[.\] /, '');
-        return lineWithoutCheckbox;
-    }
-
-    moveCompletedTasksInFile(editor: Editor): void {
+    moveCompletedTasksInFile(source: string): string {
         const LOG_HEADING = this.settings.completedAreaHeader || '## Log';
-        const source = editor.getValue();
         const lines = source.split("\n");
 
         if (!source.contains(LOG_HEADING)) {
@@ -259,7 +257,7 @@ export class TaskCollector {
         if (completedItemsIndex < remaining.length - 1) {
             result = result.concat(remaining.slice(completedItemsIndex + 1));
         }
-        editor.setValue(result.join("\n"));
+        return result.join("\n");
     }
 
     isCompletedTask(taskMatch: RegExpMatchArray): boolean {
