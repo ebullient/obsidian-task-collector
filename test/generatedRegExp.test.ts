@@ -179,13 +179,13 @@ describe('Set an append date', () => {
         config.completedAreaRemoveCheckbox = true;
         tc.updateSettings(config);
 
-        const lineWithCompletedTask = '- [x] something'
-        const lineWithCancledTask = '- [-] something'
-        const lineIncompletedTask = '- [ ] something'
+        const lineWithCompletedTask = '- [x] something';
+        const lineWithCancledTask = '- [-] something';
+        const lineIncompletedTask = '- [ ] something'; // not a complete/canceled task
         const lineWithoutCheckbox = '- something';
         expect(tc.removeCheckboxFromLine(lineWithCompletedTask)).toEqual(lineWithoutCheckbox);
         expect(tc.removeCheckboxFromLine(lineWithCancledTask)).toEqual(lineWithoutCheckbox);
-        expect(tc.removeCheckboxFromLine(lineIncompletedTask)).toEqual(lineWithoutCheckbox);
+        expect(tc.removeCheckboxFromLine(lineIncompletedTask)).toEqual(lineIncompletedTask); // unchanged
 
     });
 });
