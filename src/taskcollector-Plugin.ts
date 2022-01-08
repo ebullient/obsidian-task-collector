@@ -7,7 +7,7 @@ export class TaskCollectorPlugin extends Plugin {
     taskCollector: TaskCollector;
 
     async onload(): Promise<void> {
-        console.log('loading Task Collector (TC): %o', this.app);
+        console.log('loading Task Collector (TC)');
         this.taskCollector = new TaskCollector(this.app);
         this.addSettingTab(new TaskCollectorSettingsTab(this.app, this, this.taskCollector));
         await this.loadSettings();

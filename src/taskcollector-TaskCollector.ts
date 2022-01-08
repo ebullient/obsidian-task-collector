@@ -235,7 +235,6 @@ export class TaskCollector {
                 remaining.push("%%%COMPLETED_ITEMS_GO_HERE%%%");
             } else {
                 const taskMatch = line.match(/^(\s*)- \[(.)\]/);
-                // console.log(taskMatch);
                 if (this.isCompletedTask(taskMatch)) {
                     if (this.settings.completedAreaRemoveCheckbox) {
                         line = line.replace(this.stripTask, '$1 $2')
@@ -250,8 +249,6 @@ export class TaskCollector {
                 }
             }
         }
-        // console.log("Source lines: %o; Completed item index: %o; Completed section: %o; New tasks: %o",
-        //     remaining, completedItemsIndex, completedSection, newTasks);
 
         let result = remaining.slice(0, completedItemsIndex).concat(...newTasks).concat(...completedSection);
         if (completedItemsIndex < remaining.length - 1) {
