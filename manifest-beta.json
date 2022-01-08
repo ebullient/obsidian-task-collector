@@ -1,0 +1,10 @@
+{
+	"id": "obsidian-task-collector",
+	"name": "Task Collector (TC)",
+	"version": "0.6.2",
+	"minAppVersion": "0.13.10",
+	"description": "Manage completed tasks within a document",
+	"author": "ebullient",
+	"authorUrl": "https://github.com/ebullient",
+	"isDesktopOnly": false
+}
