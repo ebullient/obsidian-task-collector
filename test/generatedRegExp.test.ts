@@ -169,7 +169,6 @@ describe('Set an append date', () => {
         expect('- [x] 2021-10-06 something else').not.toMatch(tc.initSettings.resetRegExp);
 
         const completed = tc.updateTaskLine('- [ ] something #todo', 'x');
-        console.log(completed);
         expect(completed).toMatch(tc.initSettings.resetRegExp);
         expect('- [ ] something #todo ').toEqual(tc.resetTaskLine(completed));
     });
