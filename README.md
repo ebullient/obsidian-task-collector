@@ -47,6 +47,7 @@ Yet another plugin to manage completed tasks. ;)
     - default: (empty string, disabled)
     - example: `[(]YYYY-MM-DD[)]`, results in `(2021-09-27)`
     - When a [moment.js date format](https://momentjs.com/docs/#/displaying/format/) is specified, the current date/time will be appended to the task text.
+    - *Note:* Use square brackets to surround content that is not part of the format string. When working with dataview-friendly annotations, for example, your format string should look somethng like this: `[[completion::]YYYY-MM-DD[]]`.
 
 - **Remove text in completed (or canceled) task**  
     Remove text matching this [regular expression](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions) from the task text. 
