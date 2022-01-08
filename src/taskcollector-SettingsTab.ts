@@ -21,7 +21,6 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         containerEl.createEl("h1", { text: "Task Collector" });
 
         const tempSettings: TaskCollectorSettings = Object.assign(this.taskCollector.settings);
-        console.log("Displaying task collector settings: %o ==> %o", this.taskCollector.settings, tempSettings);
 
         new Setting(containerEl)
             .setName("Support canceled tasks")
