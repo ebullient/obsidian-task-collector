@@ -6,10 +6,12 @@ export class TaskCollector {
     initSettings: CompiledTasksSettings;
     completedOrCanceled: RegExp;
     stripTask: RegExp;
+    blockRef: RegExp;
 
     constructor(private app: App) {
         this.completedOrCanceled = new RegExp(/^(\s*- \[)[xX-](\] .*)$/);
         this.stripTask = new RegExp(/^(\s*-) \[[xX-]\] (.*)$/);
+        this.blockRef = new RegExp(/^(.*?)( \^[A-Za-z-]+)?$/)
     }
 
     updateSettings(settings: TaskCollectorSettings): void {
@@ -74,7 +76,7 @@ export class TaskCollector {
     }
 
     tryCreateResetRegex(param: string): RegExp {
-        return param ? new RegExp(param + '$') : null;
+        return param ? new RegExp(param + '( \\^[A-Za-z-]+)?$') : null;
     }
 
     tryCreateIncompleteRegex(param: string): RegExp {
@@ -93,11 +95,17 @@ export class TaskCollector {
             marked = marked.replace(this.initSettings.removeRegExp, '');
         }
         if (this.settings.appendDateFormat) {
+            let blockid = '';
+            const match = this.blockRef.exec(marked);
+            if ( match && match[2] ) {
+                marked = match[1];
+                blockid = match[2];
+            }
             // if there is text to append, append it
             if (!marked.endsWith(' ')) {
                 marked += ' ';
             }
-            marked += moment().format(this.settings.appendDateFormat);
+            marked += moment().format(this.settings.appendDateFormat) + blockid;
         }
         return marked;
     }
@@ -146,9 +154,16 @@ export class TaskCollector {
 
     resetTaskLine(lineText: string): string {
         let marked = lineText.replace(this.completedOrCanceled, '$1 $2');
+        let blockid = '';
+        const match = this.blockRef.exec(marked);
+        if ( match && match[2] ) {
+            marked = match[1];
+            blockid = match[2];
+        }
         if (this.initSettings.resetRegExp) {
             marked = marked.replace(this.initSettings.resetRegExp, '');
         }
+        marked = marked.replace(/\s*$/, blockid);
         return marked;
     }
 

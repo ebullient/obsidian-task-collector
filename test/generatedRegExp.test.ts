@@ -52,12 +52,11 @@ test('Correctly matches specified removal patterns', () => {
     expect('- [x] something #task #todo').toMatch(tc.initSettings.removeRegExp);
     expect('- [x] something else').not.toMatch(tc.initSettings.removeRegExp);
 
-    expect('- [x] something ').toEqual(tc.updateTaskLine('- [ ] something #todo', 'x'));
-    expect('- [ ] something ').toEqual(tc.resetTaskLine('- [x] something '));
+    expect(tc.updateTaskLine('- [ ] something #todo', 'x')).toEqual('- [x] something ');
+    expect(tc.resetTaskLine('- [x] something ')).toEqual('- [ ] something');
 });
 
 describe('Set an append date', () => {
-
     test('Correctly matches YYYY-MM-DD append string', () => {
         const tc = new TaskCollector(new App());
         config.appendDateFormat = 'YYYY-MM-DD';
@@ -71,7 +70,7 @@ describe('Set an append date', () => {
 
         const completed = tc.updateTaskLine('- [ ] something #todo', 'x');
         expect(completed).toMatch(tc.initSettings.resetRegExp);
-        expect('- [ ] something #todo ').toEqual(tc.resetTaskLine(completed));
+        expect(tc.resetTaskLine(completed)).toEqual('- [ ] something #todo');
     });
 
     test('Correctly matches (YYYY-MM-DD) append string', () => {
@@ -86,7 +85,7 @@ describe('Set an append date', () => {
 
         const completed = tc.updateTaskLine('- [ ] something #todo', 'x');
         expect(completed).toMatch(tc.initSettings.resetRegExp);
-        expect('- [ ] something #todo ').toEqual(tc.resetTaskLine(completed));
+        expect(tc.resetTaskLine(completed)).toEqual('- [ ] something #todo');
     });
 
     test('Correctly matches (D MMM, YYYY) append string', () => {
@@ -102,7 +101,7 @@ describe('Set an append date', () => {
 
         const completed = tc.updateTaskLine('- [ ] something #todo', 'x');
         expect(completed).toMatch(tc.initSettings.resetRegExp);
-        expect('- [ ] something #todo ').toEqual(tc.resetTaskLine(completed));
+        expect(tc.resetTaskLine(completed)).toEqual('- [ ] something #todo');
     });
 
     test('Correctly matches DD MMM, YYYY append string', () => {
@@ -119,7 +118,7 @@ describe('Set an append date', () => {
 
         const completed = tc.updateTaskLine('- [ ] something #todo', 'x');
         expect(completed).toMatch(tc.initSettings.resetRegExp);
-        expect('- [ ] something #todo ').toEqual(tc.resetTaskLine(completed));
+        expect(tc.resetTaskLine(completed)).toEqual('- [ ] something #todo');
     });
 
     test('Correctly matches [(completed on ]D MMM, YYYY[)] append string', () => {
@@ -136,7 +135,7 @@ describe('Set an append date', () => {
 
         const completed = tc.updateTaskLine('- [ ] something #todo', 'x');
         expect(completed).toMatch(tc.initSettings.resetRegExp);
-        expect('- [ ] something #todo ').toEqual(tc.resetTaskLine(completed));
+        expect(tc.resetTaskLine(completed)).toEqual('- [ ] something #todo');
     });
 
     test('Correctly matches [✅ ]YYYY-MM-DDTHH:mm append string', () => {
@@ -153,7 +152,7 @@ describe('Set an append date', () => {
 
         const completed = tc.updateTaskLine('- [ ] something #todo', 'x');
         expect(completed).toMatch(tc.initSettings.resetRegExp);
-        expect('- [ ] something #todo ').toEqual(tc.resetTaskLine(completed));
+        expect(tc.resetTaskLine(completed)).toEqual('- [ ] something #todo');
     });
 
     test('Correctly matches dataview annotated string [completion::2021-08-15]', () => {
@@ -170,7 +169,7 @@ describe('Set an append date', () => {
 
         const completed = tc.updateTaskLine('- [ ] something #todo', 'x');
         expect(completed).toMatch(tc.initSettings.resetRegExp);
-        expect('- [ ] something #todo ').toEqual(tc.resetTaskLine(completed));
+        expect(tc.resetTaskLine(completed)).toEqual('- [ ] something #todo');
     });
 
     test('Remove completed or canceled checkboxes when completedAreaRemoveCheckbox is enabled', () => {
@@ -185,7 +184,24 @@ describe('Set an append date', () => {
         expect(tc.removeCheckboxFromLine(lineWithCompletedTask)).toEqual(lineWithoutCheckbox);
         expect(tc.removeCheckboxFromLine(lineWithCancledTask)).toEqual(lineWithoutCheckbox);
         expect(tc.removeCheckboxFromLine(lineIncompletedTask)).toEqual(lineIncompletedTask); // unchanged
+    });
 
+    test('Correctly inserts item ahead of block references', () => {
+        const tc = new TaskCollector(new App());
+        config.appendDateFormat = '[[completion::]YYYY-MM-DD[]]';
+        tc.updateSettings(config);
+
+        expect('- [ ] something (6 Oct, 2021) ^your-id').toMatch(tc.blockRef);
+        expect('- [x] I finished this on [completion::2021-08-15] ^your-id').toMatch(tc.blockRef);
+
+        expect('- [ ] something (6 Oct, 2021) ^your-id').toMatch(tc.initSettings.incompleteTaskRegExp);
+        console.log(tc.initSettings.resetRegExp);
+        expect('- [x] I finished this on [completion::2021-08-15] ^your-id').toMatch(tc.initSettings.resetRegExp);
+
+        const completed = tc.updateTaskLine('- [ ] something #todo ^your-id', 'x');
+        expect(completed).toMatch(/- \[x\] something #todo \[completion::\d+-\d+-\d+\] \^your-id/);
+        expect(completed).toMatch(tc.initSettings.resetRegExp);
+        expect(tc.resetTaskLine(completed)).toEqual('- [ ] something #todo ^your-id');
     });
 });
 
