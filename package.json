@@ -9,7 +9,7 @@
     "build": "node esbuild.config.mjs production",
     "pretest": "eslint --ignore-path .gitignore src/",
     "test": "jest",
-    "version": "auto-changelog -p && git add CHANGELOG.md"
+    "version": "auto-changelog -p --ignore-commit-pattern \\(changelog.*\\|Merge.*\\) && git add CHANGELOG.md"
   },
   "keywords": [
     "obsidian",

@@ -7,6 +7,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.build.outputs.version }}
     steps:
     - uses: actions/checkout@v2
       with:
@@ -15,17 +17,13 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: '14.x' # You might need to adjust this value to your own version
-    # Get the version number and put it in a variable
-    - name: Get Version
-      id: version
-      run: |
-        echo "::set-output name=tag::$(git describe --abbrev=0)"
     # Build the plugin
     - name: Build
       id: build
       run: |
         npm install
         npm run build --if-present
+        echo "::set-output name=version::$(git describe --abbrev=0)"
     # Package the required files into a zip
     - name: Package
       run: |
@@ -41,7 +39,7 @@ jobs:
         VERSION: ${{ github.ref }}
       with:
         tag_name: ${{ github.ref }}
-        release_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
         draft: false
         prerelease: false
     # Upload the packaged release file
@@ -53,7 +51,7 @@ jobs:
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./${{ github.event.repository.name }}.zip
-        asset_name: ${{ github.event.repository.name }}.zip
+        asset_name: ${{ github.event.repository.name }}-${{ steps.build.outputs.version }}.zip
         asset_content_type: application/zip
     # Upload the main.js
     - name: Upload main.js
@@ -74,7 +72,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: manifest.json
+        asset_path: ./manifest.json
         asset_name: manifest.json
         asset_content_type: application/json
     # Upload the style.css
@@ -88,3 +86,20 @@ jobs:
     #     asset_path: ./styles.css
     #     asset_name: styles.css
     #     asset_content_type: text/css
+  brat:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: main
+    - env:
+        VERSION: ${{needs.build.outputs.version}}
+      run: |
+        echo $VERSION
+        sed -i 's|\(version":\) "[0-9\.]*"|\1 "'$VERSION'"|' manifest-beta.json
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git add .
+        git commit -m "🔨 brat release $VERSION"
+        git push
