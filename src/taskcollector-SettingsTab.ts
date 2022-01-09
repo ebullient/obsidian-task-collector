@@ -15,14 +15,13 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
     }
 
     display(): void {
-        const { containerEl } = this;
-        containerEl.empty();
+        this.containerEl.empty();
 
-        containerEl.createEl("h1", { text: "Task Collector" });
+        this.containerEl.createEl("h1", { text: "Task Collector" });
 
         const tempSettings: TaskCollectorSettings = Object.assign(this.taskCollector.settings);
 
-        new Setting(containerEl)
+        new Setting(this.containerEl)
             .setName("Support canceled tasks")
             .setDesc("Use a - to indicate canceled tasks. Canceled tasks are processed in the same way as completed tasks using options below.")
             .addToggle(toggle => toggle
@@ -33,9 +32,9 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        containerEl.createEl("h2", { text: "Completing tasks" });
+        this.containerEl.createEl("h2", { text: "Completing tasks" });
 
-        new Setting(containerEl)
+        new Setting(this.containerEl)
             .setName("Append date to completed task")
             .setDesc("If non-empty, append today's date in the given moment.js string format to the end of the task text.")
             .addMomentFormat((momentFormat) => momentFormat
@@ -54,7 +53,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 })
             );
 
-        new Setting(containerEl)
+        new Setting(this.containerEl)
             .setName("Remove text in completed task")
             .setDesc("Text matching this regular expression should be removed from the task text. Be careful! Test your expression separately. The global flag, 'g' is used for a per-line match.")
             .addText((text) => text
@@ -74,7 +73,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 })
             );
 
-        new Setting(containerEl)
+        new Setting(this.containerEl)
             .setName("Incomplete task indicators")
             .setDesc("Specify the set of single characters (a space by default) that indicate incomplete tasks.")
             .addText((text) => text
@@ -86,6 +85,9 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     } else if ( tempSettings.supportCanceledTasks && value.contains('-')) {
                         console.log(`Set of characters should not contain the marker for canceled tasks: ${value}`);
                     } else {
+                        if (!value.contains(' ')) { // make sure space is included
+                            value = ' ' + value;
+                        }
                         tempSettings.incompleteTaskValues = value;
                         this.taskCollector.updateSettings(tempSettings);
                         await this.plugin.saveSettings();
@@ -93,9 +95,9 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 })
             );
 
-        containerEl.createEl("h2", { text: "Moving completed tasks" });
+        this.containerEl.createEl("h2", { text: "Moving completed tasks" });
 
-        new Setting(containerEl)
+        new Setting(this.containerEl)
             .setName("Completed area header")
             .setDesc(`Completed (or canceled) items will be inserted under the specified header (most recent at the top). When scanning the document for completed/canceled tasks, the contents from this configured header to the next heading or separator (---) will be ignored. This heading will be created if the command is invoked and the heading does not exist. The default heading is '${DEFAULT_SETTINGS.completedAreaHeader}'.`)
             .addText((text) => text
@@ -108,7 +110,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 })
             );
 
-        new Setting(containerEl)
+        new Setting(this.containerEl)
             .setName("Remove the checkbox from moved items")
             .setDesc(`Remove the checkbox from completed (or canceled) tasks during the move to the completed area. This transforms tasks into normal list items. Task Collector will not be able to reset these items. They also will not appear in task searches or queries. The default value is: '${DEFAULT_SETTINGS.completedAreaRemoveCheckbox}'.`)
             .addToggle(toggle => toggle
@@ -119,11 +121,22 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        containerEl.createEl("h2", { text: "Right-click Menu items" });
+        this.containerEl.createEl("h2", { text: "Right-click Menu items" });
 
-        containerEl.createEl("p", { text: "Task Collector creates commands that can be bound to hotkeys or accessed using slash commands for marking tasks complete (or canceled) and resetting tasks to an incomplete state. The following settings add right click context menu items for those commands." });
+        this.containerEl.createEl("p", { text: "Task Collector creates commands that can be bound to hotkeys or accessed using slash commands for marking tasks complete (or canceled) and resetting tasks to an incomplete state. The following settings add right click context menu items for those commands." });
 
-        new Setting(containerEl)
+        new Setting(this.containerEl)
+            .setName("Add menu item for marking a task")
+            .setDesc("Add an item to the right-click menu in edit mode to mark the task _on the current line (or within the current selection)_. This menu item will trigger a quick pop-up modal to select the desired mark value. The selected value will determine follow-on actions: complete, cancel, or reset.")
+            .addToggle(toggle => toggle
+                .setValue(tempSettings.rightClickMark)
+                .onChange(async value => {
+                    tempSettings.rightClickMark = value;
+                    this.taskCollector.updateSettings(tempSettings);
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(this.containerEl)
             .setName("Add menu item for completing a task")
             .setDesc("Add an item to the right-click menu in edit mode to mark the task _on the current line (or within the current selection)_ complete. If canceled items are supported, an additional menu item will be added to mark selected tasks as canceled.")
             .addToggle(toggle => toggle
@@ -134,20 +147,42 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        new Setting(containerEl)
-                .setName("Add menu items for completing all tasks")
-                .setDesc("Add an item to the right-click menu in edit mode to mark _all_ incomplete tasks in the current document complete.")
+        new Setting(this.containerEl)
+            .setName("Add menu item for resetting a task")
+            .setDesc("Add an item to the right-click menu in edit mode to reset the task _on the current line (or within the current selection)_.")
+            .addToggle(toggle => toggle
+                .setValue(tempSettings.rightClickResetTask)
+                .onChange(async value => {
+                    tempSettings.rightClickResetTask = value;
+                    this.taskCollector.updateSettings(tempSettings);
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(this.containerEl)
+            .setName("Add menu items for completing all tasks")
+            .setDesc("Add an item to the right-click menu in edit mode to mark _all_ incomplete tasks in the current document complete.")
+            .addToggle(toggle => toggle
+                .setValue(tempSettings.rightClickToggleAll)
+                .onChange(async value => {
+                    tempSettings.rightClickToggleAll = value;
+                    this.taskCollector.updateSettings(tempSettings);
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(this.containerEl)
+                .setName("Add menu item for resetting all tasks")
+                .setDesc("Add an item to the right-click menu to reset _all_ completed (or canceled) tasks.")
                 .addToggle(toggle => toggle
-                    .setValue(tempSettings.rightClickToggleAll)
+                    .setValue(tempSettings.rightClickResetAll)
                     .onChange(async value => {
-                        tempSettings.rightClickToggleAll = value;
+                        tempSettings.rightClickResetAll = value;
                         this.taskCollector.updateSettings(tempSettings);
                         await this.plugin.saveSettings();
                     }));
 
-        new Setting(containerEl)
+        new Setting(this.containerEl)
             .setName("Add menu item for moving all completed tasks")
-            .setDesc("Add an item to the right-click menu in edit mode to move _all_ completed (or canceled) tasks.")
+            .setDesc("Add an item to the right-click menu to move _all_ completed (or canceled) tasks.")
             .addToggle(toggle => toggle
                 .setValue(tempSettings.rightClickMove)
                 .onChange(async value => {
@@ -155,16 +190,5 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     this.taskCollector.updateSettings(tempSettings);
                     await this.plugin.saveSettings();
                 }));
-
-        new Setting(containerEl)
-                    .setName("Include menu items for resetting tasks")
-                    .setDesc("Include additional menu items for resetting tasks (e.g. reset individual/selected tasks; reset all tasks)")
-                    .addToggle(toggle => toggle
-                        .setValue(tempSettings.rightClickReset)
-                        .onChange(async value => {
-                            tempSettings.rightClickReset = value;
-                            this.taskCollector.updateSettings(tempSettings);
-                            await this.plugin.saveSettings();
-                        }));
     }
 }

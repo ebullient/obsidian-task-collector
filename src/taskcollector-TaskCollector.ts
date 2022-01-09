@@ -5,13 +5,16 @@ export class TaskCollector {
     settings: TaskCollectorSettings;
     initSettings: CompiledTasksSettings;
     completedOrCanceled: RegExp;
+    anyTaskMark: RegExp;
     stripTask: RegExp;
     blockRef: RegExp;
 
     constructor(private app: App) {
+        this.app = app;
         this.completedOrCanceled = new RegExp(/^(\s*- \[)[xX-](\] .*)$/);
+        this.anyTaskMark = new RegExp(/^(\s*- \[).(\] .*)$/);
         this.stripTask = new RegExp(/^(\s*-) \[[xX-]\] (.*)$/);
-        this.blockRef = new RegExp(/^(.*?)( \^[A-Za-z-]+)?$/)
+        this.blockRef = new RegExp(/^(.*?)( \^[A-Za-z-]+)?$/);
     }
 
     updateSettings(settings: TaskCollectorSettings): void {
@@ -80,8 +83,7 @@ export class TaskCollector {
     }
 
     tryCreateIncompleteRegex(param: string): RegExp {
-        return param ? new RegExp(`^(\\s*- \\[)[${param}](\\] .*)$`)
-            : new RegExp(/^(\s*- \[) (\] .*)$/);
+        return new RegExp(`^(\\s*- \\[)[${param}](\\] .*)$`);
     }
 
     removeCheckboxFromLine(lineText: string): string {
@@ -152,8 +154,9 @@ export class TaskCollector {
         return result.join("\n");
     }
 
-    resetTaskLine(lineText: string): string {
-        let marked = lineText.replace(this.completedOrCanceled, '$1 $2');
+    resetTaskLine(lineText: string, mark = ' '): string {
+        let marked = lineText.replace(this.anyTaskMark, '$1'+mark+'$2');
+
         let blockid = '';
         const match = this.blockRef.exec(marked);
         if ( match && match[2] ) {
@@ -167,22 +170,20 @@ export class TaskCollector {
         return marked;
     }
 
-    resetTaskOnLine(editor: Editor, i: number): void {
+    resetTaskOnLine(editor: Editor, i: number, mark: string): void {
         const lineText = editor.getLine(i);
 
-        // Does this line indicate an incomplete task?
-        if (this.completedOrCanceled.exec(lineText)) {
-            const marked = this.resetTaskLine(lineText);
-            editor.setLine(i, marked);
-        }
+        // remove the guard: just change the value
+        const marked = this.resetTaskLine(lineText, mark);
+        editor.setLine(i, marked);
     }
 
-    resetTaskOnCurrentLine(editor: Editor): void {
+    resetTaskOnCurrentLine(editor: Editor, mark = ' '): void {
         if (editor.somethingSelected()) {
             const cursorStart = editor.getCursor("from")
             const cursorEnd = editor.getCursor("to");
             for (let i = cursorStart.line; i <= cursorEnd.line; i++) {
-                this.resetTaskOnLine(editor, i);
+                this.resetTaskOnLine(editor, i, mark);
             }
             editor.setSelection(cursorStart, {
                 line: cursorEnd.line,
@@ -190,7 +191,7 @@ export class TaskCollector {
             });
         } else {
             const anchor = editor.getCursor("from");
-            this.resetTaskOnLine(editor, anchor.line);
+            this.resetTaskOnLine(editor, anchor.line, mark);
         }
     }
 
