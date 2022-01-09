@@ -28,6 +28,10 @@ esbuild.build({
     outfile: 'build/main.js',
     plugins: [
         copy({
+            from: './styles.css',
+            to: './styles.css'
+        }),
+        copy({
             from: './manifest.json',
             to: './manifest.json'
         }),
