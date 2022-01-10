@@ -195,7 +195,6 @@ describe('Set an append date', () => {
         expect('- [x] I finished this on [completion::2021-08-15] ^your-id').toMatch(tc.blockRef);
 
         expect('- [ ] something (6 Oct, 2021) ^your-id').toMatch(tc.initSettings.incompleteTaskRegExp);
-        console.log(tc.initSettings.resetRegExp);
         expect('- [x] I finished this on [completion::2021-08-15] ^your-id').toMatch(tc.initSettings.resetRegExp);
 
         const completed = tc.updateTaskLine('- [ ] something #todo ^your-id', 'x');

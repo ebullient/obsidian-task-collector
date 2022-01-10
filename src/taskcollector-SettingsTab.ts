@@ -32,7 +32,31 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
+        new Setting(this.containerEl)
+                .setName("Additional task types")
+                .setDesc("Specify the set of single characters that indicate in-progress or incomplete tasks, e.g. 'i> !?D'.")
+                .addText((text) => text
+                    .setPlaceholder("> !?")
+                    .setValue(tempSettings.incompleteTaskValues)
+                    .onChange(async (value) => {
+                        if ( value.contains('x') || value.contains('X') ) {
+                            console.log(`Set of characters should not contain the marker for completed tasks: ${value}`);
+                        } else if ( tempSettings.supportCanceledTasks && value.contains('-')) {
+                            console.log(`Set of characters should not contain the marker for canceled tasks: ${value}`);
+                        } else {
+                            if (!value.contains(' ')) { // make sure space is included
+                                value = ' ' + value;
+                            }
+                            tempSettings.incompleteTaskValues = value;
+                            this.taskCollector.updateSettings(tempSettings);
+                            await this.plugin.saveSettings();
+                        }
+                    })
+                );
+
         this.containerEl.createEl("h2", { text: "Completing tasks" });
+
+        this.containerEl.createEl("p", { text: "Completed tasks, marked by 'x', 'X' (and optionally '-' for canceled items) gain special treatment based on the settings below." });
 
         new Setting(this.containerEl)
             .setName("Append date to completed task")
@@ -69,28 +93,6 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                         await this.plugin.saveSettings();
                     } catch (e) {
                         console.log(`Error parsing regular expression for text replacement: ${value}`);
-                    }
-                })
-            );
-
-        new Setting(this.containerEl)
-            .setName("Incomplete task indicators")
-            .setDesc("Specify the set of single characters (a space by default) that indicate incomplete tasks.")
-            .addText((text) => text
-                .setPlaceholder("> !?")
-                .setValue(tempSettings.incompleteTaskValues)
-                .onChange(async (value) => {
-                    if ( value.contains('x') || value.contains('X') ) {
-                        console.log(`Set of characters should not contain the marker for completed tasks: ${value}`);
-                    } else if ( tempSettings.supportCanceledTasks && value.contains('-')) {
-                        console.log(`Set of characters should not contain the marker for canceled tasks: ${value}`);
-                    } else {
-                        if (!value.contains(' ')) { // make sure space is included
-                            value = ' ' + value;
-                        }
-                        tempSettings.incompleteTaskValues = value;
-                        this.taskCollector.updateSettings(tempSettings);
-                        await this.plugin.saveSettings();
                     }
                 })
             );
