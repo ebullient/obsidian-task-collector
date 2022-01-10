@@ -14,7 +14,7 @@ export class TaskCollector {
         this.completedOrCanceled = new RegExp(/^(\s*- \[)[xX-](\] .*)$/);
         this.anyTaskMark = new RegExp(/^(\s*- \[).(\] .*)$/);
         this.stripTask = new RegExp(/^(\s*-) \[[xX-]\] (.*)$/);
-        this.blockRef = new RegExp(/^(.*?)( \^[A-Za-z-]+)?$/);
+        this.blockRef = new RegExp(/^(.*?)( \^[A-Za-z0-9-]+)?$/);
     }
 
     updateSettings(settings: TaskCollectorSettings): void {
@@ -79,7 +79,7 @@ export class TaskCollector {
     }
 
     tryCreateResetRegex(param: string): RegExp {
-        return param ? new RegExp(param + '( \\^[A-Za-z-]+)?$') : null;
+        return param ? new RegExp(param + '( \\^[A-Za-z0-9-]+)?$') : null;
     }
 
     tryCreateIncompleteRegex(param: string): RegExp {

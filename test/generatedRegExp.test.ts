@@ -191,16 +191,16 @@ describe('Set an append date', () => {
         config.appendDateFormat = '[[completion::]YYYY-MM-DD[]]';
         tc.updateSettings(config);
 
-        expect('- [ ] something (6 Oct, 2021) ^your-id').toMatch(tc.blockRef);
-        expect('- [x] I finished this on [completion::2021-08-15] ^your-id').toMatch(tc.blockRef);
+        expect('- [ ] something (6 Oct, 2021) ^your-ID-1').toMatch(tc.blockRef);
+        expect('- [x] I finished this on [completion::2021-08-15] ^your-ID-1').toMatch(tc.blockRef);
 
-        expect('- [ ] something (6 Oct, 2021) ^your-id').toMatch(tc.initSettings.incompleteTaskRegExp);
-        expect('- [x] I finished this on [completion::2021-08-15] ^your-id').toMatch(tc.initSettings.resetRegExp);
+        expect('- [ ] something (6 Oct, 2021) ^your-ID-1').toMatch(tc.initSettings.incompleteTaskRegExp);
+        expect('- [x] I finished this on [completion::2021-08-15] ^your-ID-1').toMatch(tc.initSettings.resetRegExp);
 
-        const completed = tc.updateTaskLine('- [ ] something #todo ^your-id', 'x');
-        expect(completed).toMatch(/- \[x\] something #todo \[completion::\d+-\d+-\d+\] \^your-id/);
+        const completed = tc.updateTaskLine('- [ ] something #todo ^your-ID-1', 'x');
+        expect(completed).toMatch(/- \[x\] something #todo \[completion::\d+-\d+-\d+\] \^your-ID-1/);
         expect(completed).toMatch(tc.initSettings.resetRegExp);
-        expect(tc.resetTaskLine(completed)).toEqual('- [ ] something #todo ^your-id');
+        expect(tc.resetTaskLine(completed)).toEqual('- [ ] something #todo ^your-ID-1');
     });
 });
 
