@@ -3,6 +3,15 @@
 
 Yet another plugin to manage completed tasks. ;)
 
+Task Collector commands are oriented around a somewhat archival notion of completed tasks. 
+
+- **Completed tasks** are marked with `x`, `X`.
+    - *Canceled tasks*, marked with `-`, can be added to this group in settings.
+- Any other task is considered **incomplete** (or in-progress)
+
+* [Commands](#commands) 
+* [Settings](#settings)
+
 ## How to install
 
 1. Go to **Community Plugins** in your [Obsidian](https://www.obsidian.md) settings and **disable** Safe Mode
@@ -10,42 +19,126 @@ Yet another plugin to manage completed tasks. ;)
 3. Click install
 4. "Enable" the plugin directly after installation, or use the toggle on the community plugins tab to enable the plugin after it has been installed.
 
+## TL;DR for task completion
+
+![Task Completion](https://user-images.githubusercontent.com/808713/148706433-34d21845-a441-428d-a24c-380c6db457c7.gif)
+
+1. Open the plugin settings
+
+2. Scroll down to **Incomplete task indicators** (0.6.4)/ **Additional Task Types** (0.6.5), and add any task characters you use other than `x`, `X`, and space (` `).
+
+3. *Optional:* Scroll down to find **Toggle: Add menu item for marking a task** (0.6.4), and enable it to add a right-click menu item for marking tasks.
+
+In Source or Live Preview mode, use the [(TC) Mark task](#tc-mark-task) command from the command palette, or the right-click menu (shown in the clip), or bind it to a hot key. 
+
+---
+
+## Task states
+
+For the following table, 
+* assume that support for canceled items has been enabled, and 
+* that `>` has been defined as an additional (incomplete) task type.
+
+If a task starts in the first column, 
+and we try using a command to set it to the value in the second column, 
+we'll get the result in the third column. 
+
+| Start |  Try  | Result |                                               | 
+|-------|-------|--------|-----------------------------------------------|
+| `[ ]` | `[>]` | `[>]`  | Value changed to other(`>`)                   |
+| `[ ]` | `[-]` | `[-]`  | See [Cancel Task](#tc-cancel-task-if-enabled) |
+| `[ ]` | `[x]` | `[x]`  | See [Complete Task](#tc-complete-task)        |
+| `[>]` | `[ ]` | `[ ]`  | Value changed to space(` `)                   |
+| `[>]` | `[-]` | `[-]`  | See [Cancel Task](#tc-cancel-task-if-enabled) |
+| `[>]` | `[x]` | `[x]`  | See [Complete Task](#tc-complete-task)        |
+| `[-]` | `[ ]` | `[ ]`  | See [Reset Task](#tc-reset-task)              |
+| `[-]` | `[>]` | `[>]`  | See [Reset Task](#tc-reset-task)              |
+| `[-]` | `[x]` | `[-]`  | *No change. See below*                        |
+| `[x]` | `[ ]` | `[ ]`  | See [Reset Task](#tc-reset-task)              |
+| `[x]` | `[>]` | `[>]`  | See [Reset Task](#tc-reset-task)              |
+| `[x]` | `[-]` | `[x]`  | *No change. See below*                        |
+
+Note: **Completed** tasks won't be directly completed again, they must be reset first.
+
+Completed items may be annotated with data, like `(✅ 2022-01-01)`. Task Collector will
+not "re-complete" an already completed item to avoid overwriting or duplicating that annotation.
+Completed items must be reset (which would clear that data if present), before being completed
+again.
+
 ## Commands
 
-- **Complete Task**  
+### (TC) Mark Task
 
-    1. If the current line is a task, and it matches the configuration for an incomplete task (where values other than ` ` are valid), it will mark the item as complete (`[x]`). 
-    2. Optional: Remove characters matching a configured regular expression from the task, e.g. remove a #task or #todo tag.
-    3. Optional: Append a formatted date string to the task
+1. A dialog will pop up showing known task indicators in two groups: 
+    - The first group contains marks for "completed" items.
+    - The second group contains all other task marks, minimally a space (` `).
+2. Use the mouse to select an icon, or type the associated character.
+3. What happens next depends on the state of the task and the selected character.
+    - If an incomplete task is completed (`x`, `X`), see [Complete Task](#tc-complete-task)
+    - If an incomplete task is canceled (`-`), see [Cancel Task](#tc-cancel-task-if-enabled)
+    - If a complete item is reset (` ` or other), see [Reset Task](#tc-reset-task)
+    - If a completed item is completed or canceled, nothing happens.
+    - If an unknown character is typed, nothing happens.
 
-- **Cancel Task** (if enabled)
+### (TC) Complete Task
 
-    1. If the current line is a task, and it matches the configuration for an incomplete task (where values other than ` ` are valid), it will mark the item as canceled (`[-]`). 
-    2. Optional: Remove characters matching a configured regular expression from the task, e.g. remove a `#task` or `#todo` tag.
-    3. Optional: Append a formatted date string to the task
+If the current line is (or selection contains) a task, AND the task matches the configuration for an incomplete task:
 
--  **Reset Task** (as of 0.5.0)
+1. It will mark the item as complete (`[x]` or `[X]` if selected). 
+2. Optional: Remove characters matching a configured regular expression from the task, e.g. remove a `#task` or `#todo` tag.
+3. If an append date format string is configured, append a formatted date string to the task.
 
-    1. If the current line is a task, and it matches the configuration for a completed task (`[x]` or `[-]` if support for canceled tasks is enabled), it will reset it (`[ ]`). 
-    2. If an append date format string is configured, appended text that matches the configured format will be removed.
+### (TC) Cancel Task (if enabled)
 
-- **Move completed tasks to configured heading**
+If the current line is (or selection contains) a task, AND the task matches the configuration for an incomplete task:
 
-    For the current document (open, in edit mode), move any completed (or canceled) tasks into the specified section. It will insert the items after the header (most recent at the top). The section heading will be created if it isn't present, and will stop at the next heading or `---` separator.
+1. It will mark the item as canceled (`[-]`). 
+2. Optional: Remove characters matching a configured regular expression from the task, e.g. remove a `#task` or `#todo` tag.
+3. If an append date format string is configured, append a formatted date string to the task
+
+### (TC) Reset Task 
+
+If the current line is (or selection contains) a task:
+
+1. It will set it to `[ ]` or an otherwise selected value. 
+2. If an append date format string is configured, appended text that matches the configured format will be removed.
+
+<small>(as of 0.5.0)</small>
+
+### (TC) Move completed tasks to configured heading
+
+For the current document:
+
+- Move any completed (or canceled) tasks into the specified section. Items will be inserted after the target header (most recent at the top). 
     
-- **Complete all tasks** (as of 0.4.0)
+### (TC) Complete all tasks
 
-    For the current document (open, in edit mode), apply the **Complete item** command to all tasks matching the configuration for an incomplete task as complete (`[x]`). 
+For the current document:
 
--  **Reset all completed tasks** (as of 0.4.0)
+- Apply the [Complete Task](#tc-complete-task) command to all incomplete tasks.
+    
+<small>(as of 0.4.0)</small>
 
-    For the current document (open, in edit mode), find each completed item that is not in the completed area, and mark it as incomplete (`[ ]`). If an append date format string is configured, appended text that matches the configured format will be removed.
+### (TC) Reset all completed tasks
 
+For the current document:
+
+- Apply the [Reset Task](#tc-reset-task) command to all completed tasks that are _not in the (archival) completed area_.
+
+<small>(as of 0.4.0)</small>
+ 
+ ---
 ## Settings
 
 - Toggle **Support canceled tasks**  
-  Use a `[-]` to indicate a canceled tasks. Canceled tasks are processed in the same way as completed tasks using options below.
+  Use a `[-]` to indicate a canceled tasks. Canceled tasks are processed in the same way as completed tasks.
   - default: disabled
+
+- **Additional task indicators** (renamed in 0.6.5)
+    Specify the set of single characters that indicate in-progress or incomplete tasks.
+    - default: ` ` (space)
+    - example: `> ?!` (a space is included along with other values)
+    - This setting allows checkboxes with other single character values to be treated as incomplete tasks. This is often used with bullet journal (bujo) style tasks, e.g. `[>]` for deferred items or `[/]` for items in progress. See [Task states](#task-states).
 
 ### Completing tasks
 
@@ -61,12 +154,6 @@ Yet another plugin to manage completed tasks. ;)
     - example: `#(task|todo)` (remove #task or #todo tags)
     - The global flag, 'g' is applied to a per-line match.
     - *Be careful!* Test your expression before using it. There are several [online](https://www.regextester.com/) [tools](https://regex.observepoint.com/) that can help.
-
-- **Incomplete task indicators**  
-    Specify the set of characters that indicate incomplete tasks.
-    - default: ` ` (space)
-    - example: `> ?!` (a space is included along with other values)
-    - The "Complete task" and "Cancel task" commands are careful to work only with incomplete tasks. This setting allows checkboxes with other single character values to be treated as incomplete tasks. This is often used for bujo style tasks, e.g. `[>]` for deferred items or `[/]` for items in progress.
 
 ### Moving completed tasks to a sub-section
 
@@ -84,7 +171,7 @@ Yet another plugin to manage completed tasks. ;)
     Remove the checkbox from completed (or canceled) tasks during the move to the completed area. This transforms tasks into normal list items. Task Collector will not be able to reset these items. They also will not appear in task searches or queries.
     - default: `false`
     
-## Right-click editor menu items (Breaking: 0.6.4)
+## Right-click editor menu items
 
 - **Toggle: Add menu item for marking a task** (✨ 0.6.4)
   Add an item to the right-click menu in edit mode to mark the task _on the current line (or within the current selection)_. 
