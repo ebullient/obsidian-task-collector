@@ -1,6 +1,6 @@
 {
   "name": "obsidian-task-collector",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "private": true,
   "description": "Manage completed tasks within a document in Obsidian (https://obsidian.md)",
   "main": "main.js",
@@ -9,7 +9,7 @@
     "build": "node esbuild.config.mjs production",
     "pretest": "eslint --ignore-path .gitignore src/",
     "test": "jest",
-    "version": "auto-changelog -p --ignore-commit-pattern '(changelog|🔨 brat release).*' -l 10 -b 10 && git add CHANGELOG.md"
+    "version": "auto-changelog -p --ignore-commit-pattern '(changelog|🔨 brat release|Update README).*' -l 10 -b 10 && git add CHANGELOG.md"
   },
   "keywords": [
     "obsidian",

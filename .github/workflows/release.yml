@@ -27,7 +27,7 @@ jobs:
         echo "Release ${VERSION}"
         npm install
         npm run build --if-present
-        npx auto-changelog --stdout --hide-credit --hide-empty-releases --template .github/changelog.hbs --ignore-commit-pattern '(changelog|🔨 brat release).*' -l 10 -b 10 -v ${VERSION} --starting-version ${VERSION} > release-notes.md
+        npx auto-changelog --stdout --hide-credit --hide-empty-releases --template .github/changelog.hbs --ignore-commit-pattern '(changelog|🔨 brat release|Update README).*' -l 10 -b 10 -v ${VERSION} --starting-version ${VERSION} > release-notes.md
         echo "::set-output name=version::${VERSION}"
 
     # Package the required files into a zip
