@@ -11,7 +11,6 @@ export class TaskCollector {
     anyTaskMark: RegExp;
     stripTask: RegExp;
     blockRef: RegExp;
-
     constructor(private app: App) {
         this.app = app;
         this.completedOrCanceled = new RegExp(/^(\s*- \[)[xX-](\] .*)$/);
@@ -76,7 +75,12 @@ export class TaskCollector {
         }
 
         const rightClickTaskMenu =
-            this.settings.rightClickComplete || this.settings.rightClickMove;
+            this.settings.rightClickComplete ||
+            this.settings.rightClickMark ||
+            this.settings.rightClickMove ||
+            this.settings.rightClickResetTask ||
+            this.settings.rightClickResetAll ||
+            this.settings.rightClickToggleAll;
         this.initSettings = {
             removeRegExp: this.tryCreateRemoveRegex(
                 this.settings.removeExpression
@@ -87,11 +91,6 @@ export class TaskCollector {
             ),
             rightClickTaskMenu: rightClickTaskMenu,
         };
-        console.log(
-            "loaded TC settings: %o, %o",
-            this.settings,
-            this.initSettings
-        );
     }
 
     tryCreateRemoveRegex(param: string): RegExp {
@@ -135,6 +134,25 @@ export class TaskCollector {
         return marked;
     }
 
+    markTaskInSource(
+        source: string,
+        mark: string,
+        lines: number[] = []
+    ): string {
+        const split = source.split("\n");
+        for (let i = 0; i < split.length; i++) {
+            if (!lines.length || lines.includes(i)) {
+                split.splice(
+                    i,
+                    1,
+                    mark === " "
+                        ? this.resetTaskLine(split[i], mark)
+                        : this.updateTaskLine(split[i], mark)
+                );
+            }
+        }
+        return split.join("\n");
+    }
     markTaskOnLine(editor: Editor, mark: string, i: number): void {
         const lineText = editor.getLine(i);
 

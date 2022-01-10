@@ -1,13 +1,26 @@
-import { App, Editor, Modal } from "obsidian";
+import { App, Modal } from "obsidian";
 import { TaskCollector } from "./taskcollector-TaskCollector";
 
-export class TaskMarkModal extends Modal {
-    editor: Editor;
-    taskCollector: TaskCollector;
+export function getMark(
+    app: App,
+    taskCollector: TaskCollector
+): Promise<string> {
+    return new Promise((resolve) => {
+        const modal = new TaskMarkModal(app, taskCollector);
 
-    constructor(app: App, editor: Editor, taskCollector: TaskCollector) {
+        modal.onClose = () => {
+            resolve(modal.chosenMark);
+        };
+
+        modal.open();
+    });
+}
+
+export class TaskMarkModal extends Modal {
+    taskCollector: TaskCollector;
+    chosenMark: string;
+    constructor(app: App, taskCollector: TaskCollector) {
         super(app);
-        this.editor = editor;
         this.taskCollector = taskCollector;
         this.containerEl.id = "taskcollector-modal";
     }
@@ -31,16 +44,15 @@ export class TaskMarkModal extends Modal {
         );
 
         const tc = this.taskCollector;
-        const editor = this.editor;
         const self = this;
 
         const keyListener = function (event: KeyboardEvent) {
             if (completedTasks.contains(event.key)) {
-                tc.markTaskOnCurrentLine(editor, event.key);
+                self.chosenMark = event.key;
                 event.preventDefault();
                 event.stopImmediatePropagation();
             } else if (tc.settings.incompleteTaskValues.contains(event.key)) {
-                tc.resetTaskOnCurrentLine(editor, event.key);
+                self.chosenMark = event.key;
                 event.preventDefault();
                 event.stopImmediatePropagation();
             }
@@ -55,8 +67,6 @@ export class TaskMarkModal extends Modal {
         choices: string,
         markComplete: boolean
     ): void {
-        const tc = this.taskCollector;
-        const editor = this.editor;
         const self = this;
         for (const character of choices) {
             const li = list.createEl("li", {
@@ -65,17 +75,11 @@ export class TaskMarkModal extends Modal {
                     "data-task": character,
                 },
             });
-            if (markComplete) {
-                li.addEventListener("click", function (event) {
-                    tc.markTaskOnCurrentLine(editor, character);
-                    self.close();
-                });
-            } else {
-                li.addEventListener("click", function (event) {
-                    tc.resetTaskOnCurrentLine(editor, character);
-                    self.close();
-                });
-            }
+            li.addEventListener("click", function (event) {
+                self.chosenMark = character;
+                self.close();
+            });
+
             const input = li.createEl("input", {
                 cls: "task-list-item-checkbox",
                 attr: {
