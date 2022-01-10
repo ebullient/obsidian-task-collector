@@ -27,7 +27,7 @@ Task Collector commands are oriented around a somewhat archival notion of comple
 
 2. Update the following plugin settings
 
-    1. Scroll down to **Incomplete task indicators** (0.6.4)/ **Additional Task Types** (0.6.5), and add any task characters you use other than `x`, `X`, and space (` `).
+    1. Scroll down to **Incomplete task indicators** (0.6.4)/ **Additional Task Types** (0.6.5), and add any task characters you use other than `[x]`, `[X]`, `[ ]`.
 
     2. *Optional:* Scroll down to find **Toggle: Add menu item for marking a task** (0.6.4), and enable it to add a right-click menu item for marking tasks.
 
@@ -47,10 +47,10 @@ we'll get the result in the third column.
 
 | Start |  Try  | Result |                                               | 
 |-------|-------|--------|-----------------------------------------------|
-| `[ ]` | `[>]` | `[>]`  | Value changed to other(`>`)                   |
+| `[ ]` | `[>]` | `[>]`  | Value changed                                 |
 | `[ ]` | `[-]` | `[-]`  | See [Cancel Task](#tc-cancel-task-if-enabled) |
 | `[ ]` | `[x]` | `[x]`  | See [Complete Task](#tc-complete-task)        |
-| `[>]` | `[ ]` | `[ ]`  | Value changed to space(` `)                   |
+| `[>]` | `[ ]` | `[ ]`  | Value changed                                 |
 | `[>]` | `[-]` | `[-]`  | See [Cancel Task](#tc-cancel-task-if-enabled) |
 | `[>]` | `[x]` | `[x]`  | See [Complete Task](#tc-complete-task)        |
 | `[-]` | `[ ]` | `[ ]`  | See [Reset Task](#tc-reset-task)              |
@@ -71,14 +71,14 @@ again.
 
 ### (TC) Mark Task
 
-1. A dialog will pop up showing known task indicators in two groups: 
+1. A dialog will pop up showing known task types in two groups: 
     - The first group contains marks for "completed" items.
-    - The second group contains all other task marks, minimally a space (` `).
+    - The second group contains all other task marks, minimally a space (`[ ]`).
 2. Use the mouse to select an icon, or type the associated character.
 3. What happens next depends on the state of the task and the selected character.
-    - If an incomplete task is completed (`x`, `X`), see [Complete Task](#tc-complete-task)
-    - If an incomplete task is canceled (`-`), see [Cancel Task](#tc-cancel-task-if-enabled)
-    - If a complete item is reset (` ` or other), see [Reset Task](#tc-reset-task)
+    - If an incomplete task is completed (`[x]`, `[X]`), see [Complete Task](#tc-complete-task)
+    - If an incomplete task is canceled (`[-]`), see [Cancel Task](#tc-cancel-task-if-enabled)
+    - If a complete item is reset (`[ ]` or other), see [Reset Task](#tc-reset-task)
     - If a completed item is completed or canceled, nothing happens.
     - If an unknown character is typed, nothing happens.
 
@@ -136,7 +136,7 @@ For the current document:
   Use a `[-]` to indicate a canceled tasks. Canceled tasks are processed in the same way as completed tasks.
   - default: disabled
 
-- **Additional task indicators** (renamed in 0.6.5)
+- **Additional Task Types** (renamed in 0.6.5)
     Specify the set of single characters that indicate in-progress or incomplete tasks.
     - default: ` ` (space)
     - example: `> ?!` (a space is included along with other values)
@@ -182,7 +182,7 @@ For the current document:
 
     - default: `false`
     - Notes:
-        - Task Collector will use `x` or `X` to complete an item, and `-` to cancel an item (if that support has been enabled). It will use a space (` `) to reset the task, in addition to any of the characters configured as incomplete task indicators.
+        - Task Collector will use `[x]` or `[X]` to complete an item, and `[-]` to cancel an item (if that support has been enabled). It will use a space (`[ ]`) to reset the task, in addition to any of the additional task types.
         - If you enter an unknown value with the keyboard, nothing will happen. 
 
 - **Toggle: Add menu item for completing a task**  
