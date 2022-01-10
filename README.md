@@ -5,9 +5,16 @@ Yet another plugin to manage completed tasks. ;)
 
 Task Collector commands are oriented around a somewhat archival notion of completed tasks. 
 
-- **Completed tasks** are marked with `x`, `X`.
-    - *Canceled tasks*, marked with `-`, can be added to this group in settings.
+- **Completed tasks** are marked with `[x]`, `[X]`.
+    - *Canceled tasks*, marked with `[-]`, can be added to this group in settings.
 - Any other task is considered **incomplete** (or in-progress)
+
+When a task is *completed* (assigned `[x]`, `[X]`, or optionally `[-]`): 
+- It can be annotated with additional data, e.g. ✅:: 2022-01-01
+- Text can be removed, e.g. #todo tags
+
+A completed task can be *reset* (assigned `[ ]` or other)
+- Text matching the configured annotaton pattern, e.g. ✅:: 2022-01-01, is removed
 
 * [Commands](#commands) 
 * [Settings](#settings)
@@ -27,9 +34,9 @@ Task Collector commands are oriented around a somewhat archival notion of comple
 
 2. Update the following plugin settings
 
-    1. Scroll down to **Incomplete task indicators** (0.6.4)/ **Additional Task Types** (0.6.5), and add any task characters you use other than `[x]`, `[X]`, `[ ]`.
+    1. Scroll down to **Additional Task Types** (0.6.5), and add any task characters you use other than `[x]`, `[X]`, `[ ]`.
 
-    2. *Optional:* Scroll down to find **Toggle: Add menu item for marking a task** (0.6.4), and enable it to add a right-click menu item for marking tasks.
+    2. *Optional:* Scroll down to find **Toggle: Add menu item for marking a task**, and enable it to add a right-click menu item for marking tasks.
 
 In Source or Live Preview mode, use the [(TC) Mark task](#tc-mark-task) command from the command palette, or the right-click menu (shown in the clip), or bind it to a hot key. 
 
@@ -62,7 +69,7 @@ we'll get the result in the third column.
 
 Note: **Completed** tasks won't be directly completed again, they must be reset first.
 
-Completed items may be annotated with data, like `(✅ 2022-01-01)`. Task Collector will
+Completed tasks may be annotated with data, like `(✅ 2022-01-01)`. Task Collector will
 not "re-complete" an already completed item to avoid overwriting or duplicating that annotation.
 Completed items must be reset (which would clear that data if present), before being completed
 again.
@@ -81,6 +88,8 @@ again.
     - If a complete item is reset (`[ ]` or other), see [Reset Task](#tc-reset-task)
     - If a completed item is completed or canceled, nothing happens.
     - If an unknown character is typed, nothing happens.
+
+Is the pop-up not showing what you expect? Review what you have set for **[Additional Task Types](#settings)**.
 
 ### (TC) Complete Task
 
@@ -140,22 +149,26 @@ For the current document:
     Specify the set of single characters that indicate in-progress or incomplete tasks.
     - default: ` ` (space)
     - example: `> ?!` (a space is included along with other values)
-    - This setting allows checkboxes with other single character values to be treated as incomplete tasks. This is often used with bullet journal (bujo) style tasks, e.g. `[>]` for deferred items or `[/]` for items in progress. See [Task states](#task-states).
+    - Notes:
+        - This is often used with bullet journal (bujo) style tasks, e.g. `[>]` for deferred items or `[/]` for items in progress. See [Task states](#task-states).
+        - The pop-up dialog for marking tasks will create buttons in the order the characers are included in this string.
 
 ### Completing tasks
 
 - **Append date to completed task**
     - default: (empty string, disabled)
     - example: `[(]YYYY-MM-DD[)]`, results in `(2021-09-27)`
-    - When a [moment.js date format](https://momentjs.com/docs/#/displaying/format/) is specified, the current date/time will be appended to the task text.
-    - *Note:* Use square brackets to surround content that is not part of the format string. When working with dataview-friendly annotations, for example, your format string should look somethng like this: `[[completion::]YYYY-MM-DD[]]`.
+    - Notes:
+        - When a [moment.js date format](https://momentjs.com/docs/#/displaying/format/) is specified, the current date/time will be appended to the task text.
+        - Use square brackets to surround content that is not part of the format string. When working with dataview-friendly annotations, for example, your format string should look somethng like this: `[[completion::]YYYY-MM-DD[]]`.
 
 - **Remove text in completed (or canceled) task**  
     Remove text matching this [regular expression](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions) from the task text. 
     - default: (empty string, disabled)
     - example: `#(task|todo)` (remove #task or #todo tags)
-    - The global flag, 'g' is applied to a per-line match.
-    - *Be careful!* Test your expression before using it. There are several [online](https://www.regextester.com/) [tools](https://regex.observepoint.com/) that can help.
+    - Notes:
+        - The global flag, 'g' is applied to a per-line match.
+        - *Be careful!* Test your expression before using it. There are several [online](https://www.regextester.com/) [tools](https://regex.observepoint.com/) that can help.
 
 ### Moving completed tasks to a sub-section
 
