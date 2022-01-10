@@ -19,15 +19,17 @@ Task Collector commands are oriented around a somewhat archival notion of comple
 3. Click install
 4. "Enable" the plugin directly after installation, or use the toggle on the community plugins tab to enable the plugin after it has been installed.
 
-## TL;DR for task completion
+## TL;DR for task completion (beta, 0.6.4+)
 
 ![Task Completion](https://user-images.githubusercontent.com/808713/148706433-34d21845-a441-428d-a24c-380c6db457c7.gif)
 
-1. Open the plugin settings
+1. Install care of [Beta Reviewers Auto-update Tester](https://github.com/TfTHacker/obsidian42-brat): `ebullient/obsidian-task-collector`
 
-2. Scroll down to **Incomplete task indicators** (0.6.4)/ **Additional Task Types** (0.6.5), and add any task characters you use other than `x`, `X`, and space (` `).
+2. Update the following plugin settings
 
-3. *Optional:* Scroll down to find **Toggle: Add menu item for marking a task** (0.6.4), and enable it to add a right-click menu item for marking tasks.
+    1. Scroll down to **Incomplete task indicators** (0.6.4)/ **Additional Task Types** (0.6.5), and add any task characters you use other than `x`, `X`, and space (` `).
+
+    2. *Optional:* Scroll down to find **Toggle: Add menu item for marking a task** (0.6.4), and enable it to add a right-click menu item for marking tasks.
 
 In Source or Live Preview mode, use the [(TC) Mark task](#tc-mark-task) command from the command palette, or the right-click menu (shown in the clip), or bind it to a hot key. 
 
