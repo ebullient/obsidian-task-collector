@@ -13,25 +13,33 @@ export class TaskMarkModal extends Modal {
     }
 
     onOpen(): void {
-        const selector = this.contentEl.createDiv("taskcollector-selector markdown-preview-view");
-        const completedTasks = this.taskCollector.settings.supportCanceledTasks ? "xX-" : "xX";
+        const selector = this.contentEl.createDiv(
+            "taskcollector-selector markdown-preview-view"
+        );
+        const completedTasks = this.taskCollector.settings.supportCanceledTasks
+            ? "xX-"
+            : "xX";
 
         const completedList = selector.createEl("ul");
         this.addTaskValues(completedList, completedTasks, true);
 
         const list = selector.createEl("ul");
-        this.addTaskValues(list, this.taskCollector.settings.incompleteTaskValues, false);
+        this.addTaskValues(
+            list,
+            this.taskCollector.settings.incompleteTaskValues,
+            false
+        );
 
         const tc = this.taskCollector;
         const editor = this.editor;
         const self = this;
 
         const keyListener = function (event: KeyboardEvent) {
-            if ( completedTasks.contains(event.key)) {
+            if (completedTasks.contains(event.key)) {
                 tc.markTaskOnCurrentLine(editor, event.key);
                 event.preventDefault();
                 event.stopImmediatePropagation();
-            } else if ( tc.settings.incompleteTaskValues.contains(event.key) ) {
+            } else if (tc.settings.incompleteTaskValues.contains(event.key)) {
                 tc.resetTaskOnCurrentLine(editor, event.key);
                 event.preventDefault();
                 event.stopImmediatePropagation();
@@ -42,18 +50,22 @@ export class TaskMarkModal extends Modal {
         this.scope.register(["Shift"], null, keyListener);
     }
 
-    addTaskValues(list: HTMLUListElement, choices: string, markComplete: boolean): void {
+    addTaskValues(
+        list: HTMLUListElement,
+        choices: string,
+        markComplete: boolean
+    ): void {
         const tc = this.taskCollector;
         const editor = this.editor;
         const self = this;
         for (const character of choices) {
             const li = list.createEl("li", {
-                cls: "task-list-item" + (character == ' ' ? "" : " is-checked"),
+                cls: "task-list-item" + (character == " " ? "" : " is-checked"),
                 attr: {
-                    "data-task": character
-                }
+                    "data-task": character,
+                },
             });
-            if ( markComplete ) {
+            if (markComplete) {
                 li.addEventListener("click", function (event) {
                     tc.markTaskOnCurrentLine(editor, character);
                     self.close();
@@ -67,19 +79,19 @@ export class TaskMarkModal extends Modal {
             const input = li.createEl("input", {
                 cls: "task-list-item-checkbox",
                 attr: {
-                    "id": "task-list-item-checkbox-" + character,
-                    "type": "checkbox",
-                    "style": "pointer-events: none;"
-                }
+                    id: "task-list-item-checkbox-" + character,
+                    type: "checkbox",
+                    style: "pointer-events: none;",
+                },
             });
-            if ( character != ' ' ) {
+            if (character != " ") {
                 input.setAttribute("checked", "");
             }
             li.createEl("span", {
-                text: character == ' ' ? '␣' : character,
+                text: character == " " ? "␣" : character,
                 attr: {
-                    "style": "pointer-events: none;"
-                }
+                    style: "pointer-events: none;",
+                },
             });
         }
     }
