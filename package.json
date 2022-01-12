@@ -1,40 +1,42 @@
 {
-  "name": "obsidian-task-collector",
-  "version": "0.6.6",
-  "private": true,
-  "description": "Manage completed tasks within a document in Obsidian (https://obsidian.md)",
-  "main": "main.js",
-  "scripts": {
-    "dev": "node esbuild.config.mjs",
-    "build": "node esbuild.config.mjs production",
-    "pretest": "eslint --ignore-path .gitignore src/",
-    "test": "jest",
-    "version": "auto-changelog -p --ignore-commit-pattern '(changelog|🔨 brat release|Update README).*' -l 10 -b 10 && git add CHANGELOG.md"
-  },
-  "keywords": [
-    "obsidian",
-    "obsidian-md",
-    "obsidian-plugin",
-    "obsidian-md-plugin"
-  ],
-  "author": "ebullient",
-  "repository": "github.com:ebullient/obsidian-task-collector",
-  "license": "AGPL-3.0-only",
-  "devDependencies": {
-    "@types/jest": "^27.0.2",
-    "@types/node": "^14.17.19",
-    "@typescript-eslint/eslint-plugin": "^4.33.0",
-    "@typescript-eslint/parser": "^4.33.0",
-    "auto-changelog": "^2.3.0",
-    "builtin-modules": "^3.2.0",
-    "esbuild": "0.13.12",
-    "esbuild-copy-plugin": "^1.0.0",
-    "eslint": "^7.32.0",
-    "jest": "^27.2.4",
-    "moment": "^2.29.1",
-    "obsidian": "^0.12.17",
-    "ts-jest": "^27.0.5",
-    "tslib": "^2.3.1",
-    "typescript": "4.4.4"
-  }
+    "name": "obsidian-task-collector",
+    "version": "0.6.6",
+    "private": true,
+    "description": "Manage completed tasks within a document in Obsidian (https://obsidian.md)",
+    "main": "main.js",
+    "scripts": {
+        "dev": "node esbuild.config.mjs",
+        "build": "node esbuild.config.mjs production",
+        "pretest": "eslint --ignore-path .gitignore src/",
+        "prettier": "prettier -w 'src/**/*.ts'",
+        "test": "jest",
+        "version": "auto-changelog -p --ignore-commit-pattern '(changelog|🔨 brat release|Update README).*' -l 10 -b 10 && git add CHANGELOG.md"
+    },
+    "keywords": [
+        "obsidian",
+        "obsidian-md",
+        "obsidian-plugin",
+        "obsidian-md-plugin"
+    ],
+    "author": "ebullient",
+    "repository": "github.com:ebullient/obsidian-task-collector",
+    "license": "AGPL-3.0-only",
+    "devDependencies": {
+        "@types/jest": "^27.0.2",
+        "@types/node": "^14.17.19",
+        "@typescript-eslint/eslint-plugin": "^4.33.0",
+        "@typescript-eslint/parser": "^4.33.0",
+        "auto-changelog": "^2.3.0",
+        "builtin-modules": "^3.2.0",
+        "esbuild": "0.13.12",
+        "esbuild-copy-plugin": "^1.0.0",
+        "eslint": "^7.32.0",
+        "jest": "^27.2.4",
+        "moment": "^2.29.1",
+        "obsidian": "^0.12.17",
+        "prettier": "^2.5.1",
+        "ts-jest": "^27.0.5",
+        "tslib": "^2.3.1",
+        "typescript": "4.4.4"
+    }
 }
