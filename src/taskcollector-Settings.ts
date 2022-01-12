@@ -9,15 +9,15 @@ export interface TaskCollectorSettings {
     rightClickMove: boolean;
     rightClickResetTask: boolean;
     rightClickResetAll: boolean;
-    rightClickToggleAll: boolean,
+    rightClickToggleAll: boolean;
     completedAreaRemoveCheckbox: boolean;
 }
 
 export const DEFAULT_SETTINGS: TaskCollectorSettings = {
-    completedAreaHeader: '## Log',
-    removeExpression: '',
-    appendDateFormat: '',
-    incompleteTaskValues: ' ',
+    completedAreaHeader: "## Log",
+    removeExpression: "",
+    appendDateFormat: "",
+    incompleteTaskValues: " ",
     supportCanceledTasks: false,
     rightClickComplete: false,
     rightClickMark: false,
@@ -25,8 +25,8 @@ export const DEFAULT_SETTINGS: TaskCollectorSettings = {
     rightClickResetTask: false,
     rightClickResetAll: false,
     rightClickToggleAll: false,
-    completedAreaRemoveCheckbox: false
-}
+    completedAreaRemoveCheckbox: false,
+};
 
 export interface CompiledTasksSettings {
     removeRegExp: RegExp;
@@ -34,4 +34,3 @@ export interface CompiledTasksSettings {
     incompleteTaskRegExp: RegExp;
     rightClickTaskMenu: boolean;
 }
-
