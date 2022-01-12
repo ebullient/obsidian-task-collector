@@ -8,9 +8,11 @@
         "dev": "node esbuild.config.mjs",
         "build": "node esbuild.config.mjs production",
         "pretest": "eslint --ignore-path .gitignore src/",
-        "prettier": "prettier -w 'src/**/*.ts'",
         "test": "jest",
-        "version": "auto-changelog -p --ignore-commit-pattern '(changelog|🔨 brat release|Update README).*' -l 10 -b 10 && git add CHANGELOG.md"
+        "prettier": "prettier -w 'src/**/*.ts'",
+        "version": "auto-changelog -p && git add CHANGELOG.md",
+        "test-version": "auto-changelog -p",
+        "brat-notes": "run() { auto-changelog --stdout --hide-credit --hide-empty-releases --template .github/changelog.hbs -v $1 --starting-version $1; }; run"
     },
     "keywords": [
         "obsidian",
@@ -38,5 +40,10 @@
         "ts-jest": "^27.0.5",
         "tslib": "^2.3.1",
         "typescript": "4.4.4"
+    },
+    "auto-changelog": {
+        "backfillLimit": false,
+        "commitLimit": false,
+        "ignoreCommitPattern": "(changelog|🔨 brat release|Update README).*"
     }
 }
