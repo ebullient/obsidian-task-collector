@@ -69,7 +69,7 @@ export class TaskCollectorPlugin extends Plugin {
             name: "Complete item",
             icon: Icons.COMPLETE,
             editorCallback: (editor: Editor, view: MarkdownView) => {
-                this.taskCollector.markTaskOnCurrentLine(editor, "x");
+                this.taskCollector.completeTaskOnCurrentLine(editor, "x");
             },
         };
 
@@ -78,7 +78,7 @@ export class TaskCollectorPlugin extends Plugin {
             name: "Cancel item",
             icon: Icons.CANCEL,
             editorCallback: (editor: Editor, view: MarkdownView) => {
-                this.taskCollector.markTaskOnCurrentLine(editor, "-");
+                this.taskCollector.completeTaskOnCurrentLine(editor, "-");
             },
         };
 
@@ -144,16 +144,6 @@ export class TaskCollectorPlugin extends Plugin {
         this.addCommand(clearAllTasksCommand);
         this.registerHandlers();
     }
-    async markTaskOnLines(mark: string, lines?: number[]): Promise<void> {
-        console.log(
-            "🚀 ~ file: taskcollector-Plugin.ts ~ line 71 ~ mark",
-            mark
-        );
-        const activeFile = this.app.workspace.getActiveFile();
-        const source = await this.app.vault.cachedRead(activeFile);
-        const result = this.taskCollector.markTaskInSource(source, mark, lines);
-        this.app.vault.modify(activeFile, result);
-    }
 
     getCurrentLinesFromEditor(editor: Editor): number[] {
         const lines: number[] = [];
@@ -173,6 +163,7 @@ export class TaskCollectorPlugin extends Plugin {
         }
         return lines;
     }
+
     buildMenu(menu: Menu, lines?: number[]): void {
         if (this.taskCollector.settings.rightClickMark) {
             menu.addItem((item) =>
@@ -263,18 +254,28 @@ export class TaskCollectorPlugin extends Plugin {
             );
         }
     }
+
+    async markTaskOnLines(mark: string, lines?: number[]): Promise<void> {
+        const activeFile = this.app.workspace.getActiveFile();
+        const source = await this.app.vault.cachedRead(activeFile);
+        const result = this.taskCollector.markTaskInSource(source, mark, lines);
+        this.app.vault.modify(activeFile, result);
+    }
+
     async moveAllTasks(): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
         const source = await this.app.vault.cachedRead(activeFile);
         const result = this.taskCollector.moveCompletedTasksInFile(source);
         this.app.vault.modify(activeFile, result);
     }
+
     async completeAllTasks(): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
         const source = await this.app.vault.cachedRead(activeFile);
-        const result = this.taskCollector.markAllTasks(source, "x");
+        const result = this.taskCollector.markAllTasksComplete(source, "x");
         this.app.vault.modify(activeFile, result);
     }
+
     async resetAllTasks(): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
         const source = await this.app.vault.cachedRead(activeFile);
@@ -303,6 +304,7 @@ export class TaskCollectorPlugin extends Plugin {
                     }
                 ))
             );
+
             this.registerMarkdownPostProcessor(
                 (this.postProcessor = (el, ctx) => {
                     const checkboxes = el.querySelectorAll<HTMLInputElement>(
@@ -338,6 +340,7 @@ export class TaskCollectorPlugin extends Plugin {
             );
         }
     }
+
     unregisterHandlers(): void {
         this.handlersRegistered = false;
 
