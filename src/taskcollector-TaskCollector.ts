@@ -11,6 +11,7 @@ export class TaskCollector {
     anyTaskMark: RegExp;
     stripTask: RegExp;
     blockRef: RegExp;
+
     constructor(private app: App) {
         this.app = app;
         this.completedOrCanceled = new RegExp(/^(\s*- \[)[xX-](\] .*)$/);
@@ -74,6 +75,10 @@ export class TaskCollector {
             }
         }
 
+        const completedTasks = this.settings.supportCanceledTasks
+            ? "xX-"
+            : "xX";
+
         const rightClickTaskMenu =
             this.settings.rightClickComplete ||
             this.settings.rightClickMark ||
@@ -81,6 +86,7 @@ export class TaskCollector {
             this.settings.rightClickResetTask ||
             this.settings.rightClickResetAll ||
             this.settings.rightClickToggleAll;
+
         this.initSettings = {
             removeRegExp: this.tryCreateRemoveRegex(
                 this.settings.removeExpression
@@ -90,6 +96,8 @@ export class TaskCollector {
                 this.settings.incompleteTaskValues
             ),
             rightClickTaskMenu: rightClickTaskMenu,
+            completedTasks: completedTasks,
+            completedTaskRegExp: this.tryCreateCompleteRegex(completedTasks),
         };
     }
 
@@ -101,6 +109,10 @@ export class TaskCollector {
         return param ? new RegExp(param + "( \\^[A-Za-z0-9-]+)?$") : null;
     }
 
+    tryCreateCompleteRegex(param: string): RegExp {
+        return new RegExp(`^(\\s*- \\[)[${param}](\\] .*)$`);
+    }
+
     tryCreateIncompleteRegex(param: string): RegExp {
         return new RegExp(`^(\\s*- \\[)[${param}](\\] .*)$`);
     }
@@ -109,13 +121,13 @@ export class TaskCollector {
         return lineText.replace(this.stripTask, "$1 $2");
     }
 
-    updateTaskLine(lineText: string, mark: string): string {
+    /** _Complete_ an item: append completion text, remove configured strings */
+    completeTaskLine(lineText: string, mark: string): string {
         let marked = lineText.replace(
             this.initSettings.incompleteTaskRegExp,
             "$1" + mark + "$2"
         );
         if (this.initSettings.removeRegExp) {
-            // If there is text to remove, remove it
             marked = marked.replace(this.initSettings.removeRegExp, "");
         }
         if (this.settings.appendDateFormat) {
@@ -134,43 +146,24 @@ export class TaskCollector {
         return marked;
     }
 
-    markTaskInSource(
-        source: string,
-        mark: string,
-        lines: number[] = []
-    ): string {
-        const split = source.split("\n");
-        for (let i = 0; i < split.length; i++) {
-            if (!lines.length || lines.includes(i)) {
-                split.splice(
-                    i,
-                    1,
-                    mark === " "
-                        ? this.resetTaskLine(split[i], mark)
-                        : this.updateTaskLine(split[i], mark)
-                );
-            }
-        }
-        return split.join("\n");
-    }
-    markTaskOnLine(editor: Editor, mark: string, i: number): void {
+    completeEditorLineTask(editor: Editor, mark: string, i: number): void {
         const lineText = editor.getLine(i);
 
         // Does this line indicate an incomplete task?
         const incompleteTask =
             this.initSettings.incompleteTaskRegExp.exec(lineText);
         if (incompleteTask) {
-            const marked = this.updateTaskLine(lineText, mark);
+            const marked = this.completeTaskLine(lineText, mark);
             editor.setLine(i, marked);
         }
     }
 
-    markTaskOnCurrentLine(editor: Editor, mark: string): void {
+    completeTaskOnCurrentLine(editor: Editor, mark: string): void {
         if (editor.somethingSelected()) {
             const cursorStart = editor.getCursor("from");
             const cursorEnd = editor.getCursor("to");
             for (let i = cursorStart.line; i <= cursorEnd.line; i++) {
-                this.markTaskOnLine(editor, mark, i);
+                this.completeEditorLineTask(editor, mark, i);
             }
             editor.setSelection(cursorStart, {
                 line: cursorEnd.line,
@@ -178,22 +171,41 @@ export class TaskCollector {
             });
         } else {
             const anchor = editor.getCursor("from");
-            this.markTaskOnLine(editor, mark, anchor.line);
+            this.completeEditorLineTask(editor, mark, anchor.line);
         }
     }
 
-    markAllTasks(source: string, mark: string): string {
+    markAllTasksComplete(source: string, mark: string): string {
         const lines = source.split("\n");
         const result: string[] = [];
 
         for (const line of lines) {
             if (this.initSettings.incompleteTaskRegExp.exec(line)) {
-                result.push(this.updateTaskLine(line, mark));
+                result.push(this.completeTaskLine(line, mark));
             } else {
                 result.push(line);
             }
         }
         return result.join("\n");
+    }
+
+    markTaskInSource(
+        source: string,
+        mark: string,
+        lines: number[] = []
+    ): string {
+        const split = source.split("\n");
+        for (const n of lines) {
+            if (
+                this.initSettings.completedTasks.indexOf(mark) >= 0 &&
+                this.isIncompleteTaskLine(split[n])
+            ) {
+                split[n] = this.completeTaskLine(split[n], mark);
+            } else if (this.settings.incompleteTaskValues.indexOf(mark) >= 0) {
+                split[n] = this.resetTaskLine(split[n], mark);
+            }
+        }
+        return split.join("\n");
     }
 
     resetTaskLine(lineText: string, mark = " "): string {
@@ -265,7 +277,7 @@ export class TaskCollector {
         const LOG_HEADING = this.settings.completedAreaHeader || "## Log";
         const lines = source.split("\n");
 
-        if (!source.contains(LOG_HEADING)) {
+        if (source.indexOf(LOG_HEADING) < 0) {
             if (lines[lines.length - 1].trim() !== "") {
                 lines.push("");
             }
@@ -293,7 +305,7 @@ export class TaskCollector {
                 remaining.push("%%%COMPLETED_ITEMS_GO_HERE%%%");
             } else {
                 const taskMatch = line.match(/^(\s*)- \[(.)\]/);
-                if (this.isCompletedTask(taskMatch)) {
+                if (this.isCompletedTaskLine(line)) {
                     if (this.settings.completedAreaRemoveCheckbox) {
                         line = line.replace(this.stripTask, "$1 $2");
                     }
@@ -318,14 +330,11 @@ export class TaskCollector {
         return result.join("\n");
     }
 
-    isCompletedTask(taskMatch: RegExpMatchArray): boolean {
-        if (taskMatch) {
-            return (
-                taskMatch[2] === "x" ||
-                taskMatch[2] === "X" ||
-                (this.settings.supportCanceledTasks && taskMatch[2] == "-")
-            );
-        }
-        return false;
+    isCompletedTaskLine(lineText: string): boolean {
+        return this.initSettings.completedTaskRegExp.test(lineText);
+    }
+
+    isIncompleteTaskLine(lineText: string): boolean {
+        return this.initSettings.incompleteTaskRegExp.test(lineText);
     }
 }
