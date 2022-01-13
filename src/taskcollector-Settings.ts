@@ -7,6 +7,7 @@ export interface TaskCollectorSettings {
     rightClickComplete: boolean;
     rightClickMark: boolean;
     rightClickMove: boolean;
+    rightClickReset: boolean; // ignored (old)
     rightClickResetTask: boolean;
     rightClickResetAll: boolean;
     rightClickToggleAll: boolean;
@@ -22,6 +23,7 @@ export const DEFAULT_SETTINGS: TaskCollectorSettings = {
     rightClickComplete: false,
     rightClickMark: false,
     rightClickMove: false,
+    rightClickReset: false, // ignored (old)
     rightClickResetTask: false,
     rightClickResetAll: false,
     rightClickToggleAll: false,
