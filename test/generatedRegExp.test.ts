@@ -100,33 +100,18 @@ test('Correctly mark complete or incomplete items in a selection', () => {
     expect(tc.markTaskInSource(start, ' ', [0, 1, 2, 3])).toEqual("- [ ] one\n- [ ] two\n- [ ] three\n- [ ] four");
 });
 
-test('Remove completed checkboxes when completedAreaRemoveCheckbox is enabled', () => {
+test('Remove checkbox from line', () => {
     const tc = new TaskCollector(new App());
     config.completedAreaRemoveCheckbox = true;
     tc.updateSettings(config);
 
-    const completed = '- [x] something';
-    const canceled = '- [-] something';
-    const incomplete = '- [ ] something'; // not a complete/canceled task
-    const listItem = '- something';
+    const completed = '- [x] something [x]';
+    const canceled = '- [-] something [x]';
+    const incomplete = '- [ ] something [x]';
+    const listItem = '- something [x]';
     expect(tc.removeCheckboxFromLine(completed)).toEqual(listItem);
-    expect(tc.removeCheckboxFromLine(canceled)).toEqual(canceled); // unchanged
-    expect(tc.removeCheckboxFromLine(incomplete)).toEqual(incomplete); // unchanged
-});
-
-test('Remove canceled checkboxes when completedAreaRemoveCheckbox is enabled (and canceled tasks are enabled)', () => {
-    const tc = new TaskCollector(new App());
-    config.completedAreaRemoveCheckbox = true;
-    config.supportCanceledTasks = true;
-    tc.updateSettings(config);
-
-    const completed  = '- [x] something';
-    const canceled   = '- [-] something';
-    const incomplete = '- [ ] something'; // not a complete/canceled task
-    const listItem   = '- something';
-    expect(tc.removeCheckboxFromLine(completed)).toEqual(listItem);
-    expect(tc.removeCheckboxFromLine(canceled)).toEqual(listItem); // unchanged
-    expect(tc.removeCheckboxFromLine(incomplete)).toEqual(incomplete); // unchanged
+    expect(tc.removeCheckboxFromLine(canceled)).toEqual(listItem);
+    expect(tc.removeCheckboxFromLine(incomplete)).toEqual(listItem);
 });
 
 test('Move completed items to archive area', () => {

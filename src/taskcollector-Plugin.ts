@@ -69,7 +69,10 @@ export class TaskCollectorPlugin extends Plugin {
             name: "Complete item",
             icon: Icons.COMPLETE,
             editorCallback: (editor: Editor, view: MarkdownView) => {
-                this.taskCollector.completeTaskOnCurrentLine(editor, "x");
+                this.markTaskOnLines(
+                    "x",
+                    this.getCurrentLinesFromEditor(editor)
+                );
             },
         };
 
@@ -78,7 +81,10 @@ export class TaskCollectorPlugin extends Plugin {
             name: "Cancel item",
             icon: Icons.CANCEL,
             editorCallback: (editor: Editor, view: MarkdownView) => {
-                this.taskCollector.completeTaskOnCurrentLine(editor, "-");
+                this.markTaskOnLines(
+                    "-",
+                    this.getCurrentLinesFromEditor(editor)
+                );
             },
         };
 
@@ -87,7 +93,10 @@ export class TaskCollectorPlugin extends Plugin {
             name: "Reset item",
             icon: Icons.RESET,
             editorCallback: (editor: Editor, view: MarkdownView) => {
-                this.taskCollector.resetTaskOnCurrentLine(editor);
+                this.markTaskOnLines(
+                    " ",
+                    this.getCurrentLinesFromEditor(editor)
+                );
             },
         };
 

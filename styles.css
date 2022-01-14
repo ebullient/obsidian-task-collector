@@ -44,3 +44,13 @@
 #taskcollector-modal .modal .markdown-preview-view ul > li > .task-list-item-checkbox {
     margin-right: 4px;
 }
+#taskcollector-modal .modal .markdown-preview-view nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+}
+#taskcollector-modal .modal .markdown-preview-view nav span {
+  display: block;
+  font-size: .8em;
+  color: var(--text-muted);
+}

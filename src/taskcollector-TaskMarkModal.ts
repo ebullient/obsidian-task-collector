@@ -43,19 +43,18 @@ export class TaskMarkModal extends Modal {
             false
         );
 
-        const tc = this.taskCollector;
+        const footer = selector.createEl("nav");
+        const esc = footer.createSpan();
+        esc.innerHTML = "<b>esc</b> to dismiss";
+        const bksp = footer.createSpan();
+        bksp.innerHTML = "<b>bksp</b> to remove <code>[]</code>";
+
         const self = this;
 
         const keyListener = function (event: KeyboardEvent) {
-            if (completedTasks.contains(event.key)) {
-                self.chosenMark = event.key;
-                event.preventDefault();
-                event.stopImmediatePropagation();
-            } else if (tc.settings.incompleteTaskValues.contains(event.key)) {
-                self.chosenMark = event.key;
-                event.preventDefault();
-                event.stopImmediatePropagation();
-            }
+            self.chosenMark = event.key;
+            event.preventDefault();
+            event.stopImmediatePropagation();
             self.close();
         };
         this.scope.register([], null, keyListener);

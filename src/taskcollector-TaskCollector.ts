@@ -11,6 +11,7 @@ export class TaskCollector {
     anyListItem: RegExp;
     anyTaskMark: RegExp;
     blockRef: RegExp;
+    stripTask: RegExp;
 
     constructor(private app: App) {
         this.app = app;
@@ -18,6 +19,7 @@ export class TaskCollector {
         this.anyListItem = new RegExp(/^(\s*- )([^\\[].*)$/);
         this.anyTaskMark = new RegExp(/^(\s*- \[).(\] .*)$/);
         this.blockRef = new RegExp(/^(.*?)( \^[A-Za-z0-9-]+)?$/);
+        this.stripTask = new RegExp(/^(\s*-) \[.\] (.*)$/);
     }
 
     updateSettings(settings: TaskCollectorSettings): void {
@@ -98,8 +100,6 @@ export class TaskCollector {
             rightClickTaskMenu: rightClickTaskMenu,
             completedTasks: completedTasks,
             completedTaskRegExp: this.tryCreateCompleteRegex(completedTasks),
-            stripCompletedTask:
-                this.tryCreateStripCompleteRegex(completedTasks),
         };
     }
 
@@ -114,16 +114,13 @@ export class TaskCollector {
     tryCreateCompleteRegex(param: string): RegExp {
         return new RegExp(`^(\\s*- \\[)[${param}](\\] .*)$`);
     }
-    tryCreateStripCompleteRegex(param: string): RegExp {
-        return new RegExp(`^(\\s*-) \\[[${param}]\\] (.*)$`);
-    }
 
     tryCreateIncompleteRegex(param: string): RegExp {
         return new RegExp(`^(\\s*- \\[)[${param}](\\] .*)$`);
     }
 
     removeCheckboxFromLine(lineText: string): string {
-        return lineText.replace(this.initSettings.stripCompletedTask, "$1 $2");
+        return lineText.replace(this.stripTask, "$1 $2");
     }
 
     /** _Complete_ an item: append completion text, remove configured strings */
@@ -163,23 +160,6 @@ export class TaskCollector {
         }
     }
 
-    completeTaskOnCurrentLine(editor: Editor, mark: string): void {
-        if (editor.somethingSelected()) {
-            const cursorStart = editor.getCursor("from");
-            const cursorEnd = editor.getCursor("to");
-            for (let i = cursorStart.line; i <= cursorEnd.line; i++) {
-                this.completeEditorLineTask(editor, mark, i);
-            }
-            editor.setSelection(cursorStart, {
-                line: cursorEnd.line,
-                ch: editor.getLine(cursorEnd.line).length,
-            });
-        } else {
-            const anchor = editor.getCursor("from");
-            this.completeEditorLineTask(editor, mark, anchor.line);
-        }
-    }
-
     markAllTasksComplete(source: string, mark: string): string {
         const lines = source.split("\n");
         const result: string[] = [];
@@ -205,21 +185,44 @@ export class TaskCollector {
             if (!this.anyTaskMark.test(split[n])) {
                 const match = this.anyListItem.exec(split[n]);
                 if (match && match[2]) {
+                    console.debug(
+                        "TC: list item, convert to a task %s",
+                        split[n]
+                    );
                     // it's a list item! let's make it a task, and carry on
                     split[n] = match[1] + "[ ] " + match[2];
                 } else {
+                    console.debug("TC: not a task or list item %s", split[n]);
                     // not a list item: nothing else to do with this line
                     continue;
                 }
             }
 
-            if (
-                this.initSettings.completedTasks.indexOf(mark) >= 0 &&
-                this.isIncompleteTaskLine(split[n])
-            ) {
-                split[n] = this.completeTaskLine(split[n], mark);
+            if (this.initSettings.completedTasks.indexOf(mark) >= 0) {
+                if (this.isIncompleteTaskLine(split[n])) {
+                    console.debug(
+                        "TC: complete task with %s: %s",
+                        mark,
+                        split[n]
+                    );
+                    split[n] = this.completeTaskLine(split[n], mark);
+                } else {
+                    console.debug(
+                        "TC: task already completed: %s",
+                        mark,
+                        split[n]
+                    );
+                }
             } else if (this.settings.incompleteTaskValues.indexOf(mark) >= 0) {
+                console.debug("TC: reset task with %s: %s", mark, split[n]);
                 split[n] = this.resetTaskLine(split[n], mark);
+            } else if (mark === "Backspace") {
+                split[n] = this.removeCheckboxFromLine(split[n]);
+            } else {
+                console.debug(
+                    "TC: unrecognized mark %s, check configuration settings",
+                    mark
+                );
             }
         }
         return split.join("\n");
@@ -247,23 +250,6 @@ export class TaskCollector {
         // remove the guard: just change the value
         const marked = this.resetTaskLine(lineText, mark);
         editor.setLine(i, marked);
-    }
-
-    resetTaskOnCurrentLine(editor: Editor, mark = " "): void {
-        if (editor.somethingSelected()) {
-            const cursorStart = editor.getCursor("from");
-            const cursorEnd = editor.getCursor("to");
-            for (let i = cursorStart.line; i <= cursorEnd.line; i++) {
-                this.resetTaskOnLine(editor, i, mark);
-            }
-            editor.setSelection(cursorStart, {
-                line: cursorEnd.line,
-                ch: editor.getLine(cursorEnd.line).length,
-            });
-        } else {
-            const anchor = editor.getCursor("from");
-            this.resetTaskOnLine(editor, anchor.line, mark);
-        }
     }
 
     resetAllTasks(source: string): string {
@@ -324,10 +310,7 @@ export class TaskCollector {
                 const taskMatch = line.match(/^(\s*)- \[(.)\]/);
                 if (this.isCompletedTaskLine(line)) {
                     if (this.settings.completedAreaRemoveCheckbox) {
-                        line = line.replace(
-                            this.initSettings.stripCompletedTask,
-                            "$1 $2"
-                        );
+                        line = this.removeCheckboxFromLine(line);
                     }
                     inTask = true;
                     newTasks.push(line);
