@@ -27,7 +27,7 @@ jobs:
         echo "Release ${VERSION}"
         npm install
         npm run build --if-present
-        npm run brat-notes -- ${VERSION} > release-notes.md
+        npm run brat-notes -- ${VERSION}
         echo "::set-output name=version::${VERSION}"
 
     # Package the required files into a zip
