@@ -9,12 +9,16 @@ Task Collector commands are oriented around a somewhat archival notion of comple
     - *Canceled tasks*, marked with `[-]`, can be added to this group in settings.
 - Any other task is considered **incomplete** (or in-progress)
 
-When a task is *completed* (assigned `[x]`, `[X]`, or optionally `[-]`): 
-- It can be annotated with additional data, e.g. ✅:: 2022-01-01
-- Text can be removed, e.g. #todo tags
+Task actions (see [Task states](#task-states))
 
-A completed task can be *reset* (assigned `[ ]` or other)
-- Text matching the configured annotaton pattern, e.g. ✅:: 2022-01-01, is removed
+- When a task is *completed* (assigned `[x]`, `[X]`, or optionally `[-]`): 
+    - It can be annotated with additional data, e.g. ✅:: 2022-01-01
+    - Text can be removed, e.g. #todo tags
+
+- When a task is *reset* (assigned `[ ]` or other configured value):
+    - Text matching the configured pattern for a completed task, e.g. ✅:: 2022-01-01, is removed.
+
+---
 
 * [Commands](#commands) 
 * [Settings](#settings)
@@ -26,19 +30,19 @@ A completed task can be *reset* (assigned `[ ]` or other)
 3. Click install
 4. "Enable" the plugin directly after installation, or use the toggle on the community plugins tab to enable the plugin after it has been installed.
 
-## TL;DR for task completion (beta, 0.6.4+)
+## TL;DR for task completion
 
 ![Task Completion](https://user-images.githubusercontent.com/808713/148706433-34d21845-a441-428d-a24c-380c6db457c7.gif)
 
-1. Install care of [Beta Reviewers Auto-update Tester](https://github.com/TfTHacker/obsidian42-brat): `ebullient/obsidian-task-collector`
+Update the following plugin settings
 
-2. Update the following plugin settings
+1. If you want *canceled* `[-]` items to behave like completed items, enable **Support Canceled Tasks**
 
-    1. Scroll down to **Additional Task Types** (0.6.5), and add any task characters you use other than `[x]`, `[X]`, `[ ]`.
+1. Find **Additional Task Types**, and add any task characters you use other than `[x]`, `[X]`, `[ ]` (omit `[-]` if you enabled the above)
 
-    2. *Optional:* Scroll down to find **Toggle: Add menu item for marking a task**, and enable it to add a right-click menu item for marking tasks.
+3. *Optional:* Scroll down to find **Toggle: Add menu item for marking a task**, and enable it to add a right-click menu item for marking tasks.
 
-In Source or Live Preview mode, use the [(TC) Mark task](#tc-mark-task) command from the command palette, or the right-click menu (shown in the clip), or bind it to a hot key. 
+Use the [(TC) Mark task](#tc-mark-task) command from the command palette, or the right-click menu (shown in the clip), or bind it to a hot key. 
 
 ---
 
@@ -76,20 +80,22 @@ again.
 
 ## Commands
 
-### (TC) Mark Task
+### (TC) Mark Task (✨ 0.6.4)
 
 1. A dialog will pop up showing known task types in two groups: 
     - The first group contains marks for "completed" items.
     - The second group contains all other task marks, minimally a space (`[ ]`).
 2. Use the mouse to select an icon, or type the associated character.
 3. What happens next depends on the state of the task and the selected character.
+    - If this is a plain list item, it will be converted into an empty incomplete task: processing continues...
     - If an incomplete task is completed (`[x]`, `[X]`), see [Complete Task](#tc-complete-task)
     - If an incomplete task is canceled (`[-]`), see [Cancel Task](#tc-cancel-task-if-enabled)
-    - If a complete item is reset (`[ ]` or other), see [Reset Task](#tc-reset-task)
+    - If an item is reset (`[ ]` or _other_), see [Reset Task](#tc-reset-task)
     - If a completed item is completed or canceled, nothing happens.
     - If an unknown character is typed, nothing happens.
 
-Is the pop-up not showing what you expect? Review what you have set for **[Additional Task Types](#settings)**.
+> Note:  
+> Is the pop-up not showing what you expect? Review what you have set for **[Additional Task Types](#settings)**.
 
 ### (TC) Complete Task
 
