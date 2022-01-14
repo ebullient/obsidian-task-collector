@@ -37,4 +37,5 @@ export interface CompiledTasksSettings {
     rightClickTaskMenu: boolean;
     completedTasks: string;
     completedTaskRegExp: RegExp;
+    stripCompletedTask: RegExp;
 }

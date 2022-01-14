@@ -8,15 +8,15 @@ export class TaskCollector {
     settings: TaskCollectorSettings;
     initSettings: CompiledTasksSettings;
     completedOrCanceled: RegExp;
+    anyListItem: RegExp;
     anyTaskMark: RegExp;
-    stripTask: RegExp;
     blockRef: RegExp;
 
     constructor(private app: App) {
         this.app = app;
         this.completedOrCanceled = new RegExp(/^(\s*- \[)[xX-](\] .*)$/);
+        this.anyListItem = new RegExp(/^(\s*- )([^\\[].*)$/);
         this.anyTaskMark = new RegExp(/^(\s*- \[).(\] .*)$/);
-        this.stripTask = new RegExp(/^(\s*-) \[[xX-]\] (.*)$/);
         this.blockRef = new RegExp(/^(.*?)( \^[A-Za-z0-9-]+)?$/);
     }
 
@@ -98,6 +98,8 @@ export class TaskCollector {
             rightClickTaskMenu: rightClickTaskMenu,
             completedTasks: completedTasks,
             completedTaskRegExp: this.tryCreateCompleteRegex(completedTasks),
+            stripCompletedTask:
+                this.tryCreateStripCompleteRegex(completedTasks),
         };
     }
 
@@ -112,13 +114,16 @@ export class TaskCollector {
     tryCreateCompleteRegex(param: string): RegExp {
         return new RegExp(`^(\\s*- \\[)[${param}](\\] .*)$`);
     }
+    tryCreateStripCompleteRegex(param: string): RegExp {
+        return new RegExp(`^(\\s*-) \\[[${param}]\\] (.*)$`);
+    }
 
     tryCreateIncompleteRegex(param: string): RegExp {
         return new RegExp(`^(\\s*- \\[)[${param}](\\] .*)$`);
     }
 
     removeCheckboxFromLine(lineText: string): string {
-        return lineText.replace(this.stripTask, "$1 $2");
+        return lineText.replace(this.initSettings.stripCompletedTask, "$1 $2");
     }
 
     /** _Complete_ an item: append completion text, remove configured strings */
@@ -196,6 +201,18 @@ export class TaskCollector {
     ): string {
         const split = source.split("\n");
         for (const n of lines) {
+            // if it isn't a task...
+            if (!this.anyTaskMark.test(split[n])) {
+                const match = this.anyListItem.exec(split[n]);
+                if (match && match[2]) {
+                    // it's a list item! let's make it a task, and carry on
+                    split[n] = match[1] + "[ ] " + match[2];
+                } else {
+                    // not a list item: nothing else to do with this line
+                    continue;
+                }
+            }
+
             if (
                 this.initSettings.completedTasks.indexOf(mark) >= 0 &&
                 this.isIncompleteTaskLine(split[n])
@@ -307,7 +324,10 @@ export class TaskCollector {
                 const taskMatch = line.match(/^(\s*)- \[(.)\]/);
                 if (this.isCompletedTaskLine(line)) {
                     if (this.settings.completedAreaRemoveCheckbox) {
-                        line = line.replace(this.stripTask, "$1 $2");
+                        line = line.replace(
+                            this.initSettings.stripCompletedTask,
+                            "$1 $2"
+                        );
                     }
                     inTask = true;
                     newTasks.push(line);
