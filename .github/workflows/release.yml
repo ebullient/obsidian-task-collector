@@ -104,9 +104,12 @@ jobs:
         VERSION: ${{needs.build.outputs.version}}
       run: |
         echo $VERSION
-        sed -i 's|\(version":\) "[0-9\.]*"|\1 "'$VERSION'"|' manifest-beta.json
-        git config user.name github-actions
-        git config user.email github-actions@github.com
-        git add .
-        git commit -m "🔨 brat release $VERSION"
-        git push
+        mversion=$(grep 'version' manifest-beta.json | cut -d'"' -f4)
+        if [ "$VERSION" != "$mversion" ]; then
+          sed -i 's|\(version":\) "[0-9\.]*"|\1 "'$VERSION'"|' manifest-beta.json
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "🔨 brat release $VERSION"
+          git push
+        fi
