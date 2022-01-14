@@ -257,28 +257,28 @@ export class TaskCollectorPlugin extends Plugin {
 
     async markTaskOnLines(mark: string, lines?: number[]): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        const source = await this.app.vault.cachedRead(activeFile);
+        const source = await this.app.vault.read(activeFile);
         const result = this.taskCollector.markTaskInSource(source, mark, lines);
         this.app.vault.modify(activeFile, result);
     }
 
     async moveAllTasks(): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        const source = await this.app.vault.cachedRead(activeFile);
+        const source = await this.app.vault.read(activeFile);
         const result = this.taskCollector.moveCompletedTasksInFile(source);
         this.app.vault.modify(activeFile, result);
     }
 
     async completeAllTasks(): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        const source = await this.app.vault.cachedRead(activeFile);
+        const source = await this.app.vault.read(activeFile);
         const result = this.taskCollector.markAllTasksComplete(source, "x");
         this.app.vault.modify(activeFile, result);
     }
 
     async resetAllTasks(): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        const source = await this.app.vault.cachedRead(activeFile);
+        const source = await this.app.vault.read(activeFile);
         const result = this.taskCollector.resetAllTasks(source);
         this.app.vault.modify(activeFile, result);
     }
