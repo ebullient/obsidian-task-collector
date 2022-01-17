@@ -81,9 +81,8 @@ export class TaskCollector {
             ? "xX-"
             : "xX";
 
-        let incompletedTasks = this.settings.incompleteTaskValues;
         if (this.settings.incompleteTaskValues.indexOf(" ") < 0) {
-            incompletedTasks = " " + this.settings.incompleteTaskValues;
+            this.settings.incompleteTaskValues = " " + this.settings.incompleteTaskValues;
         }
 
         const rightClickTaskMenu =
@@ -100,11 +99,12 @@ export class TaskCollector {
             ),
             resetRegExp: this.tryCreateResetRegex(momentMatchString),
             incompleteTaskRegExp:
-                this.tryCreateIncompleteRegex(incompletedTasks),
+                this.tryCreateIncompleteRegex(this.settings.incompleteTaskValues),
             rightClickTaskMenu: rightClickTaskMenu,
             completedTasks: completedTasks,
             completedTaskRegExp: this.tryCreateCompleteRegex(completedTasks),
         };
+        console.debug("TC: updated configuration %o, %o", this.settings, this.initSettings);
     }
 
     tryCreateRemoveRegex(param: string): RegExp {
