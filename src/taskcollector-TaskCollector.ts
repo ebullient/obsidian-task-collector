@@ -81,6 +81,11 @@ export class TaskCollector {
             ? "xX-"
             : "xX";
 
+        let incompletedTasks = this.settings.incompleteTaskValues;
+        if (this.settings.incompleteTaskValues.indexOf(" ") < 0) {
+            incompletedTasks = " " + this.settings.incompleteTaskValues;
+        }
+
         const rightClickTaskMenu =
             this.settings.rightClickComplete ||
             this.settings.rightClickMark ||
@@ -94,9 +99,8 @@ export class TaskCollector {
                 this.settings.removeExpression
             ),
             resetRegExp: this.tryCreateResetRegex(momentMatchString),
-            incompleteTaskRegExp: this.tryCreateIncompleteRegex(
-                this.settings.incompleteTaskValues
-            ),
+            incompleteTaskRegExp:
+                this.tryCreateIncompleteRegex(incompletedTasks),
             rightClickTaskMenu: rightClickTaskMenu,
             completedTasks: completedTasks,
             completedTaskRegExp: this.tryCreateCompleteRegex(completedTasks),
@@ -208,7 +212,7 @@ export class TaskCollector {
                     split[n] = this.completeTaskLine(split[n], mark);
                 } else {
                     console.debug(
-                        "TC: task already completed: %s",
+                        "TC: task already completed (%s): %s",
                         mark,
                         split[n]
                     );
