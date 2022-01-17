@@ -53,6 +53,21 @@ test('Complete > when included in incomplete pattern', () => {
     expect(tc.resetTaskLine('- [>] something', ' ')).toEqual('- [ ] something');
 });
 
+test('Test with empty incomplete pattern', () => {
+    const tc = new TaskCollector(new App());
+    config.incompleteTaskValues = '';
+    tc.updateSettings(config);
+
+    expect(tc.completeTaskLine('- [ ] something', 'x')).toEqual('- [x] something');
+    expect(tc.completeTaskLine('- [>] something', 'x')).toEqual('- [>] something'); // already "complete"
+    expect(tc.completeTaskLine('- [-] something', 'x')).toEqual('- [-] something'); // already "complete"
+    expect(tc.completeTaskLine('- [x] something', 'X')).toEqual('- [x] something'); // already "complete"
+    expect(tc.resetTaskLine('- [X] something', ' ')).toEqual('- [ ] something');
+    expect(tc.resetTaskLine('- [x] something', ' ')).toEqual('- [ ] something');
+    expect(tc.resetTaskLine('- [>] something', ' ')).toEqual('- [ ] something');
+    expect(tc.resetTaskLine('- [-] something', ' ')).toEqual('- [ ] something');
+});
+
 test('Match - when cancelled items are enabled', () => {
     const tc = new TaskCollector(new App());
     config.supportCanceledTasks = true;
