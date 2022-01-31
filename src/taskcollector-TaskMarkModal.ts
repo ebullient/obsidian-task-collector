@@ -34,9 +34,11 @@ export class TaskMarkModal extends Modal {
             : "xX";
 
         const completedList = selector.createEl("ul");
+        completedList.addClass("contains-task-list");
         this.addTaskValues(completedList, completedTasks, true);
 
         const list = selector.createEl("ul");
+        list.addClass("contains-task-list");
         this.addTaskValues(
             list,
             this.taskCollector.settings.incompleteTaskValues,
@@ -69,7 +71,7 @@ export class TaskMarkModal extends Modal {
         const self = this;
         for (const character of choices) {
             const li = list.createEl("li", {
-                cls: "task-list-item" + (character == " " ? "" : " is-checked"),
+                cls: "task-list-item " + (character == " " ? "" : " is-checked"),
                 attr: {
                     "data-task": character,
                 },
