@@ -34,7 +34,7 @@ jobs:
     - name: Package
       run: |
         mkdir ${{ github.event.repository.name }}
-        cp ./build/main.js ./build/manifest.json ./build/README.md ${{ github.event.repository.name }}
+        cp ./build/* ${{ github.event.repository.name }}
         zip -r ${{ github.event.repository.name }}.zip ${{ github.event.repository.name }}
     # Create the release on github
     - name: Create Release
@@ -71,6 +71,17 @@ jobs:
         asset_path: ./build/main.js
         asset_name: main.js
         asset_content_type: text/javascript
+    # Upload the styles.css
+    - name: Upload styles.css
+      id: upload-css
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./build/styles.css
+        asset_name: styles.css
+        asset_content_type: text/css
     # Upload the manifest.json
     - name: Upload manifest.json
       id: upload-manifest
@@ -82,17 +93,6 @@ jobs:
         asset_path: ./manifest.json
         asset_name: manifest.json
         asset_content_type: application/json
-    # Upload the style.css
-    - name: Upload styles.css
-      id: upload-css
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./styles.css
-        asset_name: styles.css
-        asset_content_type: text/css
   brat:
     needs: build
     runs-on: ubuntu-latest
