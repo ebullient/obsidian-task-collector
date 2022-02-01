@@ -5,12 +5,14 @@ on:
     paths:
       - '**.ts'
       - '**.json'
+      - '**.scss'
       - '**.css'
   pull_request:
     branches: [ main ]
     paths:
       - '**.ts'
       - '**.json'
+      - '**.scss'
       - '**.css'
 
 jobs:
