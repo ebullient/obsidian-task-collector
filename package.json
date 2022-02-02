@@ -10,8 +10,7 @@
     "pretest": "eslint --ignore-path .gitignore src/",
     "test": "jest",
     "prettier": "prettier -w 'src/**/*.ts'",
-    "version": "auto-changelog -p && git add CHANGELOG.md",
-    "test-version": "auto-changelog -p",
+    "version": "auto-changelog -p",
     "brat-notes": "run() { auto-changelog --stdout --hide-credit --hide-empty-releases --template .github/changelog.hbs -v $1 --starting-version $1  > release-notes.md; }; run"
   },
   "keywords": [
@@ -44,6 +43,6 @@
   "auto-changelog": {
     "backfillLimit": false,
     "commitLimit": false,
-    "ignoreCommitPattern": "(changelog|release|🔨 brat release|Update README).*"
+    "ignoreCommitPattern": "(🔖|🔨|🧹|changelog|release|Update README).*"
   }
 }

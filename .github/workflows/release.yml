@@ -44,6 +44,11 @@ jobs:
         VERSION=$(grep '^  "version"' package.json | cut -d'"' -f4)
         echo $VERSION
 
+        if [ "${{ github.event.inputs.update-manifest }}" = "true" ]; then
+          sed -i 's|\(version":\) "[0-9\.]*"|\1 "'$VERSION'"|' manifest.json
+        fi
+
+        git add .
         git status
         git commit -m "🔖 $VERSION"
         git push
