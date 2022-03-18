@@ -43,6 +43,7 @@
 }
 #taskcollector-modal .modal .markdown-preview-view ul > li > .task-list-item-checkbox {
     margin-right: 4px;
+    margin-left: unset;
 }
 #taskcollector-modal .modal .markdown-preview-view nav {
   display: flex;
