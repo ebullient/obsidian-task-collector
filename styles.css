@@ -41,7 +41,7 @@
 #taskcollector-modal .modal .markdown-preview-view ul > li > span {
     font-family: var(--font-monospace);
 }
-#taskcollector-modal .modal .markdown-preview-view ul > li > .task-list-item-checkbox {
+#taskcollector-modal .modal .markdown-preview-view ul > li.task-list-item .task-list-item-checkbox {
     margin-right: 4px;
     margin-left: unset;
 }
