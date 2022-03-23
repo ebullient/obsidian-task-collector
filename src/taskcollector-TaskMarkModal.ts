@@ -71,7 +71,8 @@ export class TaskMarkModal extends Modal {
         const self = this;
         for (const character of choices) {
             const li = list.createEl("li", {
-                cls: "task-list-item " + (character == " " ? "" : " is-checked"),
+                cls:
+                    "task-list-item " + (character == " " ? "" : " is-checked"),
                 attr: {
                     "data-task": character,
                 },
