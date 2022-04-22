@@ -30,6 +30,19 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         );
 
         new Setting(this.containerEl)
+            .setName("Only support x for completed tasks")
+            .setDesc("Only use 'x' (lower case) to indicate completed tasks.")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(tempSettings.onlyLowercaseX)
+                    .onChange(async (value) => {
+                        tempSettings.onlyLowercaseX = value;
+                        this.taskCollector.updateSettings(tempSettings);
+                        await this.plugin.saveSettings();
+                    })
+            );
+
+        new Setting(this.containerEl)
             .setName("Support canceled tasks")
             .setDesc(
                 "Use a - to indicate canceled tasks. Canceled tasks are processed in the same way as completed tasks using options below."
@@ -54,16 +67,23 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     .setPlaceholder("> !?")
                     .setValue(tempSettings.incompleteTaskValues)
                     .onChange(async (value) => {
-                        if (value.contains("x") || value.contains("X")) {
+                        if (value.contains("x")) {
                             console.log(
-                                `Set of characters should not contain the marker for completed tasks: ${value}`
+                                `Set of characters should not contain the marker for completed tasks (x): ${value}`
+                            );
+                        } else if (
+                            !tempSettings.onlyLowercaseX &&
+                            value.contains("X")
+                        ) {
+                            console.log(
+                                `Set of characters should not contain the marker for canceled tasks (X): ${value}`
                             );
                         } else if (
                             tempSettings.supportCanceledTasks &&
                             value.contains("-")
                         ) {
                             console.log(
-                                `Set of characters should not contain the marker for canceled tasks: ${value}`
+                                `Set of characters should not contain the marker for canceled tasks (-): ${value}`
                             );
                         } else {
                             if (!value.contains(" ")) {
@@ -110,7 +130,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         new Setting(this.containerEl)
             .setName("Remove text in completed task")
             .setDesc(
-                "Text matching this regular expression should be removed from the task text. Be careful! Test your expression separately. The global flag, 'g' is used for a per-line match."
+                "Text matching this regular expression should be removed from the task text. Be careful! Test your expression first. The global flag, 'g' is used for a per-line match."
             )
             .addText((text) =>
                 text

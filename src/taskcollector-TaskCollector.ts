@@ -7,7 +7,6 @@ import {
 export class TaskCollector {
     settings: TaskCollectorSettings;
     initSettings: CompiledTasksSettings;
-    completedOrCanceled: RegExp;
     anyListItem: RegExp;
     anyTaskMark: RegExp;
     blockRef: RegExp;
@@ -15,7 +14,6 @@ export class TaskCollector {
 
     constructor(private app: App) {
         this.app = app;
-        this.completedOrCanceled = new RegExp(/^(\s*- \[)[xX-](\] .*)$/);
         this.anyListItem = new RegExp(/^(\s*- )([^\\[].*)$/);
         this.anyTaskMark = new RegExp(/^(\s*- \[).(\] .*)$/);
         this.blockRef = new RegExp(/^(.*?)( \^[A-Za-z0-9-]+)?$/);
@@ -77,9 +75,9 @@ export class TaskCollector {
             }
         }
 
-        const completedTasks = this.settings.supportCanceledTasks
-            ? "xX-"
-            : "xX";
+        const completedTasks =
+            (this.settings.onlyLowercaseX ? "x" : "xX") +
+            (this.settings.supportCanceledTasks ? "-" : "");
 
         if (this.settings.incompleteTaskValues.indexOf(" ") < 0) {
             this.settings.incompleteTaskValues =
@@ -277,7 +275,7 @@ export class TaskCollector {
             } else if (line.trim() === LOG_HEADING) {
                 inCompletedSection = true;
                 result.push(line);
-            } else if (this.completedOrCanceled.exec(line)) {
+            } else if (this.isCompletedTaskLine(line)) {
                 result.push(this.resetTaskLine(line));
             } else {
                 result.push(line);

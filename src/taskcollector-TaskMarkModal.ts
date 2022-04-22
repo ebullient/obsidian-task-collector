@@ -29,9 +29,9 @@ export class TaskMarkModal extends Modal {
         const selector = this.contentEl.createDiv(
             "taskcollector-selector markdown-preview-view"
         );
-        const completedTasks = this.taskCollector.settings.supportCanceledTasks
-            ? "xX-"
-            : "xX";
+        const completedTasks =
+            (this.taskCollector.settings.onlyLowercaseX ? "x" : "xX") +
+            (this.taskCollector.settings.supportCanceledTasks ? "-" : "");
 
         const completedList = selector.createEl("ul");
         completedList.addClass("contains-task-list");
