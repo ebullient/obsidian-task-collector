@@ -141,17 +141,20 @@ export class TaskCollector {
             marked = marked.replace(this.initSettings.removeRegExp, "");
         }
         if (this.settings.appendDateFormat) {
+            const strictLineEnding = lineText.endsWith("  ");
             let blockid = "";
             const match = this.blockRef.exec(marked);
             if (match && match[2]) {
                 marked = match[1];
                 blockid = match[2];
             }
-            // if there is text to append, append it
             if (!marked.endsWith(" ")) {
                 marked += " ";
             }
             marked += moment().format(this.settings.appendDateFormat) + blockid;
+            if ( strictLineEnding ) {
+                marked += "  ";
+            }
         }
         return marked;
     }
