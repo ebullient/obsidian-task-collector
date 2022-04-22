@@ -12,6 +12,7 @@ export interface TaskCollectorSettings {
     rightClickResetAll: boolean;
     rightClickToggleAll: boolean;
     completedAreaRemoveCheckbox: boolean;
+    onlyLowercaseX: boolean;
 }
 
 export const DEFAULT_SETTINGS: TaskCollectorSettings = {
@@ -28,6 +29,7 @@ export const DEFAULT_SETTINGS: TaskCollectorSettings = {
     rightClickResetAll: false,
     rightClickToggleAll: false,
     completedAreaRemoveCheckbox: false,
+    onlyLowercaseX: false,
 };
 
 export interface CompiledTasksSettings {

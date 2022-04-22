@@ -39,6 +39,16 @@ test('Test default settings', () => {
     expect(tc.resetTaskLine('- [-] something', ' ')).toEqual('- [ ] something');
 });
 
+test('Test only lowercase x', () => {
+    const tc = new TaskCollector(new App());
+    config.onlyLowercaseX = true;
+    tc.updateSettings(config);
+
+    expect('- [x] ').toMatch(tc.initSettings.completedTaskRegExp);
+    expect('- [X] ').not.toMatch(tc.initSettings.completedTaskRegExp);
+    expect('- [X] ').not.toMatch(tc.initSettings.incompleteTaskRegExp);
+});
+
 test('Complete > when included in incomplete pattern', () => {
     const tc = new TaskCollector(new App());
     config.incompleteTaskValues = ' >';
