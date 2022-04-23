@@ -54,3 +54,47 @@ test('Test move completed item', () => {
     expect(tc.moveCompletedTasksInFile(start))
         .toEqual("\n\n## Log\n- [x] a  \n    text continuation  \n    \n    Including a longer paragraph in the same bullet");
 });
+
+test('Test move completed item from callout', () => {
+    const tc = new TaskCollector(new App());
+    tc.updateSettings(config);
+
+    const start =
+    "> - [x] This line ends with two spaces  \n" +
+    ">    which allows text to wrap using strict markdown line wrapping syntax. This line should move, too.  \n" +
+    ">\n" +
+    ">    This is also how you support list items with multiple paragraphs (leading whitespace indent), and it should travel with the previous list item.\n" +
+    ">\n" +
+    "> - [ ] Another item";
+
+    const result =
+    "> - [ ] Another item\n" +
+    "\n" +
+    "## Log\n" +
+    "> - [x] This line ends with two spaces  \n" +
+    ">    which allows text to wrap using strict markdown line wrapping syntax. This line should move, too.  \n" +
+    ">\n" +
+    ">    This is also how you support list items with multiple paragraphs (leading whitespace indent), and it should travel with the previous list item.\n" +
+    ">";
+
+    expect(tc.moveCompletedTasksInFile(start)).toEqual(result);
+});
+
+test('Test move callout associated with completed item', () => {
+    const tc = new TaskCollector(new App());
+    tc.updateSettings(config);
+
+    const start =
+    "- [x] The nested quote should move with the item\n" +
+    "    > [!note]\n" +
+    "    > Nested blockquotes associated with it would also be moved.";
+
+    const result =
+    "\n" +
+    "## Log\n" +
+    "- [x] The nested quote should move with the item\n" +
+    "    > [!note]\n" +
+    "    > Nested blockquotes associated with it would also be moved.";
+
+    expect(tc.moveCompletedTasksInFile(start)).toEqual(result);
+});

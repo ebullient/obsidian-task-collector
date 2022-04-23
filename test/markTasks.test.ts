@@ -124,3 +124,15 @@ test('Create and Mark a normal list item', () => {
     expect(tc.markTaskInSource(start, '>', [0])).toEqual("- [>] one #task");
     expect(tc.markTaskInSource(start, ' ', [0])).toEqual("- [ ] one #task");
 });
+
+test('Mark tasks within a callout', () => {
+    const tc = new TaskCollector(new App());
+    config.supportCanceledTasks = true;
+    tc.updateSettings(config);
+
+    expect(tc.completeTaskLine('> - [ ] something', '-')).toEqual('> - [-] something');
+    expect(tc.resetTaskLine('> - [-] something', ' ')).toEqual('> - [ ] something');
+
+    expect(tc.completeTaskLine('> > - [x] something', 'x')).toEqual('> > - [x] something');
+    expect(tc.resetTaskLine('> > - [x] something', ' ')).toEqual('> > - [ ] something');
+});

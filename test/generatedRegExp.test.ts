@@ -15,6 +15,16 @@ afterEach(() => {
     Object.assign(config, DEFAULT_SETTINGS);
 });
 
+test('Match blockquotes / callouts', () => {
+    const tc = new TaskCollector(new App());
+    tc.updateSettings(config);
+
+    expect('> - [x] ').toMatch(tc.initSettings.completedTaskRegExp);
+    expect('> > - [x] ').toMatch(tc.initSettings.completedTaskRegExp);
+    expect('> - [ ] ').toMatch(tc.initSettings.incompleteTaskRegExp);
+    expect('> > - [ ] ').toMatch(tc.initSettings.incompleteTaskRegExp);
+});
+
 test('Match only lowercase x', () => {
     const tc = new TaskCollector(new App());
     config.onlyLowercaseX = true;

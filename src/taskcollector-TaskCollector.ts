@@ -9,15 +9,19 @@ export class TaskCollector {
     initSettings: CompiledTasksSettings;
     anyListItem: RegExp;
     anyTaskMark: RegExp;
+    blockQuote: RegExp;
     blockRef: RegExp;
+    continuation: RegExp;
     stripTask: RegExp;
 
     constructor(private app: App) {
         this.app = app;
-        this.anyListItem = new RegExp(/^(\s*- )([^\\[].*)$/);
-        this.anyTaskMark = new RegExp(/^(\s*- \[).(\] .*)$/);
+        this.anyListItem = new RegExp(/^([\s>]*- )([^\\[].*)$/);
+        this.anyTaskMark = new RegExp(/^([\s>]*- \[).(\] .*)$/);
+        this.blockQuote = new RegExp(/^(\s*>[\s>]*)(.*)$/);
         this.blockRef = new RegExp(/^(.*?)( \^[A-Za-z0-9-]+)?$/);
-        this.stripTask = new RegExp(/^(\s*-) \[.\] (.*)$/);
+        this.continuation = new RegExp(/^( {2,}|\t)/);
+        this.stripTask = new RegExp(/^([\s>]*-) \[.\] (.*)$/);
     }
 
     updateSettings(settings: TaskCollectorSettings): void {
@@ -120,11 +124,11 @@ export class TaskCollector {
     }
 
     tryCreateCompleteRegex(param: string): RegExp {
-        return new RegExp(`^(\\s*- \\[)[${param}](\\] .*)$`);
+        return new RegExp(`^([\\s>]*- \\[)[${param}](\\] .*)$`);
     }
 
     tryCreateIncompleteRegex(param: string): RegExp {
-        return new RegExp(`^(\\s*- \\[)[${param}](\\] .*)$`);
+        return new RegExp(`^([\\s>]*- \\[)[${param}](\\] .*)$`);
     }
 
     removeCheckboxFromLine(lineText: string): string {
@@ -152,7 +156,7 @@ export class TaskCollector {
                 marked += " ";
             }
             marked += moment().format(this.settings.appendDateFormat) + blockid;
-            if ( strictLineEnding ) {
+            if (strictLineEnding) {
                 marked += "  ";
             }
         }
@@ -241,6 +245,7 @@ export class TaskCollector {
 
     resetTaskLine(lineText: string, mark = " "): string {
         let marked = lineText.replace(this.anyTaskMark, "$1" + mark + "$2");
+        const strictLineEnding = lineText.endsWith("  ");
 
         let blockid = "";
         const match = this.blockRef.exec(marked);
@@ -252,6 +257,9 @@ export class TaskCollector {
             marked = marked.replace(this.initSettings.resetRegExp, "");
         }
         marked = marked.replace(/\s*$/, blockid);
+        if (strictLineEnding) {
+            marked += "  ";
+        }
         return marked;
     }
 
@@ -303,6 +311,7 @@ export class TaskCollector {
         const newTasks = [];
         let inCompletedSection = false;
         let inTask = false;
+        let inCallout = false;
         let completedItemsIndex = lines.length;
 
         for (let line of lines) {
@@ -318,17 +327,22 @@ export class TaskCollector {
                 completedItemsIndex = remaining.push(line);
                 remaining.push("%%%COMPLETED_ITEMS_GO_HERE%%%");
             } else {
-                const taskMatch = line.match(/^(\s*)- \[(.)\]/);
                 if (this.isCompletedTaskLine(line)) {
                     if (this.settings.completedAreaRemoveCheckbox) {
                         line = this.removeCheckboxFromLine(line);
                     }
                     inTask = true;
+                    inCallout = this.isCallout(line); // is task _inside_ the callout
                     newTasks.push(line);
-                } else if (inTask && !taskMatch && line.match(/^( {2,}|\t)/)) {
+                } else if (
+                    inTask &&
+                    !this.isTaskLine(line) &&
+                    this.isContinuation(line, inCallout)
+                ) {
                     newTasks.push(line);
                 } else {
                     inTask = false;
+                    inCallout = false;
                     remaining.push(line);
                 }
             }
@@ -350,5 +364,27 @@ export class TaskCollector {
 
     isIncompleteTaskLine(lineText: string): boolean {
         return this.initSettings.incompleteTaskRegExp.test(lineText);
+    }
+
+    isTaskLine(lineText: string): boolean {
+        return this.anyTaskMark.test(lineText);
+    }
+
+    isContinuation(lineText: string, inCallout: boolean): boolean {
+        if (inCallout) {
+            const match = this.blockQuote.exec(lineText);
+            if (match) {
+                return (
+                    match[1].endsWith(">") ||
+                    match[1].endsWith("  ") ||
+                    match[1].endsWith("\t")
+                );
+            }
+        }
+        return this.continuation.test(lineText);
+    }
+
+    isCallout(lineText: string): boolean {
+        return this.blockQuote.test(lineText);
     }
 }
