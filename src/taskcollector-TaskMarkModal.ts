@@ -1,7 +1,7 @@
 import { App, Modal } from "obsidian";
 import { TaskCollector } from "./taskcollector-TaskCollector";
 
-export function getMark(
+export function promptForMark(
     app: App,
     taskCollector: TaskCollector
 ): Promise<string> {
