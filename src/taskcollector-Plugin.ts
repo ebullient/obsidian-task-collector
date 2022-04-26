@@ -12,7 +12,9 @@ import {
 import { TaskCollector } from "./taskcollector-TaskCollector";
 import { DEFAULT_SETTINGS } from "./taskcollector-Settings";
 import { TaskCollectorSettingsTab } from "./taskcollector-SettingsTab";
-import { getMark } from "./taskcollector-TaskMarkModal";
+import { promptForMark } from "./taskcollector-TaskMarkModal";
+import { API } from "./@types/api";
+import { TaskCollectorApi } from "./taskcollector-Api";
 
 enum Icons {
     COMPLETE = "tc-complete-item",
@@ -26,6 +28,9 @@ enum Icons {
 
 export class TaskCollectorPlugin extends Plugin {
     taskCollector: TaskCollector;
+
+    /** External-facing plugin API. */
+    public api: API;
 
     async onload(): Promise<void> {
         console.log("loading Task Collector (TC)");
@@ -105,7 +110,7 @@ export class TaskCollectorPlugin extends Plugin {
             name: "Mark item",
             icon: Icons.MARK,
             editorCallback: async (editor: Editor, view: MarkdownView) => {
-                const mark = await getMark(this.app, this.taskCollector);
+                const mark = await promptForMark(this.app, this.taskCollector);
                 if (mark) {
                     this.markTaskOnLines(
                         mark,
@@ -152,6 +157,8 @@ export class TaskCollectorPlugin extends Plugin {
         this.addCommand(completeAllTasksCommand);
         this.addCommand(clearAllTasksCommand);
         this.registerHandlers();
+
+        this.api = new TaskCollectorApi(this.app, this.taskCollector);
     }
 
     getCurrentLinesFromEditor(editor: Editor): number[] {
@@ -176,7 +183,7 @@ export class TaskCollectorPlugin extends Plugin {
                     .setTitle("(TC) Mark Task")
                     .setIcon(Icons.MARK)
                     .onClick(async () => {
-                        const mark = await getMark(
+                        const mark = await promptForMark(
                             this.app,
                             this.taskCollector
                         );
