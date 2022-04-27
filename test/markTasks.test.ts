@@ -27,16 +27,16 @@ test('Test default settings', () => {
 
     expect('- [x] ').toMatch(tc.initSettings.completedTaskRegExp);
     expect('- [X] ').toMatch(tc.initSettings.completedTaskRegExp);
-    expect('- [-] ').not.toMatch(tc.initSettings.completedTaskRegExp);
+    expect('- [-] ').toMatch(tc.initSettings.completedTaskRegExp);
 
-    expect(tc.completeTaskLine('- [ ] something', 'x')).toEqual('- [x] something');
-    expect(tc.completeTaskLine('- [>] something', 'x')).toEqual('- [>] something'); // already "complete"
-    expect(tc.completeTaskLine('- [-] something', 'x')).toEqual('- [-] something'); // already "complete"
-    expect(tc.completeTaskLine('- [x] something', 'X')).toEqual('- [x] something'); // already "complete"
-    expect(tc.resetTaskLine('- [X] something', ' ')).toEqual('- [ ] something');
-    expect(tc.resetTaskLine('- [x] something', ' ')).toEqual('- [ ] something');
-    expect(tc.resetTaskLine('- [>] something', ' ')).toEqual('- [ ] something');
-    expect(tc.resetTaskLine('- [-] something', ' ')).toEqual('- [ ] something');
+    expect(tc.markTaskLine('- [ ] something', 'x')).toEqual('- [x] something');
+    expect(tc.markTaskLine('- [>] something', 'x')).toEqual('- [>] something'); // "complete" (with something unknown)
+    expect(tc.markTaskLine('- [-] something', 'x')).toEqual('- [-] something'); // already "complete"
+    expect(tc.markTaskLine('- [x] something', 'X')).toEqual('- [x] something'); // already "complete"
+    expect(tc.markTaskLine('- [X] something', ' ')).toEqual('- [ ] something');
+    expect(tc.markTaskLine('- [x] something', ' ')).toEqual('- [ ] something');
+    expect(tc.markTaskLine('- [>] something', ' ')).toEqual('- [ ] something'); // always reset
+    expect(tc.markTaskLine('- [-] something', ' ')).toEqual('- [ ] something'); // always reset
 });
 
 test('Complete > when included in incomplete pattern', () => {
@@ -49,8 +49,8 @@ test('Complete > when included in incomplete pattern', () => {
 
     expect('- [>] ').toMatch(tc.initSettings.incompleteTaskRegExp);
 
-    expect(tc.completeTaskLine('- [>] something', 'x')).toEqual('- [x] something');
-    expect(tc.resetTaskLine('- [>] something', ' ')).toEqual('- [ ] something');
+    expect(tc.markTaskLine('- [>] something', 'x')).toEqual('- [x] something');
+    expect(tc.markTaskLine('- [>] something', ' ')).toEqual('- [ ] something');
 });
 
 test('- behaves like completed item when cancelled items are enabled', () => {
@@ -62,10 +62,10 @@ test('- behaves like completed item when cancelled items are enabled', () => {
     expect('- [-] ').not.toMatch(tc.initSettings.incompleteTaskRegExp);
     expect('- [-] ').toMatch(tc.initSettings.completedTaskRegExp);
 
-    expect(tc.completeTaskLine('- [ ] something', '-')).toEqual('- [-] something');
-    expect(tc.completeTaskLine('- [-] something', 'x')).toEqual('- [-] something');
-    expect(tc.completeTaskLine('- [x] something', '-')).toEqual('- [x] something');
-    expect(tc.resetTaskLine('- [-] something', ' ')).toEqual('- [ ] something');
+    expect(tc.markTaskLine('- [ ] something', '-')).toEqual('- [-] something');
+    expect(tc.markTaskLine('- [-] something', 'x')).toEqual('- [-] something');
+    expect(tc.markTaskLine('- [x] something', '-')).toEqual('- [x] something');
+    expect(tc.markTaskLine('- [-] something', ' ')).toEqual('- [ ] something');
 });
 
 test('Test with empty incomplete pattern', () => {
@@ -73,14 +73,14 @@ test('Test with empty incomplete pattern', () => {
     config.incompleteTaskValues = '';
     tc.updateSettings(config);
 
-    expect(tc.completeTaskLine('- [ ] something', 'x')).toEqual('- [x] something');
-    expect(tc.completeTaskLine('- [>] something', 'x')).toEqual('- [>] something'); // already "complete"
-    expect(tc.completeTaskLine('- [-] something', 'x')).toEqual('- [-] something'); // already "complete"
-    expect(tc.completeTaskLine('- [x] something', 'X')).toEqual('- [x] something'); // already "complete"
-    expect(tc.resetTaskLine('- [X] something', ' ')).toEqual('- [ ] something');
-    expect(tc.resetTaskLine('- [x] something', ' ')).toEqual('- [ ] something');
-    expect(tc.resetTaskLine('- [>] something', ' ')).toEqual('- [ ] something');
-    expect(tc.resetTaskLine('- [-] something', ' ')).toEqual('- [ ] something');
+    expect(tc.markTaskLine('- [ ] something', 'x')).toEqual('- [x] something');
+    expect(tc.markTaskLine('- [>] something', 'x')).toEqual('- [>] something'); // already "complete"
+    expect(tc.markTaskLine('- [-] something', 'x')).toEqual('- [-] something'); // already "complete"
+    expect(tc.markTaskLine('- [x] something', 'X')).toEqual('- [x] something'); // already "complete"
+    expect(tc.markTaskLine('- [X] something', ' ')).toEqual('- [ ] something');
+    expect(tc.markTaskLine('- [x] something', ' ')).toEqual('- [ ] something');
+    expect(tc.markTaskLine('- [>] something', ' ')).toEqual('- [ ] something');
+    expect(tc.markTaskLine('- [-] something', ' ')).toEqual('- [ ] something');
 });
 
 test('Correctly mark complete or incomplete items in a selection', () => {
@@ -106,9 +106,9 @@ test('Remove checkbox from line', () => {
     const canceled = '- [-] something [x]';
     const incomplete = '- [ ] something [x]';
     const listItem = '- something [x]';
-    expect(tc.removeCheckboxFromLine(completed)).toEqual(listItem);
-    expect(tc.removeCheckboxFromLine(canceled)).toEqual(listItem);
-    expect(tc.removeCheckboxFromLine(incomplete)).toEqual(listItem);
+    expect(tc.markTaskLine(completed, "Backspace")).toEqual(listItem);
+    expect(tc.markTaskLine(canceled, "Backspace")).toEqual(listItem);
+    expect(tc.markTaskLine(incomplete, "Backspace")).toEqual(listItem);
 });
 
 test('Create and Mark a normal list item', () => {
@@ -130,9 +130,9 @@ test('Mark tasks within a callout', () => {
     config.supportCanceledTasks = true;
     tc.updateSettings(config);
 
-    expect(tc.completeTaskLine('> - [ ] something', '-')).toEqual('> - [-] something');
-    expect(tc.resetTaskLine('> - [-] something', ' ')).toEqual('> - [ ] something');
+    expect(tc.markTaskLine('> - [ ] something', '-')).toEqual('> - [-] something');
+    expect(tc.markTaskLine('> - [-] something', ' ')).toEqual('> - [ ] something');
 
-    expect(tc.completeTaskLine('> > - [x] something', 'x')).toEqual('> > - [x] something');
-    expect(tc.resetTaskLine('> > - [x] something', ' ')).toEqual('> > - [ ] something');
+    expect(tc.markTaskLine('> > - [x] something', 'x')).toEqual('> > - [x] something');
+    expect(tc.markTaskLine('> > - [x] something', ' ')).toEqual('> > - [ ] something');
 });
