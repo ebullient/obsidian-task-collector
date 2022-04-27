@@ -1,4 +1,4 @@
-export class API {
+export interface API {
     /**
      * Return completed task values as a string.
      * Will be "x", "xX", "x-", or "xX-"
@@ -27,5 +27,5 @@ export class API {
      *
      * Returns the selected "mark" (character) as a string.
      */
-     getMark(): Promise<string>;
+    getMark(): Promise<string>;
 }

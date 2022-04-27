@@ -29,13 +29,14 @@ export class TaskMarkModal extends Modal {
         const selector = this.contentEl.createDiv(
             "taskcollector-selector markdown-preview-view"
         );
-        const completedTasks =
-            (this.taskCollector.settings.onlyLowercaseX ? "x" : "xX") +
-            (this.taskCollector.settings.supportCanceledTasks ? "-" : "");
 
         const completedList = selector.createEl("ul");
         completedList.addClass("contains-task-list");
-        this.addTaskValues(completedList, completedTasks, true);
+        this.addTaskValues(
+            completedList,
+            this.taskCollector.initSettings.completedTasks,
+            true
+        );
 
         const list = selector.createEl("ul");
         list.addClass("contains-task-list");

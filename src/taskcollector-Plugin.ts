@@ -300,23 +300,28 @@ export class TaskCollectorPlugin extends Plugin {
     postProcessor: MarkdownPostProcessor;
     registerHandlers(): void {
         if (
-            this.taskCollector.initSettings.rightClickTaskMenu &&
+            this.taskCollector.initSettings.registerHandlers &&
             !this.handlersRegistered
         ) {
             this.handlersRegistered = true;
-            this.registerEvent(
-                (this.eventRef = this.app.workspace.on(
-                    "editor-menu",
-                    (menu, editor) => {
-                        //get line selections here
-                        this.buildMenu(
-                            menu,
-                            this.getCurrentLinesFromEditor(editor)
-                        );
-                    }
-                ))
-            );
 
+            // Source / Edit mode
+            if (this.taskCollector.initSettings.rightClickTaskMenu) {
+                this.registerEvent(
+                    (this.eventRef = this.app.workspace.on(
+                        "editor-menu",
+                        (menu, editor) => {
+                            //get line selections here
+                            this.buildMenu(
+                                menu,
+                                this.getCurrentLinesFromEditor(editor)
+                            );
+                        }
+                    ))
+                );
+            }
+
+            // Preview / Live Preview
             this.registerMarkdownPostProcessor(
                 (this.postProcessor = (el, ctx) => {
                     const checkboxes = el.querySelectorAll<HTMLInputElement>(
@@ -331,22 +336,49 @@ export class TaskCollectorPlugin extends Plugin {
 
                     for (const checkbox of Array.from(checkboxes)) {
                         const line = Number(checkbox.dataset.line);
-                        this.registerDomEvent(
-                            checkbox.parentElement,
-                            "contextmenu",
-                            (ev) => {
-                                ev.preventDefault();
-                                const view =
-                                    this.app.workspace.getActiveViewOfType(
-                                        MarkdownView
-                                    );
-                                if (view && view.editor) {
-                                    const menu = new Menu(this.app);
-                                    this.buildMenu(menu, [lineStart + line]);
-                                    menu.showAtMouseEvent(ev);
+
+                        if (
+                            this.taskCollector.initSettings.rightClickTaskMenu
+                        ) {
+                            this.registerDomEvent(
+                                checkbox.parentElement,
+                                "contextmenu",
+                                (ev) => {
+                                    ev.preventDefault();
+                                    const view =
+                                        this.app.workspace.getActiveViewOfType(
+                                            MarkdownView
+                                        );
+                                    if (view && view.editor) {
+                                        const menu = new Menu(this.app);
+                                        this.buildMenu(menu, [
+                                            lineStart + line,
+                                        ]);
+                                        menu.showAtMouseEvent(ev);
+                                    }
                                 }
-                            }
-                        );
+                            );
+                        }
+
+                        if (this.taskCollector.settings.previewOnClick) {
+                            this.registerDomEvent(
+                                checkbox,
+                                "click",
+                                async (ev) => {
+                                    ev.stopImmediatePropagation();
+                                    ev.preventDefault();
+                                    const mark = await promptForMark(
+                                        this.app,
+                                        this.taskCollector
+                                    );
+                                    if (mark) {
+                                        this.markTaskOnLines(mark, [
+                                            lineStart + line,
+                                        ]);
+                                    }
+                                }
+                            );
+                        }
                     }
                 })
             );
@@ -356,10 +388,15 @@ export class TaskCollectorPlugin extends Plugin {
     unregisterHandlers(): void {
         this.handlersRegistered = false;
 
-        this.app.workspace.offref(this.eventRef);
-        this.eventRef = null;
+        if (this.eventRef) {
+            this.app.workspace.offref(this.eventRef);
+            this.eventRef = null;
+        }
 
-        MarkdownPreviewRenderer.unregisterPostProcessor(this.postProcessor);
+        if (this.postProcessor) {
+            MarkdownPreviewRenderer.unregisterPostProcessor(this.postProcessor);
+            this.postProcessor = null;
+        }
     }
 
     onunload(): void {
@@ -372,6 +409,11 @@ export class TaskCollectorPlugin extends Plugin {
             DEFAULT_SETTINGS,
             await this.loadData()
         );
+        // remove old attribute
+        if (settings.rightClickReset) {
+            delete settings.rightClickReset;
+            await this.saveData(settings);
+        }
         this.taskCollector.updateSettings(settings);
     }
 
