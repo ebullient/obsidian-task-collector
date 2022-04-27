@@ -31,7 +31,9 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
 
         new Setting(this.containerEl)
             .setName("Only support x for completed tasks")
-            .setDesc("Only use 'x' (lower case) to indicate completed tasks.")
+            .setDesc(
+                "Only use 'x' (lower case) to indicate completed tasks (hide X (upper case))."
+            )
             .addToggle((toggle) =>
                 toggle
                     .setValue(tempSettings.onlyLowercaseX)
@@ -76,7 +78,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                             value.contains("X")
                         ) {
                             console.log(
-                                `Set of characters should not contain the marker for canceled tasks (X): ${value}`
+                                `Set of characters should not contain the marker for completed tasks (X): ${value}`
                             );
                         } else if (
                             tempSettings.supportCanceledTasks &&
@@ -100,7 +102,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         this.containerEl.createEl("h2", { text: "Completing tasks" });
 
         this.containerEl.createEl("p", {
-            text: "Completed tasks, marked by 'x', 'X' (and optionally '-' for canceled items) gain special treatment based on the settings below.",
+            text: "Completed tasks (and optionally '-' for canceled items) gain special treatment based on the settings below.",
         });
 
         new Setting(this.containerEl)
@@ -152,6 +154,21 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     })
             );
 
+        new Setting(this.containerEl)
+            .setName("Apply these settings to all tasks")
+            .setDesc(
+                "Append and remove text as configured above when marking tasks with anything other than a space (to reset)."
+            )
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(tempSettings.appendRemoveAllTasks)
+                    .onChange(async (value) => {
+                        tempSettings.appendRemoveAllTasks = value;
+                        this.taskCollector.updateSettings(tempSettings);
+                        await this.plugin.saveSettings();
+                    })
+            );
+
         this.containerEl.createEl("h2", { text: "Moving completed tasks" });
 
         new Setting(this.containerEl)
@@ -185,16 +202,35 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     })
             );
 
-        this.containerEl.createEl("h2", { text: "Right-click Menu items" });
+        this.containerEl.createEl("h2", {
+            text: "Marking items using menus",
+        });
 
         this.containerEl.createEl("p", {
             text: "Task Collector creates commands that can be bound to hotkeys or accessed using slash commands for marking tasks complete (or canceled) and resetting tasks to an incomplete state. The following settings add right click context menu items for those commands.",
         });
 
         new Setting(this.containerEl)
+            .setName(
+                "Preview / Live preview: Show the selection menu when a checkbox is clicked"
+            )
+            .setDesc(
+                "Display a panel that allows you to select (with mouse or keyboard) the value to assign when you click the task. The selected value will determine follow-on actions: complete, cancel, or reset."
+            )
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(tempSettings.previewOnClick)
+                    .onChange(async (value) => {
+                        tempSettings.previewOnClick = value;
+                        this.taskCollector.updateSettings(tempSettings);
+                        await this.plugin.saveSettings();
+                    })
+            );
+
+        new Setting(this.containerEl)
             .setName("Add menu item for marking a task")
             .setDesc(
-                "Add an item to the right-click menu in edit mode to mark the task _on the current line (or within the current selection)_. This menu item will trigger a quick pop-up modal to select the desired mark value. The selected value will determine follow-on actions: complete, cancel, or reset."
+                "Add an item to the right-click menu in edit mode to mark the task on the current line (or within the current selection). This menu item will trigger a quick pop-up modal to select the desired mark value. The selected value will determine follow-on actions: complete, cancel, or reset."
             )
             .addToggle((toggle) =>
                 toggle
@@ -209,7 +245,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         new Setting(this.containerEl)
             .setName("Add menu item for completing a task")
             .setDesc(
-                "Add an item to the right-click menu in edit mode to mark the task _on the current line (or within the current selection)_ complete. If canceled items are supported, an additional menu item will be added to mark selected tasks as canceled."
+                "Add an item to the right-click menu in edit mode to mark the task on the current line (or within the current selection) complete. If canceled items are supported, an additional menu item will be added to mark selected tasks as canceled."
             )
             .addToggle((toggle) =>
                 toggle
@@ -224,7 +260,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         new Setting(this.containerEl)
             .setName("Add menu item for resetting a task")
             .setDesc(
-                "Add an item to the right-click menu in edit mode to reset the task _on the current line (or within the current selection)_."
+                "Add an item to the right-click menu in edit mode to reset the task on the current line (or within the current selection)."
             )
             .addToggle((toggle) =>
                 toggle
@@ -239,7 +275,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         new Setting(this.containerEl)
             .setName("Add menu items for completing all tasks")
             .setDesc(
-                "Add an item to the right-click menu in edit mode to mark _all_ incomplete tasks in the current document complete."
+                "Add an item to the right-click menu in edit mode to mark all incomplete tasks in the current document complete."
             )
             .addToggle((toggle) =>
                 toggle
@@ -254,7 +290,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         new Setting(this.containerEl)
             .setName("Add menu item for resetting all tasks")
             .setDesc(
-                "Add an item to the right-click menu to reset _all_ completed (or canceled) tasks."
+                "Add an item to the right-click menu to reset all completed (or canceled) tasks."
             )
             .addToggle((toggle) =>
                 toggle
@@ -269,7 +305,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         new Setting(this.containerEl)
             .setName("Add menu item for moving all completed tasks")
             .setDesc(
-                "Add an item to the right-click menu to move _all_ completed (or canceled) tasks."
+                "Add an item to the right-click menu to move all completed (or canceled) tasks."
             )
             .addToggle((toggle) =>
                 toggle
