@@ -1,4 +1,4 @@
-import { App, Editor, moment } from "obsidian";
+import { App, moment } from "obsidian";
 import {
     TaskCollectorSettings,
     CompiledTasksSettings,
@@ -8,6 +8,7 @@ export class TaskCollector {
     settings: TaskCollectorSettings;
     initSettings: CompiledTasksSettings;
     anyListItem: RegExp;
+    taskMark: RegExp;
     anyTaskMark: RegExp;
     blockQuote: RegExp;
     blockRef: RegExp;
@@ -17,7 +18,7 @@ export class TaskCollector {
     constructor(private app: App) {
         this.app = app;
         this.anyListItem = new RegExp(/^([\s>]*- )([^\\[].*)$/);
-        this.anyTaskMark = new RegExp(/^([\s>]*- \[).(\] .*)$/);
+        this.anyTaskMark = new RegExp(/^([\s>]*- \[)(.)(\] .*)$/);
         this.blockQuote = new RegExp(/^(\s*>[\s>]*)(.*)$/);
         this.blockRef = new RegExp(/^(.*?)( \^[A-Za-z0-9-]+)?$/);
         this.continuation = new RegExp(/^( {2,}|\t)/);
@@ -77,6 +78,7 @@ export class TaskCollector {
                     );
                 }
             }
+            momentMatchString = `\\s*${momentMatchString}\\s*`;
         }
 
         const completedTasks =
@@ -105,6 +107,8 @@ export class TaskCollector {
                 this.settings.incompleteTaskValues
             ),
             rightClickTaskMenu: rightClickTaskMenu,
+            registerHandlers:
+                rightClickTaskMenu || this.settings.previewOnClick,
             completedTasks: completedTasks,
             completedTaskRegExp: this.tryCreateCompleteRegex(completedTasks),
         };
@@ -119,28 +123,26 @@ export class TaskCollector {
         return param ? new RegExp(param, "g") : null;
     }
 
-    tryCreateResetRegex(param: string): RegExp {
+    private tryCreateResetRegex(param: string): RegExp {
         return param ? new RegExp(param + "( \\^[A-Za-z0-9-]+)?$") : null;
     }
 
-    tryCreateCompleteRegex(param: string): RegExp {
+    private tryCreateCompleteRegex(param: string): RegExp {
         return new RegExp(`^([\\s>]*- \\[)[${param}](\\] .*)$`);
     }
 
-    tryCreateIncompleteRegex(param: string): RegExp {
+    private tryCreateIncompleteRegex(param: string): RegExp {
         return new RegExp(`^([\\s>]*- \\[)[${param}](\\] .*)$`);
     }
 
-    removeCheckboxFromLine(lineText: string): string {
+    private removeCheckboxFromLine(lineText: string): string {
         return lineText.replace(this.stripTask, "$1 $2");
     }
 
     /** _Complete_ an item: append completion text, remove configured strings */
-    completeTaskLine(lineText: string, mark: string): string {
-        let marked = lineText.replace(
-            this.initSettings.incompleteTaskRegExp,
-            "$1" + mark + "$2"
-        );
+    private completeTaskLine(lineText: string, mark = "x"): string {
+        console.debug("TC: complete task with %s: %s", mark, lineText);
+        let marked = lineText.replace(this.anyTaskMark, `$1${mark}$3`);
         if (this.initSettings.removeRegExp) {
             marked = marked.replace(this.initSettings.removeRegExp, "");
         }
@@ -161,18 +163,6 @@ export class TaskCollector {
             }
         }
         return marked;
-    }
-
-    completeEditorLineTask(editor: Editor, mark: string, i: number): void {
-        const lineText = editor.getLine(i);
-
-        // Does this line indicate an incomplete task?
-        const incompleteTask =
-            this.initSettings.incompleteTaskRegExp.exec(lineText);
-        if (incompleteTask) {
-            const marked = this.completeTaskLine(lineText, mark);
-            editor.setLine(i, marked);
-        }
     }
 
     markAllTasksComplete(source: string, mark: string): string {
@@ -196,79 +186,82 @@ export class TaskCollector {
     ): string {
         const split = source.split("\n");
         for (const n of lines) {
-            // if it isn't a task...
-            if (!this.anyTaskMark.test(split[n])) {
-                const match = this.anyListItem.exec(split[n]);
-                if (match && match[2]) {
-                    console.debug(
-                        "TC: list item, convert to a task %s",
-                        split[n]
-                    );
-                    // it's a list item! let's make it a task, and carry on
-                    split[n] = match[1] + "[ ] " + match[2];
-                } else {
-                    console.debug("TC: not a task or list item %s", split[n]);
-                    // not a list item: nothing else to do with this line
-                    continue;
-                }
-            }
-
-            if (this.initSettings.completedTasks.indexOf(mark) >= 0) {
-                if (this.isIncompleteTaskLine(split[n])) {
-                    console.debug(
-                        "TC: complete task with %s: %s",
-                        mark,
-                        split[n]
-                    );
-                    split[n] = this.completeTaskLine(split[n], mark);
-                } else {
-                    console.debug(
-                        "TC: task already completed (%s): %s",
-                        mark,
-                        split[n]
-                    );
-                }
-            } else if (this.settings.incompleteTaskValues.indexOf(mark) >= 0) {
-                console.debug("TC: reset task with %s: %s", mark, split[n]);
-                split[n] = this.resetTaskLine(split[n], mark);
-            } else if (mark === "Backspace") {
-                split[n] = this.removeCheckboxFromLine(split[n]);
-            } else {
-                console.debug(
-                    "TC: unrecognized mark %s, check configuration settings",
-                    mark
-                );
-            }
+            split[n] = this.markTaskLine(split[n], mark);
         }
         return split.join("\n");
     }
 
-    resetTaskLine(lineText: string, mark = " "): string {
-        let marked = lineText.replace(this.anyTaskMark, "$1" + mark + "$2");
+    markTaskLine(lineText: string, mark: string): string {
+        const taskMatch = this.anyTaskMark.exec(lineText);
+
+        if (mark === "Backspace") {
+            lineText = this.removeCheckboxFromLine(lineText);
+        } else if (taskMatch) {
+            const completeMark =
+                this.initSettings.completedTasks.indexOf(mark) >= 0;
+
+            if (this.isCompletedTaskLine(lineText)) {
+                if (completeMark) {
+                    console.log("TC: task already completed: %s", lineText);
+                } else {
+                    lineText = this.resetTaskLine(lineText, mark);
+                }
+            } else if (this.isIncompleteTaskLine(lineText)) {
+                if (completeMark) {
+                    lineText = this.settings.appendRemoveAllTasks
+                        ? this.resetTaskLine(lineText, mark)
+                        : this.completeTaskLine(lineText, mark);
+                } else {
+                    lineText = this.resetTaskLine(lineText, mark);
+                }
+            } else if (mark === " ") {
+                lineText = this.resetTaskLine(lineText, mark);
+            } else {
+                console.log(
+                    "TC: unknown mark (%s), leaving unchanged: %s",
+                    mark,
+                    lineText
+                );
+            }
+        } else if (mark !== "Backspace") {
+            const match = this.anyListItem.exec(lineText);
+            if (match && match[2]) {
+                console.debug("TC: list item, convert to a task %s", lineText);
+                // convert to a task, and then mark
+                lineText = this.markTaskLine(
+                    `${match[1]}[ ] ${match[2]}`,
+                    mark
+                );
+            } else {
+                console.debug("TC: not a task or list item %s", lineText);
+            }
+        }
+        return lineText;
+    }
+
+    private resetTaskLine(lineText: string, mark = " "): string {
+        console.debug("TC: reset task with %s: %s", mark, lineText);
+        lineText = lineText.replace(this.anyTaskMark, `$1${mark}$3`);
         const strictLineEnding = lineText.endsWith("  ");
 
         let blockid = "";
-        const match = this.blockRef.exec(marked);
+        const match = this.blockRef.exec(lineText);
         if (match && match[2]) {
-            marked = match[1];
+            lineText = match[1];
             blockid = match[2];
         }
         if (this.initSettings.resetRegExp) {
-            marked = marked.replace(this.initSettings.resetRegExp, "");
+            lineText = lineText.replace(this.initSettings.resetRegExp, "");
         }
-        marked = marked.replace(/\s*$/, blockid);
+        lineText = lineText.replace(/\s*$/, blockid);
+        if (this.settings.appendRemoveAllTasks && mark !== " ") {
+            // clear previous appended text
+            lineText = this.completeTaskLine(lineText, mark);
+        }
         if (strictLineEnding) {
-            marked += "  ";
+            lineText += "  ";
         }
-        return marked;
-    }
-
-    resetTaskOnLine(editor: Editor, i: number, mark: string): void {
-        const lineText = editor.getLine(i);
-
-        // remove the guard: just change the value
-        const marked = this.resetTaskLine(lineText, mark);
-        editor.setLine(i, marked);
+        return lineText;
     }
 
     resetAllTasks(source: string): string {
@@ -358,19 +351,19 @@ export class TaskCollector {
         return result.join("\n");
     }
 
-    isCompletedTaskLine(lineText: string): boolean {
+    private isCompletedTaskLine(lineText: string): boolean {
         return this.initSettings.completedTaskRegExp.test(lineText);
     }
 
-    isIncompleteTaskLine(lineText: string): boolean {
+    private isIncompleteTaskLine(lineText: string): boolean {
         return this.initSettings.incompleteTaskRegExp.test(lineText);
     }
 
-    isTaskLine(lineText: string): boolean {
+    private isTaskLine(lineText: string): boolean {
         return this.anyTaskMark.test(lineText);
     }
 
-    isContinuation(lineText: string, inCallout: boolean): boolean {
+    private isContinuation(lineText: string, inCallout: boolean): boolean {
         if (inCallout) {
             const match = this.blockQuote.exec(lineText);
             if (match) {
@@ -384,7 +377,7 @@ export class TaskCollector {
         return this.continuation.test(lineText);
     }
 
-    isCallout(lineText: string): boolean {
+    private isCallout(lineText: string): boolean {
         return this.blockQuote.test(lineText);
     }
 }
