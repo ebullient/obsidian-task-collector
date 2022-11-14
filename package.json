@@ -28,7 +28,7 @@
     "@types/node": "^18.11.9",
     "@typescript-eslint/eslint-plugin": "^4.33.0",
     "@typescript-eslint/parser": "^4.33.0",
-    "auto-changelog": "^2.3.0",
+    "auto-changelog": "^2.4.0",
     "builtin-modules": "^3.2.0",
     "esbuild": "0.13.12",
     "eslint": "^7.32.0",
