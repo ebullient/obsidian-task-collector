@@ -30,7 +30,7 @@
     "@typescript-eslint/parser": "^4.33.0",
     "auto-changelog": "^2.4.0",
     "builtin-modules": "^3.3.0",
-    "esbuild": "0.16.10",
+    "esbuild": "0.16.12",
     "eslint": "^7.32.0",
     "jest": "^27.2.4",
     "moment": "^2.29.4",
