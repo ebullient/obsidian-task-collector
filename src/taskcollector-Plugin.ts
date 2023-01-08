@@ -344,6 +344,7 @@ export class TaskCollectorPlugin extends Plugin {
                                 checkbox.parentElement,
                                 "contextmenu",
                                 (ev) => {
+                                    ev.stopImmediatePropagation();
                                     ev.preventDefault();
                                     const view =
                                         this.app.workspace.getActiveViewOfType(
