@@ -212,6 +212,19 @@ describe('Set an append date', () => {
 
         expect(tc.markTaskLine(forwarded, 'x')).toMatch(/^- \[x\] something\s+\(\d+-\d+-\d+\)  $/);
     });
+
+    test('Deal with lots of square brackets', () => {
+        const tc = new TaskCollector(new App());
+        config.appendDateFormat = '[[completion::]YYYY-MM-DD[] ✅ ]YYYY-MM-DD[T]HH:mm';
+        config.appendRemoveAllTasks = true;
+        config.incompleteTaskValues = '>';
+        tc.updateSettings(config);
+
+        const completed = tc.markTaskLine('- [ ] something', 'x');
+        expect(completed).toMatch(tc.initSettings.resetRegExp);
+        expect(completed).toMatch(/^- \[x\] something \[completion::\d+-\d+-\d+\] ✅ \d+-\d+-\d+T\d+:\d+$/);
+        expect(tc.markTaskLine(completed, ' ')).toEqual('- [ ] something');
+    });
 });
 
 test('Apply text stripping/reset rules to all tasks', () => {

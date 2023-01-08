@@ -30,54 +30,40 @@ export class TaskCollector {
         let momentMatchString = null;
 
         if (settings.appendDateFormat) {
-            // YYYY-MM-DD or DD MM, YYYY or .. [(]YYYY-MM-DD[)] where the stuff in the brackets is literal
-            const literals = [];
-
-            const regex1 = RegExp("(\\[.*?\\]\\]?)", "g");
-            let match;
-            let i = 0;
-
             momentMatchString = settings.appendDateFormat;
-            while ((match = regex1.exec(momentMatchString)) !== null) {
-                momentMatchString = momentMatchString.replace(
-                    match[0],
-                    `%$${i}$%`
-                );
-                literals.push(
-                    match[0]
-                        .substring(1, match[0].length - 1)
-                        .replace(/\(/g, "\\(") // escape a naked (
-                        .replace(/\)/g, "\\)") // escape a naked )
-                        .replace(/\[/g, "\\[") // escape a naked [
-                        .replace(/\]/g, "\\]")
-                ); // escape a naked ]
-                i++;
-            }
 
-            // Now let's replace moment date formatting
-            momentMatchString = momentMatchString
-                .replace("YYYY", "\\d{4}") // 4-digit year
-                .replace("YY", "\\d{2}") // 2-digit year
-                .replace("DD", "\\d{2}") // day of month, padded
-                .replace("D", "\\d{1,2}") // day of month, not padded
-                .replace("MMM", "[A-Za-z]{3}") // month, abbrv
-                .replace("MM", "\\d{2}") // month, padded
-                .replace("M", "\\d{1,2}") // month, not padded
-                .replace("HH", "\\d{2}") // 24-hour, padded
-                .replace("H", "\\d{1,2}") // 24-hour, not padded
-                .replace("hh", "\\d{2}") // 12-hour, padded
-                .replace("h", "\\d{1,2}") // 12-hour, not padded
-                .replace("mm", "\\d{2}") // minute, padded
-                .replace("m", "\\d{1,2}"); // minute, not padded
+            const onlyFormattingTokens = /^(Y|D|M|H|h|m)+$/;
+            const formattingTokens =
+                /(\[[^[]*\])|(\\)?([Hh]mm(ss)?|Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Qo?|N{1,5}|YYYYYY|YYYYY|YYYY|YY|y{2,4}|yo?|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|kk?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g;
 
-            if (literals.length > 0) {
-                for (let i = 0; i < literals.length; i++) {
-                    momentMatchString = momentMatchString.replace(
-                        `%$${i}$%`,
-                        literals[i]
+            const array = momentMatchString.match(formattingTokens);
+            for (let i = 0, length = array.length; i < length; i++) {
+                const segment = array[i];
+                if (onlyFormattingTokens.test(segment)) {
+                    array[i] = segment
+                        .replace(/YYYY/g, "\\d{4}") // 4-digit year
+                        .replace(/YY/g, "\\d{2}") // 2-digit year
+                        .replace(/DD/g, "\\d{2}") // day of month, padded
+                        .replace(/D/g, "\\d{1,2}") // day of month, not padded
+                        .replace(/MMM/g, "[A-Za-z]{3}") // month, abbrv
+                        .replace(/MM/g, "\\d{2}") // month, padded
+                        .replace(/M/g, "\\d{1,2}") // month, not padded
+                        .replace(/HH/g, "\\d{2}") // 24-hour, padded
+                        .replace(/H/g, "\\d{1,2}") // 24-hour, not padded
+                        .replace(/hh/g, "\\d{2}") // 12-hour, padded
+                        .replace(/h/g, "\\d{1,2}") // 12-hour, not padded
+                        .replace(/mm/g, "\\d{2}") // minute, padded
+                        .replace(/m/g, "\\d{1,2}"); // minute, not padded;
+                } else if (segment.match(/\[[\s\S]/)) {
+                    array[i] = this.replaceLiterals(
+                        segment.replace(/^\[|\]$/g, "")
                     );
+                } else {
+                    array[i] = this.replaceLiterals(segment);
                 }
             }
+
+            momentMatchString = array.join("");
             momentMatchString = `\\s*${momentMatchString}\\s*`;
         }
 
@@ -379,5 +365,13 @@ export class TaskCollector {
 
     private isCallout(lineText: string): boolean {
         return this.blockQuote.test(lineText);
+    }
+
+    private replaceLiterals(segment: string) {
+        return segment
+            .replace(/\(/g, "\\(") // escape literal (
+            .replace(/\)/g, "\\)") // escape literal )
+            .replace(/\[/g, "\\[") // escape literal [
+            .replace(/\]/g, "\\]"); // escape literal ]
     }
 }
