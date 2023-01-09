@@ -1,138 +1,74 @@
-import { App } from "obsidian";
 import { TaskCollector } from "../src/taskcollector-TaskCollector";
-import { DEFAULT_SETTINGS, TaskCollectorSettings } from "../src/taskcollector-Settings";
+import { TaskCollectorSettings } from "../src/@types/settings";
 import * as Moment from 'moment';
+import { COMPLETE_NAME, DEFAULT_COLLECTION, DEFAULT_NAME, DEFAULT_SETTINGS, GROUP_COMPLETE, GROUP_DEFAULT } from "../src/taskcollector-Constants";
 
 jest.mock('obsidian', () => ({
     App: jest.fn().mockImplementation(),
     moment: () => Moment()
 }));
 
-const config: TaskCollectorSettings = Object.assign({}, DEFAULT_SETTINGS);;
+let tc = new TaskCollector();
+let config: TaskCollectorSettings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 
 afterEach(() => {
-    // reset config to defaults
-    Object.assign(config, DEFAULT_SETTINGS);
+    tc = new TaskCollector();
+    config =  JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 });
 
 test('Test default settings', () => {
-    const tc = new TaskCollector(new App());
-    tc.updateSettings(config);
+    tc.init(config);
 
-    expect(tc.initSettings.removeRegExp).toBeNull();
-    expect(tc.initSettings.resetRegExp).toBeNull();
+    expect(tc.cache.removeExpr[COMPLETE_NAME]).toBeUndefined();
+    expect(tc.cache.undoExpr[COMPLETE_NAME]).toBeUndefined();
 
-    expect('- [ ] ').toMatch(tc.initSettings.incompleteTaskRegExp);
-    expect('- [>] ').not.toMatch(tc.initSettings.incompleteTaskRegExp);
-
-    expect('- [x] ').toMatch(tc.initSettings.completedTaskRegExp);
-    expect('- [X] ').toMatch(tc.initSettings.completedTaskRegExp);
-    expect('- [-] ').toMatch(tc.initSettings.completedTaskRegExp);
-
-    expect(tc.markTaskLine('- [ ] something', 'x')).toEqual('- [x] something');
-    expect(tc.markTaskLine('- [>] something', 'x')).toEqual('- [>] something'); // "complete" (with something unknown)
-    expect(tc.markTaskLine('- [-] something', 'x')).toEqual('- [-] something'); // already "complete"
-    expect(tc.markTaskLine('- [x] something', 'X')).toEqual('- [x] something'); // already "complete"
-    expect(tc.markTaskLine('- [X] something', ' ')).toEqual('- [ ] something');
-    expect(tc.markTaskLine('- [x] something', ' ')).toEqual('- [ ] something');
-    expect(tc.markTaskLine('- [>] something', ' ')).toEqual('- [ ] something'); // always reset
-    expect(tc.markTaskLine('- [-] something', ' ')).toEqual('- [ ] something'); // always reset
+    expect(tc.updateLineText('- [ ] something', 'x')).toEqual('- [x] something');
+    expect(tc.updateLineText('- [x] something', '-')).toEqual('- [-] something');
+    expect(tc.updateLineText('- [-] something', '>')).toEqual('- [>] something');
+    expect(tc.updateLineText('- [>] something', ' ')).toEqual('- [ ] something');
 });
 
-test('Complete > when included in incomplete pattern', () => {
-    const tc = new TaskCollector(new App());
-    config.incompleteTaskValues = ' >';
-    tc.updateSettings(config);
-
-    expect(tc.initSettings.removeRegExp).toBeNull();
-    expect(tc.initSettings.resetRegExp).toBeNull();
-
-    expect('- [>] ').toMatch(tc.initSettings.incompleteTaskRegExp);
-
-    expect(tc.markTaskLine('- [>] something', 'x')).toEqual('- [x] something');
-    expect(tc.markTaskLine('- [>] something', ' ')).toEqual('- [ ] something');
-});
-
-test('- behaves like completed item when cancelled items are enabled', () => {
-    const tc = new TaskCollector(new App());
-    config.supportCanceledTasks = true;
-    tc.updateSettings(config);
-
-    expect(tc.initSettings.completedTaskRegExp).not.toBeNull();
-    expect('- [-] ').not.toMatch(tc.initSettings.incompleteTaskRegExp);
-    expect('- [-] ').toMatch(tc.initSettings.completedTaskRegExp);
-
-    expect(tc.markTaskLine('- [ ] something', '-')).toEqual('- [-] something');
-    expect(tc.markTaskLine('- [-] something', 'x')).toEqual('- [-] something');
-    expect(tc.markTaskLine('- [x] something', '-')).toEqual('- [x] something');
-    expect(tc.markTaskLine('- [-] something', ' ')).toEqual('- [ ] something');
-});
-
-test('Test with empty incomplete pattern', () => {
-    const tc = new TaskCollector(new App());
-    config.incompleteTaskValues = '';
-    tc.updateSettings(config);
-
-    expect(tc.markTaskLine('- [ ] something', 'x')).toEqual('- [x] something');
-    expect(tc.markTaskLine('- [>] something', 'x')).toEqual('- [>] something'); // already "complete"
-    expect(tc.markTaskLine('- [-] something', 'x')).toEqual('- [-] something'); // already "complete"
-    expect(tc.markTaskLine('- [x] something', 'X')).toEqual('- [x] something'); // already "complete"
-    expect(tc.markTaskLine('- [X] something', ' ')).toEqual('- [ ] something');
-    expect(tc.markTaskLine('- [x] something', ' ')).toEqual('- [ ] something');
-    expect(tc.markTaskLine('- [>] something', ' ')).toEqual('- [ ] something');
-    expect(tc.markTaskLine('- [-] something', ' ')).toEqual('- [ ] something');
-});
-
-test('Correctly mark complete or incomplete items in a selection', () => {
-    const tc = new TaskCollector(new App());
-    config.incompleteTaskValues = ' >';
-    config.supportCanceledTasks = true;
-    config.removeExpression = "#(task|todo)";
-    tc.updateSettings(config);
+test('Correctly mark items in a selection', () => {
+    tc.init(config);
 
     const start = "- [ ] one\n- [>] two\n- [-] three\n- [x] four";
-    expect(tc.markTaskInSource(start, 'x', [0, 1, 2, 3])).toEqual("- [x] one\n- [x] two\n- [-] three\n- [x] four");
-    expect(tc.markTaskInSource(start, '-', [0, 1, 2, 3])).toEqual("- [-] one\n- [-] two\n- [-] three\n- [x] four");
-    expect(tc.markTaskInSource(start, '>', [0, 1, 2, 3])).toEqual("- [>] one\n- [>] two\n- [>] three\n- [>] four");
-    expect(tc.markTaskInSource(start, ' ', [0, 1, 2, 3])).toEqual("- [ ] one\n- [ ] two\n- [ ] three\n- [ ] four");
+    expect(tc.markSelectedTask(start, 'x', [0, 1, 2, 3])).toEqual("- [x] one\n- [x] two\n- [x] three\n- [x] four");
+    expect(tc.markSelectedTask(start, '-', [0, 1, 2, 3])).toEqual("- [-] one\n- [-] two\n- [-] three\n- [-] four");
+    expect(tc.markSelectedTask(start, '>', [0, 1, 2, 3])).toEqual("- [>] one\n- [>] two\n- [>] three\n- [>] four");
+    expect(tc.markSelectedTask(start, ' ', [0, 1, 2, 3])).toEqual("- [ ] one\n- [ ] two\n- [ ] three\n- [ ] four");
 });
 
-test('Remove checkbox from line', () => {
-    const tc = new TaskCollector(new App());
-    config.completedAreaRemoveCheckbox = true;
-    tc.updateSettings(config);
+test('Remove checkbox from line with backspace from modal', () => {
+    config.groups[COMPLETE_NAME].collection = Object.assign({}, DEFAULT_COLLECTION);
+    config.groups[COMPLETE_NAME].collection.removeCheckbox = true;
+    tc.init(config);
 
     const completed = '- [x] something [x]';
-    const canceled = '- [-] something [x]';
     const incomplete = '- [ ] something [x]';
     const listItem = '- something [x]';
-    expect(tc.markTaskLine(completed, "Backspace")).toEqual(listItem);
-    expect(tc.markTaskLine(canceled, "Backspace")).toEqual(listItem);
-    expect(tc.markTaskLine(incomplete, "Backspace")).toEqual(listItem);
+    expect(tc.updateLineText(completed, "Backspace")).toEqual(listItem);
+    expect(tc.updateLineText(incomplete, "Backspace")).toEqual(listItem);
 });
 
 test('Create and Mark a normal list item', () => {
-    const tc = new TaskCollector(new App());
-    config.supportCanceledTasks = true;
-    config.incompleteTaskValues = ' >';
-    config.removeExpression = "#(task|todo)";
-    tc.updateSettings(config);
+    config.groups[DEFAULT_NAME].marks += '>';
+    config.groups[COMPLETE_NAME].marks += '-';
+    config.groups[COMPLETE_NAME].removeExpr = "#(task|todo)";
+    tc.init(config);
 
     const start = "- one #task";
-    expect(tc.markTaskInSource(start, 'x', [0])).toEqual("- [x] one ");
-    expect(tc.markTaskInSource(start, '-', [0])).toEqual("- [-] one ");
-    expect(tc.markTaskInSource(start, '>', [0])).toEqual("- [>] one #task");
-    expect(tc.markTaskInSource(start, ' ', [0])).toEqual("- [ ] one #task");
+    expect(tc.markSelectedTask(start, 'x', [0])).toEqual("- [x] one");
+    expect(tc.markSelectedTask(start, '-', [0])).toEqual("- [-] one");
+    expect(tc.markSelectedTask(start, '>', [0])).toEqual("- [>] one #task");
+    expect(tc.markSelectedTask(start, ' ', [0])).toEqual("- [ ] one #task");
 });
 
 test('Mark tasks within a callout', () => {
-    const tc = new TaskCollector(new App());
-    config.supportCanceledTasks = true;
-    tc.updateSettings(config);
+    tc.init(config);
 
-    expect(tc.markTaskLine('> - [ ] something', '-')).toEqual('> - [-] something');
-    expect(tc.markTaskLine('> - [-] something', ' ')).toEqual('> - [ ] something');
+    expect(tc.updateLineText('> - [ ] something', '-')).toEqual('> - [-] something');
+    expect(tc.updateLineText('> - [-] something', ' ')).toEqual('> - [ ] something');
 
-    expect(tc.markTaskLine('> > - [x] something', 'x')).toEqual('> > - [x] something');
-    expect(tc.markTaskLine('> > - [x] something', ' ')).toEqual('> > - [ ] something');
+    expect(tc.updateLineText('> > - [x] something', 'x')).toEqual('> > - [x] something');
+    expect(tc.updateLineText('> > - [x] something', ' ')).toEqual('> > - [ ] something');
 });

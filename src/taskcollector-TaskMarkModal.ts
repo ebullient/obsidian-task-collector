@@ -34,7 +34,7 @@ export class TaskMarkModal extends Modal {
         completedList.addClass("contains-task-list");
         this.addTaskValues(
             completedList,
-            this.taskCollector.initSettings.completedTasks,
+            this.taskCollector.cache.completedMarks,
             true
         );
 
@@ -42,7 +42,7 @@ export class TaskMarkModal extends Modal {
         list.addClass("contains-task-list");
         this.addTaskValues(
             list,
-            this.taskCollector.settings.incompleteTaskValues,
+            this.taskCollector.cache.incompleteMarks,
             false
         );
 
@@ -55,10 +55,21 @@ export class TaskMarkModal extends Modal {
         const self = this;
 
         const keyListener = function (event: KeyboardEvent) {
-            self.chosenMark = event.key;
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            self.close();
+            switch (event.key) {
+                case "ArrowLeft":
+                case "ArrowRight":
+                case "ArrowUp":
+                case "ArrowDown":
+                case "CapsLock":
+                case "Tab":
+                    break;
+                default: {
+                    self.chosenMark = event.key;
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    self.close();
+                }
+            }
         };
         this.scope.register([], null, keyListener);
         this.scope.register(["Shift"], null, keyListener);

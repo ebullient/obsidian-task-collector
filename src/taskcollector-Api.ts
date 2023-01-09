@@ -13,11 +13,11 @@ export class TaskCollectorApi implements API {
     }
 
     getCompletedTaskValues(): string {
-        return this.taskCollector.initSettings.completedTasks;
+        return this.taskCollector.cache.completedMarks;
     }
 
     getIncompleteTaskValues(): string {
-        return this.taskCollector.settings.incompleteTaskValues;
+        return this.taskCollector.cache.incompleteMarks;
     }
 
     getMark(): Promise<string> {
@@ -25,7 +25,6 @@ export class TaskCollectorApi implements API {
     }
 
     isComplete(value: string): boolean {
-        // This may include cancelled items (those are still "complete")
         return this.getCompletedTaskValues().contains(value);
     }
     isCanceled(value: string): boolean {

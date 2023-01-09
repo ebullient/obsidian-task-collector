@@ -1,14 +1,30 @@
-import { App, moment, PluginSettingTab, Setting } from "obsidian";
 import {
-    TaskCollectorSettings,
-    DEFAULT_SETTINGS,
-} from "./taskcollector-Settings";
-import { TaskCollector } from "./taskcollector-TaskCollector";
+    App,
+    moment,
+    ButtonComponent,
+    PluginSettingTab,
+    Setting,
+    Notice,
+} from "obsidian";
+import { TaskCollector, _regex } from "./taskcollector-TaskCollector";
 import TaskCollectorPlugin from "./main";
+import { ManipulationSettings, TaskCollectorSettings } from "./@types/settings";
+import {
+    COMPLETE_NAME,
+    DEFAULT_COLLECTION,
+    DEFAULT_NAME,
+    TEXT_ONLY_MARK,
+    TEXT_ONLY_NAME,
+} from "./taskcollector-Constants";
+import { Data } from "./taskcollector-Data";
 
 export class TaskCollectorSettingsTab extends PluginSettingTab {
     plugin: TaskCollectorPlugin;
-    taskCollector: TaskCollector;
+    tc: TaskCollector;
+    newSettings: TaskCollectorSettings;
+    groupList: HTMLDListElement;
+    cache: Record<string, Set<HTMLInputElement>> = {};
+    saveButton: HTMLElement;
 
     constructor(
         app: App,
@@ -17,197 +33,140 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
     ) {
         super(app, plugin);
         this.plugin = plugin;
-        this.taskCollector = taskCollector;
+        this.tc = taskCollector;
     }
 
+    save() {
+        Data.sanitize(this.plugin, this.newSettings);
+        this.tc.init(this.newSettings);
+        this.plugin.saveSettings();
+        new Notice("(TC) Configuration saved");
+    }
+
+    /** Save on exit */
+    hide(): void {
+        this.save();
+    }
+
+    /** Show/validate setting changes */
     display(): void {
+        this.newSettings = JSON.parse(JSON.stringify(this.tc.settings));
+        this.drawElements();
+    }
+
+    drawElements(): void {
         this.containerEl.empty();
+        this.containerEl.addClass("task-collector-settings");
 
-        this.containerEl.createEl("h1", { text: "Task Collector" });
-
-        const tempSettings: TaskCollectorSettings = Object.assign(
-            this.taskCollector.settings
-        );
+        new Setting(this.containerEl).setHeading().setName("Task Collector");
 
         new Setting(this.containerEl)
-            .setName("Only support x for completed tasks")
+            .setName("Save settings")
+            .setClass("task-collector-save-reset")
+            .addButton((button) =>
+                button
+                    .setIcon("reset")
+                    .setTooltip(
+                        "Reset to previously saved (or generated) values"
+                    )
+                    .onClick(() => {
+                        this.newSettings = JSON.parse(
+                            JSON.stringify(this.tc.settings)
+                        );
+                        this.display();
+                        new Notice("(TC) Configuration reset");
+                    })
+            )
+            .addButton((button) => {
+                button
+                    .setIcon("save")
+                    .setTooltip("Save current values")
+                    .onClick(() => {
+                        this.save();
+                    });
+                this.saveButton = button.buttonEl;
+            });
+
+        new Setting(this.containerEl)
+            .setName("Task Collection")
             .setDesc(
-                "Only use 'x' (lower case) to indicate completed tasks (hide X (upper case))."
+                "Enable task collection (additional task group settings when enabled)"
             )
             .addToggle((toggle) =>
                 toggle
-                    .setValue(tempSettings.onlyLowercaseX)
+                    .setValue(this.newSettings.collectionEnabled)
                     .onChange(async (value) => {
-                        tempSettings.onlyLowercaseX = value;
-                        this.taskCollector.updateSettings(tempSettings);
-                        await this.plugin.saveSettings();
-                    })
-            );
-
-        new Setting(this.containerEl)
-            .setName("Support canceled tasks")
-            .setDesc(
-                "Use a - to indicate canceled tasks. Canceled tasks are processed in the same way as completed tasks using options below."
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(tempSettings.supportCanceledTasks)
-                    .onChange(async (value) => {
-                        tempSettings.supportCanceledTasks = value;
-                        this.taskCollector.updateSettings(tempSettings);
-                        await this.plugin.saveSettings();
-                    })
-            );
-
-        new Setting(this.containerEl)
-            .setName("Additional task types")
-            .setDesc(
-                "Specify the set of single characters that indicate in-progress or incomplete tasks, e.g. 'i> !?D'."
-            )
-            .addText((text) =>
-                text
-                    .setPlaceholder("> !?")
-                    .setValue(tempSettings.incompleteTaskValues)
-                    .onChange(async (value) => {
-                        if (value.contains("x")) {
-                            console.log(
-                                `Set of characters should not contain the marker for completed tasks (x): ${value}`
-                            );
-                        } else if (
-                            !tempSettings.onlyLowercaseX &&
-                            value.contains("X")
-                        ) {
-                            console.log(
-                                `Set of characters should not contain the marker for completed tasks (X): ${value}`
-                            );
-                        } else if (
-                            tempSettings.supportCanceledTasks &&
-                            value.contains("-")
-                        ) {
-                            console.log(
-                                `Set of characters should not contain the marker for canceled tasks (-): ${value}`
-                            );
-                        } else {
-                            if (!value.contains(" ")) {
-                                // make sure space is included
-                                value = " " + value;
-                            }
-                            tempSettings.incompleteTaskValues = value;
-                            this.taskCollector.updateSettings(tempSettings);
-                            await this.plugin.saveSettings();
+                        const redraw =
+                            value != this.newSettings.collectionEnabled;
+                        this.tc.logDebug(
+                            "TODO: collectionEnabled",
+                            this.newSettings.collectionEnabled,
+                            value
+                        );
+                        this.newSettings.collectionEnabled = value;
+                        if (redraw) {
+                            this.drawElements();
                         }
                     })
             );
 
-        this.containerEl.createEl("h2", { text: "Completing tasks" });
+        new Setting(this.containerEl)
+            .setName("Define task mark cycle")
+            .setDesc(
+                "Specify characters (as a string) for Previous/Next commands"
+            )
+            .addText((input) =>
+                input
+                    .setPlaceholder("")
+                    .setValue(this.newSettings.markCycle)
+                    .onChange(async (value) => {
+                        this.tc.logDebug("TODO task mark cycle", value);
+                    })
+            );
+
+        new Setting(this.containerEl).setHeading().setName("Task Groups");
 
         this.containerEl.createEl("p", {
-            text: "Completed tasks (and optionally '-' for canceled items) gain special treatment based on the settings below.",
-        });
-
-        new Setting(this.containerEl)
-            .setName("Append date to completed task")
-            .setDesc(
-                "If non-empty, append today's date in the given moment.js string format to the end of the task text."
-            )
-            .addMomentFormat((momentFormat) =>
-                momentFormat
-                    .setPlaceholder("YYYY-MM-DD")
-                    .setValue(tempSettings.appendDateFormat)
-                    .onChange(async (value) => {
-                        try {
-                            // Try formatting "now" with the specified format string
-                            moment().format(value);
-                            tempSettings.appendDateFormat = value;
-                            this.taskCollector.updateSettings(tempSettings);
-                            await this.plugin.saveSettings();
-                        } catch (e) {
-                            console.log(
-                                `Error parsing specified date format: ${value}`
-                            );
-                        }
-                    })
-            );
-
-        new Setting(this.containerEl)
-            .setName("Remove text in completed task")
-            .setDesc(
-                "Text matching this regular expression should be removed from the task text. Be careful! Test your expression first. The global flag, 'g' is used for a per-line match."
-            )
-            .addText((text) =>
-                text
-                    .setPlaceholder(" #(todo|task)")
-                    .setValue(tempSettings.removeExpression)
-                    .onChange(async (value) => {
-                        try {
-                            // try compiling the regular expression
-                            this.taskCollector.tryCreateRemoveRegex(value);
-
-                            tempSettings.removeExpression = value;
-                            this.taskCollector.updateSettings(tempSettings);
-                            await this.plugin.saveSettings();
-                        } catch (e) {
-                            console.log(
-                                `Error parsing regular expression for text replacement: ${value}`
-                            );
-                        }
-                    })
-            );
-
-        new Setting(this.containerEl)
-            .setName("Apply these settings to all tasks")
-            .setDesc(
-                "Append and remove text as configured above when marking tasks with anything other than a space (to reset)."
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(tempSettings.appendRemoveAllTasks)
-                    .onChange(async (value) => {
-                        tempSettings.appendRemoveAllTasks = value;
-                        this.taskCollector.updateSettings(tempSettings);
-                        await this.plugin.saveSettings();
-                    })
-            );
-
-        this.containerEl.createEl("h2", { text: "Moving completed tasks" });
-
-        new Setting(this.containerEl)
-            .setName("Completed area header")
-            .setDesc(
-                `Completed (or canceled) items will be inserted under the specified header (most recent at the top). When scanning the document for completed/canceled tasks, the contents from this configured header to the next heading or separator (---) will be ignored. This heading will be created if the command is invoked and the heading does not exist. The default heading is '${DEFAULT_SETTINGS.completedAreaHeader}'.`
-            )
-            .addText((text) =>
-                text
-                    .setPlaceholder("## Log")
-                    .setValue(tempSettings.completedAreaHeader)
-                    .onChange(async (value) => {
-                        tempSettings.completedAreaHeader = value.trim();
-                        this.taskCollector.updateSettings(tempSettings);
-                        await this.plugin.saveSettings();
-                    })
-            );
-
-        new Setting(this.containerEl)
-            .setName("Remove the checkbox from moved items")
-            .setDesc(
-                `Remove the checkbox from completed (or canceled) tasks during the move to the completed area. This transforms tasks into normal list items. Task Collector will not be able to reset these items. They also will not appear in task searches or queries. The default value is: '${DEFAULT_SETTINGS.completedAreaRemoveCheckbox}'.`
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(tempSettings.completedAreaRemoveCheckbox)
-                    .onChange(async (value) => {
-                        tempSettings.completedAreaRemoveCheckbox = value;
-                        this.taskCollector.updateSettings(tempSettings);
-                        await this.plugin.saveSettings();
-                    })
-            );
-
-        this.containerEl.createEl("h2", {
-            text: "Marking items using menus",
+            text:
+                "Task collector configures tasks in groups. " +
+                "Each group can be associated with one or more task marks ('x' or '>'). " +
+                "The default group configuration will apply to any mark not otherwise assigned to a group.",
         });
 
         this.containerEl.createEl("p", {
-            text: "Task Collector creates commands that can be bound to hotkeys or accessed using slash commands for marking tasks complete (or canceled) and resetting tasks to an incomplete state. The following settings add right click context menu items for those commands.",
+            text:
+                "Marks that you define within the following groups appear in the selection modal. " +
+                "Those marks that 'complete' a task will appear in the top row.",
+        });
+
+        this.groupList = this.containerEl.createEl("dl");
+        this.showTaskGroups();
+
+        new Setting(this.containerEl)
+            .setClass("tc-create-task-group")
+            .addButton((button: ButtonComponent) =>
+                button
+                    .setTooltip("Add a new task group")
+                    .setButtonText("+")
+                    .onClick(() => {
+                        const name = `group-${
+                            Object.values(this.newSettings.groups).length
+                        }`;
+                        Data.createSettingsGroup(
+                            this.newSettings.groups,
+                            name,
+                            {}
+                        );
+                        this.showTaskGroups();
+                    })
+            );
+
+        new Setting(this.containerEl).setHeading().setName("Menus and Modals");
+
+        this.containerEl.createEl("p", {
+            text:
+                "Task Collector creates commands that can be bound to hotkeys or accessed using slash commands for marking tasks. " +
+                "The following settings add right click context menu items for those commands.",
         });
 
         new Setting(this.containerEl)
@@ -215,106 +174,470 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 "Preview / Live preview: Show the selection menu when a checkbox is clicked"
             )
             .setDesc(
-                "Display a panel that allows you to select (with mouse or keyboard) the value to assign when you click the task. The selected value will determine follow-on actions: complete, cancel, or reset."
+                "When you click a checkbox, display a panel that allows you to select (with mouse or keyboard) the value to assign."
             )
             .addToggle((toggle) =>
                 toggle
-                    .setValue(tempSettings.previewOnClick)
+                    .setValue(this.newSettings.previewClickModal)
                     .onChange(async (value) => {
-                        tempSettings.previewOnClick = value;
-                        this.taskCollector.updateSettings(tempSettings);
-                        await this.plugin.saveSettings();
+                        this.tc.logDebug("TODO: previewClickModal", value);
+                        this.newSettings.previewClickModal = value;
                     })
             );
 
         new Setting(this.containerEl)
             .setName("Add menu item for marking a task")
             .setDesc(
-                "Add an item to the right-click menu in edit mode to mark the task on the current line (or within the current selection). This menu item will trigger a quick pop-up modal to select the desired mark value. The selected value will determine follow-on actions: complete, cancel, or reset."
+                "Add an item to the right-click menu to mark the task on the current line (or within the current selection). This menu item will trigger a quick pop-up modal to select the desired mark value."
             )
             .addToggle((toggle) =>
                 toggle
-                    .setValue(tempSettings.rightClickMark)
+                    .setValue(this.newSettings.contextMenu.markTask)
                     .onChange(async (value) => {
-                        tempSettings.rightClickMark = value;
-                        this.taskCollector.updateSettings(tempSettings);
-                        await this.plugin.saveSettings();
+                        this.tc.logDebug("TODO: contextMenu.markTask", value);
+                        this.newSettings.contextMenu.markTask = value;
                     })
             );
 
         new Setting(this.containerEl)
-            .setName("Add menu item for completing a task")
+            .setName("Add menu item for collecting tasks")
             .setDesc(
-                "Add an item to the right-click menu in edit mode to mark the task on the current line (or within the current selection) complete. If canceled items are supported, an additional menu item will be added to mark selected tasks as canceled."
+                "Add an item to the right-click menu to collect tasks (based on task configuration)."
             )
             .addToggle((toggle) =>
                 toggle
-                    .setValue(tempSettings.rightClickComplete)
+                    .setValue(this.newSettings.contextMenu.collectTasks)
                     .onChange(async (value) => {
-                        tempSettings.rightClickComplete = value;
-                        this.taskCollector.updateSettings(tempSettings);
-                        await this.plugin.saveSettings();
+                        this.tc.logDebug(
+                            "TODO: contextMenu.collectTasks",
+                            value
+                        );
+                        this.newSettings.contextMenu.collectTasks = value;
                     })
             );
 
+        new Setting(this.containerEl).setHeading().setName("Other settings");
+
         new Setting(this.containerEl)
-            .setName("Add menu item for resetting a task")
-            .setDesc(
-                "Add an item to the right-click menu in edit mode to reset the task on the current line (or within the current selection)."
-            )
+            .setName("Debug")
+            .setDesc("Enable debug messages")
             .addToggle((toggle) =>
                 toggle
-                    .setValue(tempSettings.rightClickResetTask)
+                    .setValue(this.newSettings.debug)
                     .onChange(async (value) => {
-                        tempSettings.rightClickResetTask = value;
-                        this.taskCollector.updateSettings(tempSettings);
-                        await this.plugin.saveSettings();
+                        this.tc.logDebug("TODO: debug", value);
+                        this.newSettings.debug = value;
+                    })
+            );
+    }
+
+    showTaskGroups() {
+        this.cache = {};
+        this.groupList.empty();
+        this.clearButtonErrors();
+
+        // default always comes first
+        this.createGroupItem(this.newSettings.groups[DEFAULT_NAME]);
+
+        // any/everything else
+        Object.values(this.newSettings.groups)
+            .filter((mts) => mts.name != DEFAULT_NAME)
+            .forEach((mts) => {
+                this.createGroupItem(mts);
+            });
+    }
+
+    createGroupItem(mts: ManipulationSettings) {
+        const dt = this.groupList.createEl("dt");
+        const itemEl = this.groupList.createEl("dd");
+
+        const nameSetting = new Setting(dt)
+            .setName("Group name")
+            .setDesc("Name for this group")
+            .setClass("task-group-name");
+        if (mts.name === TEXT_ONLY_NAME) {
+            nameSetting.addExtraButton((b) => {
+                b.setIcon("info")
+                    .setTooltip(
+                        "This is a special group that supports appending text to arbitrary lines of text"
+                    )
+                    .setDisabled(true);
+            });
+        }
+        nameSetting.addText((text) =>
+            text
+                .setPlaceholder(COMPLETE_NAME)
+                .setValue(mts.name)
+                .setDisabled(mts.name === DEFAULT_NAME)
+                .onChange((value) => {
+                    const target = this.newSettings.groups[value];
+                    if (!value) {
+                        text.inputEl.addClass("data-value-error");
+                        text.inputEl.setAttribute(
+                            "aria-label",
+                            "A group name is required."
+                        );
+                    } else if (target && target != mts) {
+                        text.inputEl.addClass("data-value-error");
+                        text.inputEl.setAttribute(
+                            "aria-label",
+                            "This name is already used by another group"
+                        );
+                    } else {
+                        text.inputEl.removeClass("data-value-error");
+                        text.inputEl.removeAttribute("aria-label");
+                        Data.moveGroup(
+                            this.newSettings.groups,
+                            mts.name,
+                            value
+                        );
+                        if (value === TEXT_ONLY_NAME) {
+                            mts.marks = TEXT_ONLY_MARK;
+                            // we just created the text group, redraw / rebuild cache
+                            this.drawElements();
+                        }
+                    }
+                    this.tc.logDebug(
+                        "TODO: task group name",
+                        this.newSettings.groups
+                    );
+                })
+        );
+        nameSetting.addExtraButton((b) => {
+            b.setIcon(mts.name === DEFAULT_NAME ? "info" : "trash")
+                .setTooltip(
+                    mts.name === DEFAULT_NAME
+                        ? "Default task settings"
+                        : "Delete this group"
+                )
+                .setDisabled(mts.name === DEFAULT_NAME)
+                .onClick(async () => {
+                    delete this.newSettings.groups[mts.name];
+                    this.showTaskGroups();
+                });
+        });
+        if (mts.name === DEFAULT_NAME) {
+            nameSetting.controlEl.addClass("default-group");
+        } else if (mts.name === TEXT_ONLY_NAME) {
+            nameSetting.controlEl.addClass("text-only-group");
+        }
+
+        if (mts.name !== TEXT_ONLY_NAME) {
+            const taskMarks = new Setting(itemEl)
+                .setName("Task marks")
+                .setClass("task-marks");
+
+            if (mts.name !== DEFAULT_NAME) {
+                taskMarks.addToggle((t) => {
+                    t.setValue(mts.complete);
+                    t.setTooltip(
+                        "If enabled, this group represents completed items. Completed items appear in the top row of the selection menu."
+                    ).onChange(async (value) => {
+                        mts.complete = value;
+                    });
+                });
+                taskMarks.setDesc(
+                    "Set one or marks associated with this group as a string. e.g. '>?!'. Use a space for unmarked tasks. " +
+                        "Enable the toggle if this group represents completed tasks."
+                );
+            } else {
+                taskMarks.setDesc(
+                    "Set one or marks associated with this group as a string. e.g. '>?!'. Use a space for unmarked tasks. "
+                );
+            }
+
+            taskMarks.addText((input) => {
+                input.setPlaceholder("xX").onChange((value) => {
+                    const newMarks = Data.sanitizeMarks(value);
+                    if (newMarks != value) {
+                        input.inputEl.value = newMarks;
+                    }
+                    if (newMarks != mts.marks) {
+                        this.removeMarks(mts.marks, input.inputEl);
+
+                        mts.marks = newMarks;
+                        taskMarks.controlEl.setAttribute("marks", mts.marks);
+
+                        this.findDuplicates(input.inputEl);
+                    }
+                });
+                // sanitize and display initial value
+                mts.marks = Data.sanitizeMarks(mts.marks);
+                input.setValue(mts.marks);
+                taskMarks.controlEl.setAttribute("marks", mts.marks);
+                this.findDuplicates(input.inputEl);
+            });
+        }
+
+        new Setting(itemEl)
+            .setName(`Append date to ${this.getDescription(mts)}`)
+            .setDesc(
+                `Append today's date in the given moment.js format to the end of the ${this.getDescription(
+                    mts
+                )}`
+            )
+            .addMomentFormat((momentFormat) =>
+                momentFormat
+                    .setPlaceholder("YYYY-MM-DD")
+                    .setValue(mts.appendDateFormat)
+                    .onChange(async (value) => {
+                        try {
+                            // Try formatting "now" with the specified format string
+                            moment().format(value);
+                            mts.appendDateFormat = value;
+                            this.tc.logDebug(
+                                "append date format",
+                                mts.name,
+                                mts.appendDateFormat
+                            );
+                        } catch (e) {
+                            console.error(
+                                `Error parsing specified date format for ${mts.name}: ${value}`
+                            );
+                        }
+                    })
+            );
+        new Setting(itemEl)
+            .setName(
+                `Remove text matching pattern from ${this.getDescription(mts)}`
+            )
+            .setDesc(
+                `Text matching this regular expression will be removed from ${this.getDescription(
+                    mts
+                )}. Be careful! Test your expression first. The global flag ('g') is used for a per-line match.`
+            )
+            .addText((text) =>
+                text
+                    .setPlaceholder(" #(todo|task)")
+                    .setValue(mts.removeExpr)
+                    .onChange(async (value) => {
+                        try {
+                            // try compiling the regular expression
+                            _regex.tryRemoveTextRegex(value);
+                            mts.removeExpr = value;
+                            this.tc.logDebug(
+                                "remove regex",
+                                mts.name,
+                                mts.removeExpr
+                            );
+                        } catch (e) {
+                            console.error(
+                                `Error parsing specified text replacement regular expression for ${mts.name}: ${value}`
+                            );
+                        }
                     })
             );
 
-        new Setting(this.containerEl)
-            .setName("Add menu items for completing all tasks")
+        new Setting(itemEl)
+            .setName("Register Command")
             .setDesc(
-                "Add an item to the right-click menu in edit mode to mark all incomplete tasks in the current document complete."
+                mts.name === TEXT_ONLY_NAME
+                    ? "A command will be registered to append text to selected lines"
+                    : "A command will be registered for each mark in the group."
+            )
+            .addToggle((toggle) =>
+                toggle.setValue(mts.registerCommand).onChange(async (value) => {
+                    mts.registerCommand = value;
+                    this.tc.logDebug(
+                        "registerCommand",
+                        mts.name,
+                        mts.registerCommand
+                    );
+                })
+            );
+
+        new Setting(itemEl)
+            .setName("Add menu item for marking a task")
+            .setDesc(
+                "A right-click menu item will be added for each mark in the group."
             )
             .addToggle((toggle) =>
                 toggle
-                    .setValue(tempSettings.rightClickToggleAll)
+                    .setValue(this.newSettings.contextMenu.markTask)
                     .onChange(async (value) => {
-                        tempSettings.rightClickToggleAll = value;
-                        this.taskCollector.updateSettings(tempSettings);
-                        await this.plugin.saveSettings();
+                        this.tc.logDebug("TODO: contextMenu.markTask", value);
+                        this.newSettings.contextMenu.markTask = value;
                     })
             );
 
-        new Setting(this.containerEl)
-            .setName("Add menu item for resetting all tasks")
-            .setDesc(
-                "Add an item to the right-click menu to reset all completed (or canceled) tasks."
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(tempSettings.rightClickResetAll)
-                    .onChange(async (value) => {
-                        tempSettings.rightClickResetAll = value;
-                        this.taskCollector.updateSettings(tempSettings);
-                        await this.plugin.saveSettings();
-                    })
-            );
+        if (this.newSettings.collectionEnabled && mts.name !== TEXT_ONLY_NAME) {
+            if (!mts.collection) {
+                mts.collection = JSON.parse(JSON.stringify(DEFAULT_COLLECTION));
+            }
+            new Setting(itemEl)
+                .setName("Area heading")
+                .setClass("area-heading")
+                .setDesc(
+                    "Marked tasks will be collected and moved under the specified heading. Task collection for a group only occurs when an area heading is configured."
+                )
+                .addText((text) =>
+                    text
+                        .setPlaceholder("## Log")
+                        .setValue(mts.collection.areaHeading)
+                        .onChange(async (value) => {
+                            mts.collection.areaHeading = value;
+                        })
+                );
+            new Setting(itemEl)
+                .setName("Remove checkbox")
+                .setClass("remove-checkbox")
+                .setDesc("When a task is collected, remove the checkbox")
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(mts.collection.removeCheckbox)
+                        .onChange(async (value) => {
+                            mts.collection.removeCheckbox = value;
+                        })
+                );
+        }
+    }
 
-        new Setting(this.containerEl)
-            .setName("Add menu item for moving all completed tasks")
-            .setDesc(
-                "Add an item to the right-click menu to move all completed (or canceled) tasks."
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(tempSettings.rightClickMove)
-                    .onChange(async (value) => {
-                        tempSettings.rightClickMove = value;
-                        this.taskCollector.updateSettings(tempSettings);
-                        await this.plugin.saveSettings();
-                    })
+    private removeMarks(oldValue: string, input: HTMLInputElement) {
+        const marks = oldValue ? oldValue.split("") : [];
+        this.tc.logDebug(`removeMarks begin: '${oldValue}'`, this.cache);
+
+        if (input.hasClass("no-marks-defined")) {
+            input.removeClass("no-marks-defined");
+            input.removeClass("data-value-error");
+            input.removeAttribute("aria-label");
+        }
+
+        marks.forEach((x) => {
+            this.tc.logDebug(`(TC): remove mark '${x}'`, this.cache[x]);
+            if (this.cache[x]) {
+                const set = this.cache[x];
+                set.delete(input);
+                this.tryRemoveConflict(x, input);
+
+                // if there is only one element left in the array,
+                // remove the current character from the list of conflicts
+                if (set.size == 1) {
+                    set.forEach((i) => this.tryRemoveConflict(x, i));
+                }
+            }
+        });
+        this.tc.logDebug(`removeMarks end: '${oldValue}'`, this.cache);
+    }
+
+    private findDuplicates(input: HTMLInputElement) {
+        const marks = input.value ? input.value.split("") : [];
+        this.tc.logDebug(
+            `findDuplicates begin: '${input.value}'`,
+            marks,
+            input,
+            this.cache
+        );
+
+        // add input element into the cache (new marks)
+        marks.forEach((x) => {
+            if (this.cache[x]) {
+                const set = this.cache[x];
+                set.add(input);
+
+                if (set.size > 1) {
+                    // we have a conflict over a defined task mark
+                    set.forEach((i) => this.trySetConflict(x, i));
+                    console.error(
+                        `(TC) More then one group uses task mark ${this.showMark(
+                            x
+                        )}`
+                    );
+                }
+            } else {
+                // no conflict, all is well.
+                this.cache[x] = new Set();
+                this.cache[x].add(input);
+            }
+        });
+
+        if (marks.length == 0) {
+            input.addClass("no-marks-defined");
+            input.addClass("data-value-error");
+            input.setAttribute(
+                "aria-label",
+                this.newSettings.groups[TEXT_ONLY_NAME]
+                    ? "Must define one or more marks for this group."
+                    : `Must define one or more marks for this group. Change the name to '${TEXT_ONLY_NAME}' for special text-only behavior.`
             );
+            this.tc.logDebug(
+                `findDuplicates end (empty): '${input.value}'`,
+                input,
+                this.cache
+            );
+        }
+
+        this.tc.logDebug(
+            `findDuplicates end: '${input.value}'`,
+            input,
+            this.cache
+        );
+        this.testForErrors();
+    }
+
+    private trySetConflict(mark: string, input: HTMLInputElement) {
+        const existing = input.getAttribute("conflict") || "";
+        const conflict = Data.sanitizeMarks(existing + mark);
+
+        input.setAttribute("conflict", conflict);
+        input.addClass("data-value-error");
+        input.setAttribute(
+            "aria-label",
+            `More than one task group uses ${this.showMark(conflict)}`
+        );
+        this.tc.logDebug(
+            `conflicts for '${input.value}': '${this.showMark(conflict)}'`
+        );
+    }
+
+    private tryRemoveConflict(mark: string, input: HTMLInputElement) {
+        if (!input.hasAttribute("conflict")) {
+            return;
+        }
+        const remaining = input.getAttribute("conflict").replace(mark, "");
+        this.tc.logDebug(`remaining from '${input.value}': '${remaining}'`);
+
+        if (remaining.length == 0) {
+            // all conflicting marks have been removed
+            input.removeAttribute("conflict");
+            input.removeClass("data-value-error");
+            input.removeAttribute("aria-label");
+        } else {
+            input.removeAttribute("conflict");
+            this.trySetConflict(remaining, input);
+        }
+    }
+
+    private getDescription(mts: ManipulationSettings) {
+        return mts.name === TEXT_ONLY_NAME
+            ? "selected lines of text"
+            : "selected task(s)";
+    }
+
+    private showMark(x: string) {
+        return x == TEXT_ONLY_MARK ? "(empty)" : x;
+    }
+
+    private clearButtonErrors() {
+        // Modal create or reset
+        this.saveButton.removeClass("data-value-error");
+        this.saveButton.removeAttribute("aria-label");
+    }
+
+    private testForErrors() {
+        const hasErrors = Object.values(this.cache)
+            .flatMap((s) => Array.from(s.values()))
+            .find((i) => i.hasClass("data-value-error"));
+        this.tc.logDebug("testForErrors", hasErrors);
+
+        if (hasErrors) {
+            this.saveButton.addClass("data-value-error");
+            this.saveButton.setAttribute(
+                "aria-label",
+                `There are configuration errors. Correct those before saving.`
+            );
+        } else {
+            this.saveButton.removeClass("data-value-error");
+            this.saveButton.removeAttribute("aria-label");
+        }
     }
 }

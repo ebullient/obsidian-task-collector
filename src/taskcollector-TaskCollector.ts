@@ -1,352 +1,515 @@
-import { App, moment } from "obsidian";
+import { moment } from "obsidian";
 import {
     TaskCollectorSettings,
-    CompiledTasksSettings,
-} from "./taskcollector-Settings";
+    TaskCollectorCache,
+    ManipulationSettings,
+    TcSection,
+} from "./@types/settings";
+import {
+    CACHE_DEFAULT,
+    TEXT_ONLY_NAME,
+    TEXT_ONLY_MARK,
+    DEFAULT_NAME,
+} from "./taskcollector-Constants";
+import { Data } from "./taskcollector-Data";
+
+const DATE_FORMATTING_TOKENS = /^(Y|D|M|H|h|m)+$/;
+const ALL_FORMATTING_TOKENS =
+    /(\[[^[]*\])|(\\)?([Hh]mm(ss)?|Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Qo?|N{1,5}|YYYYYY|YYYYY|YYYY|YY|y{2,4}|yo?|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|kk?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g;
 
 export class TaskCollector {
     settings: TaskCollectorSettings;
-    initSettings: CompiledTasksSettings;
-    anyListItem: RegExp;
-    taskMark: RegExp;
-    anyTaskMark: RegExp;
-    blockQuote: RegExp;
-    blockRef: RegExp;
-    continuation: RegExp;
-    stripTask: RegExp;
+    cache: TaskCollectorCache;
 
-    constructor(private app: App) {
-        this.app = app;
-        this.anyListItem = new RegExp(/^([\s>]*- )([^\\[].*)$/);
-        this.anyTaskMark = new RegExp(/^([\s>]*- \[)(.)(\] .*)$/);
-        this.blockQuote = new RegExp(/^(\s*>[\s>]*)(.*)$/);
-        this.blockRef = new RegExp(/^(.*?)( \^[A-Za-z0-9-]+)?$/);
-        this.continuation = new RegExp(/^( {2,}|\t)/);
-        this.stripTask = new RegExp(/^([\s>]*-) \[.\] (.*)$/);
+    anyListItem = new RegExp(/^([\s>]*- )([^\\[].*)$/);
+    anyTaskMark = new RegExp(/^([\s>]*- \[)(.)(\] .*)$/);
+    anyText = new RegExp(/^([\s>]*)(.*)$/);
+    blockQuote = new RegExp(/^(\s*>[\s>]*)(.*)$/);
+    blockRef = new RegExp(/^(.*?)( \^[A-Za-z0-9-]+)?$/);
+    continuation = new RegExp(/^( {2,}|\t)/);
+    stripTask = new RegExp(/^([\s>]*-) \[.\] (.*)$/);
+
+    init(settings: TaskCollectorSettings): void {
+        this.settings = settings;
+        this.cache = JSON.parse(JSON.stringify(CACHE_DEFAULT));
+
+        this.cache.useContextMenu =
+            settings.contextMenu.markTask || settings.contextMenu.resetTask;
+
+        Object.values(settings.groups).forEach((v) =>
+            this.cacheTaskSettings(v, this.cache)
+        );
+
+        // Store sorted unique list of completion area headings
+        if (this.settings.collectionEnabled) {
+            this.cache.areaHeadings = [
+                ...Object.keys(this.cache.headingToMark),
+            ];
+            this.cache.areaHeadings.sort();
+        }
+        this.cache.completedMarks = Data.sanitizeMarks(
+            this.cache.completedMarks
+        );
+        this.cache.incompleteMarks = Data.sanitizeMarks(
+            this.cache.incompleteMarks
+        );
+
+        this.logDebug("configuration read", this.settings, this.cache);
     }
 
-    updateSettings(settings: TaskCollectorSettings): void {
-        this.settings = settings;
-        let momentMatchString = null;
+    logDebug(message: string, ...optionalParams: any[]): void {
+        if (!this.settings || this.settings.debug) {
+            console.debug("(TC) " + message, ...optionalParams);
+        }
+    }
 
-        if (settings.appendDateFormat) {
-            momentMatchString = settings.appendDateFormat;
+    /**
+     * Process task manipulation settings and populate cache
+     * @param mts
+     * @param cache
+     */
+    private cacheTaskSettings(
+        mts: ManipulationSettings,
+        cache: TaskCollectorCache
+    ) {
+        mts.marks.split("").forEach((x) => {
+            if (cache.marks[x]) {
+                const name = cache.marks[x].name;
+                console.warn(
+                    `Two groups of settings contain ${x}: ${name} and ${mts.name}. Using ${name}`
+                );
+            } else {
+                // allow for lookup of this configuration per character
+                cache.marks[x] = mts;
 
-            const onlyFormattingTokens = /^(Y|D|M|H|h|m)+$/;
-            const formattingTokens =
-                /(\[[^[]*\])|(\\)?([Hh]mm(ss)?|Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Qo?|N{1,5}|YYYYYY|YYYYY|YYYY|YY|y{2,4}|yo?|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|kk?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g;
+                // This specific configuration may want to add a context menu
+                cache.useContextMenu == cache.useContextMenu ||
+                    mts.useContextMenu;
 
-            const array = momentMatchString.match(formattingTokens);
-            for (let i = 0, length = array.length; i < length; i++) {
-                const segment = array[i];
-                if (onlyFormattingTokens.test(segment)) {
-                    array[i] = segment
-                        .replace(/YYYY/g, "\\d{4}") // 4-digit year
-                        .replace(/YY/g, "\\d{2}") // 2-digit year
-                        .replace(/DD/g, "\\d{2}") // day of month, padded
-                        .replace(/D/g, "\\d{1,2}") // day of month, not padded
-                        .replace(/MMM/g, "[A-Za-z]{3}") // month, abbrv
-                        .replace(/MM/g, "\\d{2}") // month, padded
-                        .replace(/M/g, "\\d{1,2}") // month, not padded
-                        .replace(/HH/g, "\\d{2}") // 24-hour, padded
-                        .replace(/H/g, "\\d{1,2}") // 24-hour, not padded
-                        .replace(/hh/g, "\\d{2}") // 12-hour, padded
-                        .replace(/h/g, "\\d{1,2}") // 12-hour, not padded
-                        .replace(/mm/g, "\\d{2}") // minute, padded
-                        .replace(/m/g, "\\d{1,2}"); // minute, not padded;
-                } else if (segment.match(/\[[\s\S]/)) {
-                    array[i] = this.replaceLiterals(
-                        segment.replace(/^\[|\]$/g, "")
-                    );
-                } else {
-                    array[i] = this.replaceLiterals(segment);
+                // store the regex for matching text to remove
+                if (mts.removeExpr) {
+                    const regex = tryRemoveTextRegex(mts.removeExpr);
+                    cache.removeExpr[mts.name] = regex;
+                }
+
+                // store the undo string for this collection of marks
+                if (mts.appendDateFormat) {
+                    const regex = tryUndoRegex(mts.appendDateFormat);
+                    cache.undoExpr[mts.name] = regex;
+                }
+
+                // store the area heading for this mark
+                if (mts.collection && mts.collection.areaHeading) {
+                    if (cache.headingToMark[mts.collection.areaHeading]) {
+                        cache.headingToMark[mts.collection.areaHeading] += x;
+                    } else {
+                        cache.headingToMark[mts.collection.areaHeading] = x;
+                    }
+                }
+
+                if (x !== TEXT_ONLY_MARK) {
+                    if (mts.complete) {
+                        cache.completedMarks += x;
+                    } else {
+                        cache.incompleteMarks += x;
+                    }
                 }
             }
-
-            momentMatchString = array.join("");
-            momentMatchString = `\\s*${momentMatchString}\\s*`;
-        }
-
-        const completedTasks =
-            (this.settings.onlyLowercaseX ? "x" : "xX") +
-            (this.settings.supportCanceledTasks ? "-" : "");
-
-        if (this.settings.incompleteTaskValues.indexOf(" ") < 0) {
-            this.settings.incompleteTaskValues =
-                " " + this.settings.incompleteTaskValues;
-        }
-
-        const rightClickTaskMenu =
-            this.settings.rightClickComplete ||
-            this.settings.rightClickMark ||
-            this.settings.rightClickMove ||
-            this.settings.rightClickResetTask ||
-            this.settings.rightClickResetAll ||
-            this.settings.rightClickToggleAll;
-
-        this.initSettings = {
-            removeRegExp: this.tryCreateRemoveRegex(
-                this.settings.removeExpression
-            ),
-            resetRegExp: this.tryCreateResetRegex(momentMatchString),
-            incompleteTaskRegExp: this.tryCreateIncompleteRegex(
-                this.settings.incompleteTaskValues
-            ),
-            rightClickTaskMenu: rightClickTaskMenu,
-            registerHandlers:
-                rightClickTaskMenu || this.settings.previewOnClick,
-            completedTasks: completedTasks,
-            completedTaskRegExp: this.tryCreateCompleteRegex(completedTasks),
-        };
-        console.debug(
-            "TC: updated configuration %o, %o",
-            this.settings,
-            this.initSettings
-        );
+        });
     }
 
-    tryCreateRemoveRegex(param: string): RegExp {
-        return param ? new RegExp(param, "g") : null;
-    }
+    // Mark tasks
 
-    private tryCreateResetRegex(param: string): RegExp {
-        return param ? new RegExp(param + "( \\^[A-Za-z0-9-]+)?$") : null;
-    }
-
-    private tryCreateCompleteRegex(param: string): RegExp {
-        return new RegExp(`^([\\s>]*- \\[)[${param}](\\] .*)$`);
-    }
-
-    private tryCreateIncompleteRegex(param: string): RegExp {
-        return new RegExp(`^([\\s>]*- \\[)[${param}](\\] .*)$`);
-    }
-
-    private removeCheckboxFromLine(lineText: string): string {
-        return lineText.replace(this.stripTask, "$1 $2");
-    }
-
-    /** _Complete_ an item: append completion text, remove configured strings */
-    private completeTaskLine(lineText: string, mark = "x"): string {
-        console.debug("TC: complete task with %s: %s", mark, lineText);
-        let marked = lineText.replace(this.anyTaskMark, `$1${mark}$3`);
-        if (this.initSettings.removeRegExp) {
-            marked = marked.replace(this.initSettings.removeRegExp, "");
-        }
-        if (this.settings.appendDateFormat) {
-            const strictLineEnding = lineText.endsWith("  ");
-            let blockid = "";
-            const match = this.blockRef.exec(marked);
-            if (match && match[2]) {
-                marked = match[1];
-                blockid = match[2];
-            }
-            if (!marked.endsWith(" ")) {
-                marked += " ";
-            }
-            marked += moment().format(this.settings.appendDateFormat) + blockid;
-            if (strictLineEnding) {
-                marked += "  ";
-            }
-        }
-        return marked;
-    }
-
-    markAllTasksComplete(source: string, mark: string): string {
-        const lines = source.split("\n");
-        const result: string[] = [];
-
-        for (const line of lines) {
-            if (this.initSettings.incompleteTaskRegExp.exec(line)) {
-                result.push(this.completeTaskLine(line, mark));
-            } else {
-                result.push(line);
-            }
-        }
-        return result.join("\n");
-    }
-
-    markTaskInSource(
+    /**
+     * Mark selected tasks
+     * @param source
+     * @param lines
+     * @param mark
+     */
+    markSelectedTask(
         source: string,
         mark: string,
         lines: number[] = []
     ): string {
         const split = source.split("\n");
         for (const n of lines) {
-            split[n] = this.markTaskLine(split[n], mark);
+            split[n] = this.updateLineText(split[n], mark);
         }
         return split.join("\n");
     }
 
-    markTaskLine(lineText: string, mark: string): string {
-        const taskMatch = this.anyTaskMark.exec(lineText);
+    /**
+     * Reset all marked tasks in the file
+     * @param source
+     */
+    resetAllMarkedTasks(source: string): string {
+        throw new Error("Method not implemented.");
+    }
 
+    /**
+     * Update the task in the provided line text to use
+     * the specified mark
+     * @param lineText
+     * @param mark
+     */
+    updateLineText(lineText: string, mark: string): string {
         if (mark === "Backspace") {
-            lineText = this.removeCheckboxFromLine(lineText);
-        } else if (taskMatch) {
-            const completeMark =
-                this.initSettings.completedTasks.indexOf(mark) >= 0;
+            return this.doRemoveTask(lineText);
+        } else if (mark === "") {
+            mark = TEXT_ONLY_MARK;
+        }
 
-            if (this.isCompletedTaskLine(lineText)) {
-                if (completeMark) {
-                    console.log("TC: task already completed: %s", lineText);
-                } else {
-                    lineText = this.resetTaskLine(lineText, mark);
-                }
-            } else if (this.isIncompleteTaskLine(lineText)) {
-                if (completeMark) {
-                    lineText = this.settings.appendRemoveAllTasks
-                        ? this.resetTaskLine(lineText, mark)
-                        : this.completeTaskLine(lineText, mark);
-                } else {
-                    lineText = this.resetTaskLine(lineText, mark);
-                }
-            } else if (mark === " ") {
-                lineText = this.resetTaskLine(lineText, mark);
-            } else {
-                console.log(
-                    "TC: unknown mark (%s), leaving unchanged: %s",
-                    mark,
-                    lineText
-                );
-            }
-        } else if (mark !== "Backspace") {
-            const match = this.anyListItem.exec(lineText);
-            if (match && match[2]) {
-                console.debug("TC: list item, convert to a task %s", lineText);
-                // convert to a task, and then mark
-                lineText = this.markTaskLine(
-                    `${match[1]}[ ] ${match[2]}`,
-                    mark
-                );
-            } else {
-                console.debug("TC: not a task or list item %s", lineText);
-            }
+        const taskMatch = this.anyTaskMark.exec(lineText);
+        if (taskMatch) {
+            // this is already a task
+            const old = taskMatch[2];
+            return this.doMarkTask(lineText, old, mark);
+        }
+
+        const match = this.anyListItem.exec(lineText);
+        if (mark === TEXT_ONLY_MARK && this.cache.marks[TEXT_ONLY_MARK]) {
+            // apply to general text. Do not convert to a task
+            lineText = this.doMarkText(lineText);
+        } else if (match && match[2]) {
+            this.logDebug("list item, convert to a task %s", lineText);
+            // convert to a task, and then mark
+            lineText = this.updateLineText(`${match[1]}[ ] ${match[2]}`, mark);
+        } else if (
+            mark !== TEXT_ONLY_MARK &&
+            lineText.match(this.cache.undoExpr[TEXT_ONLY_NAME])
+        ) {
+            this.logDebug("marked plain text, convert to a task %s", lineText);
+            // undo text-only configuration
+            lineText = this.doMarkText(lineText, false);
+            // convert to a task, and then mark
+            const leadingSpace = this.anyText.exec(lineText);
+            lineText = this.updateLineText(
+                `${leadingSpace[1]}- [ ] ${leadingSpace[2]}`,
+                mark
+            );
+        } else {
+            this.logDebug("not a task or list item %s", lineText);
         }
         return lineText;
     }
 
-    private resetTaskLine(lineText: string, mark = " "): string {
-        console.debug("TC: reset task with %s: %s", mark, lineText);
-        lineText = lineText.replace(this.anyTaskMark, `$1${mark}$3`);
-        const strictLineEnding = lineText.endsWith("  ");
-
+    private doMarkText(lineText: string, append = true): string {
+        // remember line ending: block id and strict line ending whitespace
         let blockid = "";
+        const strictLineEnding = lineText.endsWith("  ");
         const match = this.blockRef.exec(lineText);
         if (match && match[2]) {
             lineText = match[1];
             blockid = match[2];
         }
-        if (this.initSettings.resetRegExp) {
-            lineText = lineText.replace(this.initSettings.resetRegExp, "");
+
+        // Apply text-only configuration
+        const undoExpr = this.cache.undoExpr[TEXT_ONLY_NAME];
+        if (undoExpr) {
+            lineText = lineText.replace(undoExpr, "");
         }
+        if (append) {
+            const removeExpr = this.cache.removeExpr[TEXT_ONLY_NAME];
+            if (removeExpr) {
+                lineText = lineText.replace(removeExpr, "");
+            }
+            const appendExpr =
+                this.settings.groups[TEXT_ONLY_NAME].appendDateFormat;
+            if (appendExpr) {
+                if (!lineText.endsWith(" ")) {
+                    lineText += " ";
+                }
+                lineText += moment().format(appendExpr);
+            }
+        }
+
+        // restore block id & trailing whitespace
         lineText = lineText.replace(/\s*$/, blockid);
-        if (this.settings.appendRemoveAllTasks && mark !== " ") {
-            // clear previous appended text
-            lineText = this.completeTaskLine(lineText, mark);
-        }
         if (strictLineEnding) {
             lineText += "  ";
         }
+        this.logDebug("text updated", lineText);
         return lineText;
     }
 
-    resetAllTasks(source: string): string {
-        const LOG_HEADING = this.settings.completedAreaHeader || "## Log";
-        const lines = source.split("\n");
+    private doMarkTask(lineText: string, old: string, mark: string): string {
+        this.logDebug("mark task", lineText);
+        const oldMarkName = this.cache.marks[old]?.name || DEFAULT_NAME;
+        const newMarkName = this.cache.marks[mark]?.name || DEFAULT_NAME;
 
-        const result: string[] = [];
-        let inCompletedSection = false;
-        for (const line of lines) {
-            if (inCompletedSection) {
-                if (line.startsWith("#") || line.trim() === "---") {
-                    inCompletedSection = false;
-                }
-                result.push(line);
-            } else if (line.trim() === LOG_HEADING) {
-                inCompletedSection = true;
-                result.push(line);
-            } else if (this.isCompletedTaskLine(line)) {
-                result.push(this.resetTaskLine(line));
-            } else {
-                result.push(line);
-            }
+        // replace the task mark
+        lineText = lineText.replace(this.anyTaskMark, `$1${mark}$3`);
+
+        // remember line ending: block id and strict line ending whitespace
+        let blockid = "";
+        const strictLineEnding = lineText.endsWith("  ");
+        const match = this.blockRef.exec(lineText);
+        if (match && match[2]) {
+            lineText = match[1];
+            blockid = match[2];
         }
-        return result.join("\n");
+
+        const undoExpr = this.cache.undoExpr[oldMarkName];
+        if (undoExpr) {
+            lineText = lineText.replace(undoExpr, "");
+        }
+
+        const removeExpr = this.cache.removeExpr[newMarkName];
+        if (removeExpr) {
+            lineText = lineText.replace(removeExpr, "");
+        }
+
+        const appendExpr = this.settings.groups[newMarkName].appendDateFormat;
+        if (appendExpr) {
+            if (!lineText.endsWith(" ")) {
+                lineText += " ";
+            }
+            lineText += moment().format(appendExpr);
+        }
+
+        // append block id & replace ending whitespace
+        lineText = lineText.replace(/\s*$/, blockid);
+        if (strictLineEnding) {
+            lineText += "  ";
+        }
+        this.logDebug("task marked", lineText);
+        return lineText;
     }
 
-    moveCompletedTasksInFile(source: string): string {
-        const LOG_HEADING = this.settings.completedAreaHeader || "## Log";
-        const lines = source.split("\n");
+    private doRemoveTask(lineText: string): string {
+        return lineText.replace(this.stripTask, "$1 $2");
+    }
 
-        if (source.indexOf(LOG_HEADING) < 0) {
-            if (lines[lines.length - 1].trim() !== "") {
-                lines.push("");
-            }
-            lines.push(LOG_HEADING);
+    // Task Collection / Move tasks
+
+    /**
+     * Move marked task to the appropriate heading
+     * @param source
+     * @param lines
+     */
+    moveAllTasks(source: string): string {
+        if (this.cache.areaHeadings.length == 0) {
+            return source;
         }
 
-        const remaining = [];
-        const completedSection = [];
-        const newTasks = [];
-        let inCompletedSection = false;
-        let inTask = false;
+        const parsed: string[] = [];
+        const order: string[] = [];
+
+        // split out content for named sections
+        const sections = this.scan(source, parsed, order);
+
+        // move general tasks to appropriate sections
+        const result = this.move(parsed, sections, order, 0);
+
+        // in order of appearance from top to bottom
+        for (let i = 0; i < order.length; i++) {
+            const [heading, bi] = order[i].split("%:%");
+            const bi2 = Number(bi);
+
+            // move existing tasks in sections to other sections
+            sections[heading].blocks[bi2].existing = this.move(
+                sections[heading].blocks[bi2].existing,
+                sections,
+                order,
+                i,
+                this.cache.headingToMark[heading]
+            );
+        }
+
+        return result
+            .flatMap((l) => {
+                const match = l.match(/%%--TC--(.*)--(\d+)--%%/);
+                if (match) {
+                    const h = match[1];
+                    const i = Number(match[2]);
+                    return sections[h].blocks[i].newTasks.concat(
+                        ...sections[h].blocks[i].existing
+                    );
+                }
+                return l;
+            })
+            .join("\n");
+    }
+
+    private scan(
+        source: string,
+        parsed: string[],
+        order: string[]
+    ): Record<string, TcSection> {
+        const split = source.split("\n");
+        this.ensureHeadings(split);
+
+        const sections: Record<string, TcSection> = {};
+        let activeSection: string[] = null;
+
+        // parse / analyze
+        for (const line of split) {
+            const trim = line.trim();
+
+            if (
+                line.startsWith("#") &&
+                contains(this.cache.areaHeadings, trim)
+            ) {
+                parsed.push(line); // push heading to parsed lines
+                const index = this.createCompletionArea(trim, sections);
+
+                activeSection = sections[trim].blocks[index].existing;
+                parsed.push(`%%--TC--${trim}--${index}--%%`);
+                order.push(`${trim}%:%${index}`);
+            } else if (
+                activeSection &&
+                (line.startsWith("#") || line.trim() === "---")
+            ) {
+                activeSection = null;
+                parsed.push(line);
+            } else if (activeSection) {
+                activeSection.push(line);
+            } else {
+                parsed.push(line);
+            }
+        }
+        return sections;
+    }
+
+    private move(
+        source: string[],
+        sections: Record<string, TcSection>,
+        order: string[],
+        orderIndex: number,
+        excluded?: string
+    ): string[] {
+        const remaining: string[] = [];
+
+        let markToMove = null;
+        let taskToBeMoved = null;
         let inCallout = false;
-        let completedItemsIndex = lines.length;
 
-        for (let line of lines) {
-            if (inCompletedSection) {
-                if (line.startsWith("#") || line.trim() === "---") {
-                    inCompletedSection = false;
+        for (let line of source) {
+            if (taskToBeMoved && this.isContinuation(line, inCallout)) {
+                // keep task lines together
+                taskToBeMoved.push(line);
+                continue;
+            }
+            if (taskToBeMoved) {
+                const heading =
+                    this.cache.marks[markToMove].collection.areaHeading;
+                const index = this.findNextSection(heading, order, orderIndex);
+
+                // add this task to the list of new tasks for the section
+                taskToBeMoved.forEach((l) =>
+                    sections[heading].blocks[index].newTasks.push(l)
+                );
+
+                markToMove = null;
+                taskToBeMoved = null;
+                inCallout = false;
+            }
+            if (line.startsWith("%%--TC--")) {
+                // only applies to general text, not completion sections
+                // always preceded by a section heading
+                orderIndex = source.indexOf(line);
+                remaining.push(line);
+                continue;
+            }
+
+            const taskMatch = this.anyTaskMark.exec(line);
+            if (taskMatch) {
+                const mark = taskMatch[2];
+                if (excluded && excluded.indexOf(mark) >= 0) {
+                    // we are in the target section for this mark
                     remaining.push(line);
-                } else {
-                    completedSection.push(line);
-                }
-            } else if (line.trim() === LOG_HEADING) {
-                inCompletedSection = true;
-                completedItemsIndex = remaining.push(line);
-                remaining.push("%%%COMPLETED_ITEMS_GO_HERE%%%");
-            } else {
-                if (this.isCompletedTaskLine(line)) {
-                    if (this.settings.completedAreaRemoveCheckbox) {
-                        line = this.removeCheckboxFromLine(line);
+                } else if (this.isCollected(mark)) {
+                    // start of task that should be moved to another section
+                    if (this.removeCheckbox(mark)) {
+                        line = this.doRemoveTask(line);
                     }
-                    inTask = true;
-                    inCallout = this.isCallout(line); // is task _inside_ the callout
-                    newTasks.push(line);
-                } else if (
-                    inTask &&
-                    !this.isTaskLine(line) &&
-                    this.isContinuation(line, inCallout)
-                ) {
-                    newTasks.push(line);
+                    markToMove = mark;
+                    taskToBeMoved = [];
+                    taskToBeMoved.push(line);
+                    inCallout = this.isCallout(line); // is the task inside a callout
                 } else {
-                    inTask = false;
-                    inCallout = false;
+                    // mark not configured for collection
                     remaining.push(line);
                 }
+            } else {
+                remaining.push(line);
             }
         }
+        return remaining;
+    }
 
-        let result = remaining
-            .slice(0, completedItemsIndex)
-            .concat(...newTasks)
-            .concat(...completedSection);
-        if (completedItemsIndex < remaining.length - 1) {
-            result = result.concat(remaining.slice(completedItemsIndex + 1));
+    /**
+     * Find _next_ heading of the requested type (looping back to the beginning if necessary)
+     * @param heading
+     * @param order
+     * @param start
+     * @returns
+     */
+    private findNextSection(
+        heading: string,
+        order: string[],
+        start: number
+    ): number {
+        let wrap = false;
+        for (let i = start; !wrap || i != start; i++) {
+            if (i == order.length) {
+                i = 0;
+                wrap = true;
+            }
+            if (order[i].startsWith(heading)) {
+                const [_, index] = order[i].split("%:%");
+                return Number(index);
+            }
         }
-        return result.join("\n");
+        return undefined;
     }
 
-    private isCompletedTaskLine(lineText: string): boolean {
-        return this.initSettings.completedTaskRegExp.test(lineText);
+    private createCompletionArea(
+        name: string,
+        sections: Record<string, TcSection>
+    ): number {
+        if (!sections[name]) {
+            sections[name] = {
+                blocks: [],
+            };
+        }
+        sections[name].blocks.push({
+            existing: [],
+            newTasks: [],
+        });
+        return sections[name].blocks.length - 1;
     }
 
-    private isIncompleteTaskLine(lineText: string): boolean {
-        return this.initSettings.incompleteTaskRegExp.test(lineText);
+    private ensureHeadings(split: string[]) {
+        this.cache.areaHeadings.forEach((h) => {
+            if (!contains(split, h)) {
+                if (split[split.length - 1].trim() !== "") {
+                    split.push("");
+                }
+                split.push(h);
+                split.push("");
+            }
+        });
     }
 
-    private isTaskLine(lineText: string): boolean {
-        return this.anyTaskMark.test(lineText);
+    private isCollected(mark: string) {
+        return (
+            this.cache.marks[mark] &&
+            this.cache.marks[mark].collection &&
+            this.cache.marks[mark].collection.areaHeading
+        );
+    }
+
+    private removeCheckbox(mark: string) {
+        return (
+            this.cache.marks[mark] &&
+            this.cache.marks[mark].collection &&
+            this.cache.marks[mark].collection.removeCheckbox
+        );
+    }
+
+    private isCallout(lineText: string): boolean {
+        return this.blockQuote.test(lineText);
     }
 
     private isContinuation(lineText: string, inCallout: boolean): boolean {
@@ -362,16 +525,68 @@ export class TaskCollector {
         }
         return this.continuation.test(lineText);
     }
+}
 
-    private isCallout(lineText: string): boolean {
-        return this.blockQuote.test(lineText);
+function contains(haystack: string[], needle: string) {
+    return haystack.find((s) => s === needle);
+}
+
+export const _regex = {
+    tryCompleteRegex,
+    tryIncompleteRegex,
+    tryUndoRegex,
+    tryRemoveTextRegex,
+};
+
+function tryCompleteRegex(param: string): RegExp {
+    return new RegExp(`^([\\s>]*- \\[)[${param}](\\] .*)$`);
+}
+
+function tryIncompleteRegex(param: string): RegExp {
+    return new RegExp(`^([\\s>]*- \\[)[${param}](\\] .*)$`);
+}
+
+function tryRemoveTextRegex(param: string): RegExp {
+    return param ? new RegExp(param, "g") : null;
+}
+
+function tryUndoRegex(appendDateFormat: string): RegExp {
+    const array = appendDateFormat.match(ALL_FORMATTING_TOKENS);
+    for (let i = 0, length = array.length; i < length; i++) {
+        const segment = array[i];
+        if (DATE_FORMATTING_TOKENS.test(segment)) {
+            array[i] = segment
+                .replace(/YYYY/g, "\\d{4}") // 4-digit year
+                .replace(/YY/g, "\\d{2}") // 2-digit year
+                .replace(/DD/g, "\\d{2}") // day of month, padded
+                .replace(/D/g, "\\d{1,2}") // day of month, not padded
+                .replace(/MMM/g, "[A-Za-z]{3}") // month, abbrv
+                .replace(/MM/g, "\\d{2}") // month, padded
+                .replace(/M/g, "\\d{1,2}") // month, not padded
+                .replace(/HH/g, "\\d{2}") // 24-hour, padded
+                .replace(/H/g, "\\d{1,2}") // 24-hour, not padded
+                .replace(/hh/g, "\\d{2}") // 12-hour, padded
+                .replace(/h/g, "\\d{1,2}") // 12-hour, not padded
+                .replace(/mm/g, "\\d{2}") // minute, padded
+                .replace(/m/g, "\\d{1,2}"); // minute, not padded;
+        } else if (segment.match(/\[[\s\S]/)) {
+            array[i] = replaceLiterals(segment.replace(/^\[|\]$/g, ""));
+        } else {
+            array[i] = replaceLiterals(segment);
+        }
     }
 
-    private replaceLiterals(segment: string) {
-        return segment
-            .replace(/\(/g, "\\(") // escape literal (
-            .replace(/\)/g, "\\)") // escape literal )
-            .replace(/\[/g, "\\[") // escape literal [
-            .replace(/\]/g, "\\]"); // escape literal ]
-    }
+    // allow whitespace around the appended string
+    const matchString = `\\s*${array.join("")}\\s*`;
+
+    // allow a block reference at the end of the line
+    return new RegExp(matchString + "( \\^[A-Za-z0-9-]+)?$");
+}
+
+function replaceLiterals(segment: string) {
+    return segment
+        .replace(/\(/g, "\\(") // escape literal (
+        .replace(/\)/g, "\\)") // escape literal )
+        .replace(/\[/g, "\\[") // escape literal [
+        .replace(/\]/g, "\\]"); // escape literal ]
 }

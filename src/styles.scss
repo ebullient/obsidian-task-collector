@@ -1,0 +1,113 @@
+.task-collector-settings {
+  dt,
+  .setting-item.tc-create-task-group {
+    padding: 0.75em 0 0 0;
+    border-top: 1px solid var(--background-modifier-border);
+  }
+
+  .task-group-name {
+    input[type="text"]:disabled {
+      // border: none;
+      background-color: var(--background-primary);
+    }
+  }
+
+  button.data-value-error {
+    background-color: var(--background-modifier-error);
+    color: var(--text-on-accent);
+  }
+
+  input[type="text"].data-value-error {
+    border-color: var(--text-error);
+    text-decoration: underline;
+  }
+
+  .task-marks {
+    input[type="text"] {
+      font-family: var(--font-monospace);
+    }
+
+    .setting-item-control[marks*=" "] {
+      position: relative;
+    }
+    .setting-item-control[marks*=" "]::after {
+      content: "␣";
+      position: absolute;
+      left: 5px;
+    }
+  }
+  .setting-item {
+    border-top: none;
+  }
+}
+
+#taskcollector-modal {
+
+  .modal-close-button {
+    display: none;
+  }
+  .modal {
+    padding: 10px;
+    min-width: 200px;
+    max-width: 300px;
+
+    .markdown-preview-view {
+      padding: 5px;
+
+      ul {
+        display: flex;
+        flex-wrap: wrap;
+        --gap: 3px;
+        --square: 45px;
+        margin: calc(-1 * var(--gap)) calc(1 * var(--gap));
+        margin-block-start: 0;
+        margin-block-end: 0;
+        padding-inline-start: 0;
+
+        > li {
+          margin: var(--gap);
+          display: block;
+          width: var(--square);
+          height: var(--square);
+          background-color: var(--background-primary);
+          border: 1px solid var(--background-modifier-border);
+          border-radius: 2px;
+          text-indent: unset;
+          line-height: var(--square);
+          text-align: center;
+
+          > span {
+            font-family: var(--font-monospace);
+          }
+        }
+        > li::before {
+          display: none;
+        }
+        > li.task-list-item {
+          text-decoration: none;
+
+          input.task-list-item-checkbox {
+            margin-right: 4px;
+            margin-left: unset;
+          }
+        }
+      }
+
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+
+        span {
+          display: block;
+          font-size: 0.8em;
+          color: var(--text-muted);
+        }
+      }
+    }
+  }
+  .modal-content {
+    background-color: var(--background-secondary);
+    margin-top: 0px;
+  }
+}

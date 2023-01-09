@@ -1,83 +1,38 @@
 # Obsidian: Task Collector
 [![GitHub tag (Latest by date)](https://img.shields.io/github/v/tag/ebullient/obsidian-task-collector)](https://github.com/ebullient/obsidian-task-collector/releases) ![GitHub all releases](https://img.shields.io/github/downloads/ebullient/obsidian-task-collector/total?color=success)
 
-Yet another plugin to manage completed tasks. ;)
-
-Task Collector commands are oriented around a somewhat archival notion of completed tasks. 
-
-- **Completed tasks** are marked with `[x]`, `[X]`.
-    - *Canceled tasks*, marked with `[-]`, can be added to this group in settings.
-- Any other task is considered **incomplete** (or in-progress)
-
-Task actions (see [Task states](#task-states))
-
-- When a task is *completed* (assigned `[x]`, `[X]`, or optionally `[-]`): 
-    - It can be annotated with additional data, e.g. ✅:: 2022-01-01
-    - Text can be removed, e.g. #todo tags
-
-- When a task is *reset* (assigned `[ ]` or other configured value):
-    - Text matching the configured pattern for a completed task, e.g. ✅:: 2022-01-01, is removed.
-
----
-
-* [Commands](#commands) 
-* [Settings](#settings)
+Yet another plugin to manage completed tasks, but this one has a task-completion modal to go with it!
 
 ## How to install
 
 1. Go to **Community Plugins** in your [Obsidian](https://www.obsidian.md) settings and **disable** Safe Mode
 2. Click on **Browse** and search for "task collector"
 3. Click install
-4. "Enable" the plugin directly after installation, or use the toggle on the community plugins tab to enable the plugin after it has been installed.
+4. Use the toggle on the community plugins tab to enable the plugin.
 
 ## TL;DR for task completion
 
-![Task Completion](https://user-images.githubusercontent.com/808713/148706433-34d21845-a441-428d-a24c-380c6db457c7.gif)
-
-Update the following plugin settings
-
-1. If you want *canceled* `[-]` items to behave like completed items, enable **Support Canceled Tasks**
-
-1. Find **Additional Task Types**, and add any task characters you use other than `[x]`, `[X]`, `[ ]` (omit `[-]` if you enabled the above)
-
-3. *Optional:* Scroll down to find **Toggle: Add menu item for marking a task**, and enable it to add a right-click menu item for marking tasks.
+1. Open Plugin settings
+2. Edit the task marks for the `default` group to include any characters you use for incomplete tasks.
+3. Edit the task marks for the `complete` group to include any characters you use for completed tasks.
+4. Scroll down to find **Menus and Modals**, and enable the context menus you prefer.
 
 Use the [(TC) Mark task](#tc-mark-task) command from the command palette, or the right-click menu (shown in the clip), or bind it to a hot key. 
 
----
+![Task Completion](https://user-images.githubusercontent.com/808713/148706433-34d21845-a441-428d-a24c-380c6db457c7.gif)
 
-## Task states
+## Task Groups
 
-For the following table, 
-* assume that support for canceled items has been enabled, and 
-* that `>` has been defined as an additional (incomplete) task type.
+Marking tasks is configured in groups:
 
-If a task starts in the first column, 
-and we try using a command to set it to the value in the second column, 
-we'll get the result in the third column. 
-
-| Start |  Try  | Result |                                               | 
-|-------|-------|--------|-----------------------------------------------|
-| `[ ]` | `[>]` | `[>]`  | Value changed                                 |
-| `[ ]` | `[-]` | `[-]`  | See [Cancel Task](#tc-cancel-task-if-enabled) |
-| `[ ]` | `[x]` | `[x]`  | See [Complete Task](#tc-complete-task)        |
-| `[>]` | `[ ]` | `[ ]`  | Value changed                                 |
-| `[>]` | `[-]` | `[-]`  | See [Cancel Task](#tc-cancel-task-if-enabled) |
-| `[>]` | `[x]` | `[x]`  | See [Complete Task](#tc-complete-task)        |
-| `[-]` | `[ ]` | `[ ]`  | See [Reset Task](#tc-reset-task)              |
-| `[-]` | `[>]` | `[>]`  | See [Reset Task](#tc-reset-task)              |
-| `[-]` | `[x]` | `[-]`  | *No change. See below*                        |
-| `[x]` | `[ ]` | `[ ]`  | See [Reset Task](#tc-reset-task)              |
-| `[x]` | `[>]` | `[>]`  | See [Reset Task](#tc-reset-task)              |
-| `[x]` | `[-]` | `[x]`  | *No change. See below*                        |
-
-Note: **Completed** tasks won't be directly completed again, they must be reset first.
-
-Completed tasks may be annotated with data, like `(✅ 2022-01-01)`. Task Collector will
-not "re-complete" an already completed item to avoid overwriting or duplicating that annotation.
-Completed items must be reset (which would clear that data if present), before being completed
-again.
-
+- Each group can have one or more marks associated with it
+- Each group defines behavior for when that group is applied to a task:
+  - If an _append date_ format is defined for the group:
+    - A date string with that format will be appended to the end of the task when it is marked. 
+    - If task collector changes the mark, the appended date string will be removed before the next mark is applied.
+  - If a  _remove text_ pattern is defined for the group:
+    - Text that matches the provided pattern will be removed when the task is marked. Aside from an immediate "undo", this is not a reversible operation.
+  
 ## Commands
 
 ### (TC) Mark Task (✨ 0.6.4)
@@ -86,89 +41,101 @@ again.
     - The first group contains marks for "completed" items.
     - The second group contains all other task marks, minimally a space (`[ ]`).
 2. Use the mouse to select an icon, or type the associated character.
-3. What happens next depends on the state of the task and the selected character.
-    - If this is a plain list item, it will be converted into an empty incomplete task: processing continues...
-    - If an incomplete task is completed (`[x]`, `[X]`), see [Complete Task](#tc-complete-task)
-    - If an incomplete task is canceled (`[-]`), see [Cancel Task](#tc-cancel-task-if-enabled)
-    - If an item is reset (`[ ]` or _other_), see [Reset Task](#tc-reset-task)
-    - If a completed item is completed or canceled, nothing happens.
-    - If an unknown character is typed, nothing happens.
 
 > Note:  
-> Is the pop-up not showing what you expect? Review what you have set for **[Additional Task Types](#settings)**.
+> - Is the pop-up not showing what you expect? Review the marks defined in your task groups.
+> - You can use (type) characters that are not shown in the dialog. They will use the `default` group settings.
 
-### (TC) Complete Task
+When the task is marked: 
 
-If the current line is (or selection contains) a task, AND the task matches the configuration for an incomplete task:
+1. Text appended by the previous mark will be removed (if it matches)
+2. The task will be marked with the new mark
+3. If a remove text pattern is configured, it will be applied to the task text.
+4. If there is an append date format, a formatted time stamp will be appended to the task.  
 
-1. It will mark the item as complete (`[x]` or `[X]` if selected). 
-2. Optional: Remove characters matching a configured regular expression from the task, e.g. remove a `#task` or `#todo` tag.
-3. If an append date format string is configured, append a formatted date string to the task.
+### (TC) Collect tasks  (✨ 1.0.0)
 
-### (TC) Cancel Task (if enabled)
+Task Collector can gather and regroup different kinds of tasks into different areas within a note.
 
-If the current line is (or selection contains) a task, AND the task matches the configuration for an incomplete task:
+1. Enable "Task Collection" 
+2. For the group of tasks that you would like to gather: 
+    - Set a completion area header
+    - Decide whether or not the checkbox should be removed when the task is relocated.
 
-1. It will mark the item as canceled (`[-]`). 
-2. Optional: Remove characters matching a configured regular expression from the task, e.g. remove a `#task` or `#todo` tag.
-3. If an append date format string is configured, append a formatted date string to the task
+When you "Collect tasks", the following will happen: 
 
-### (TC) Reset Task 
+- Any missing area headings will be added to the end of the document.
+- The document will be scanned from top to bottom, to find all configured headings
+  - You can have more than one heading of each type in the note.
+- Main note content:  
+  - The main content (excluding collection areas) are scanned for tasks that should be moved
+  - Tasks that are discovered will be moved to the next closesd matching section.
+    - If a section is not found between the task and the end of the note, the search resumes from the top.
+- Collection areas:
+  - Collection areas are then scanned for tasks that should be moved to other areas, moving from the top down.
 
-If the current line is (or selection contains) a task:
+As an example, if you start with this:
 
-1. It will set it to `[ ]` or an otherwise selected value. 
-2. If an append date format string is configured, appended text that matches the configured format will be removed.
+```
+- [ ] i1
+- [x] one
+- [>] two
 
-<small>(as of 0.5.0)</small>
+## To Do
 
-### (TC) Move completed tasks to configured heading
+## Log
+- [ ] i2
+- [x] three
+- [>] four
 
-For the current document:
+## Deferred
+- [ ] i3
+- [x] five
+- [>] six
+```
 
-- Move any completed (or canceled) tasks into the specified section. Items will be inserted after the target header (most recent at the top). 
-    
-### (TC) Complete all tasks
+You can configure group collection so the result is this: 
 
-For the current document:
+```
+## To Do
+- [ ] i1
+- [ ] i2
+- [ ] i3
 
-- Apply the [Complete Task](#tc-complete-task) command to all incomplete tasks.
-    
-<small>(as of 0.4.0)</small>
+## Log
+- [x] one
+- [x] five
+- [x] three
 
-### (TC) Reset all completed tasks
+## Deferred
+- [>] two
+- [>] four
+- [>] six
+```
 
-For the current document:
+For this case specifically, set the area header for the **default** group to `"## To Do`,
+create a new group called `deferred` that supports one mark (`>`) and uses `## Deferred` as an area header. Set the **complete** group area header to `## Log`.
 
-- Apply the [Reset Task](#tc-reset-task) command to all completed tasks that are _not in the (archival) completed area_.
-
-<small>(as of 0.4.0)</small>
- 
  ---
 ## Settings
 
-- Toggle **Support canceled tasks**  
-  Use a `[-]` to indicate a canceled tasks. Canceled tasks are processed in the same way as completed tasks.
-  - default: disabled
+Settings have been overhauled for version 1.0
 
-- **Additional Task Types** (renamed in 0.6.5)
-    Specify the set of single characters that indicate in-progress or incomplete tasks.
-    - default: ` ` (space)
-    - example: `> ?!` (a space is included along with other values)
-    - Notes:
-        - This is often used with bullet journal (bujo) style tasks, e.g. `[>]` for deferred items or `[/]` for items in progress. See [Task states](#task-states).
-        - The pop-up dialog for marking tasks will create buttons in the order the characers are included in this string.
+- Toggle **Enable task collection**  
+    Use this toggle to enable task collection commands and show related options.
+    - default: disabled
 
-### Completing tasks
+- **Task Groups**  
+    Each task group defines a set of behaviors that should be applied when the associated marks are added or removed from a task.
 
-- **Append date to completed task**
+  - **Append date to a marked task**
     - default: (empty string, disabled)
     - example: `[(]YYYY-MM-DD[)]`, results in `(2021-09-27)`
     - Notes:
-        - When a [moment.js date format](https://momentjs.com/docs/#/displaying/format/) is specified, the current date/time will be appended to the task text.
-        - Use square brackets to surround content that is not part of the format string. When working with dataview-friendly annotations, for example, your format string should look somethng like this: `[[completion::]YYYY-MM-DD[]]`.
+      - When a [moment.js date format](https://momentjs.com/docs/#/displaying/format/) is specified, the current date/time will be appended to the task text.
+      - Use square brackets to surround content that is not part of the format string. When working with dataview-friendly annotations, for example, your format string should look somethng like this: `[[completion::]YYYY-MM-DD[]]`.
 
-- **Remove text in completed (or canceled) task**  
+  - **Remove text when a task is marked**  
     Remove text matching this [regular expression](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions) from the task text. 
     - default: (empty string, disabled)
     - example: `#(task|todo)` (remove #task or #todo tags)
@@ -176,21 +143,25 @@ For the current document:
         - The global flag, 'g' is applied to a per-line match.
         - *Be careful!* Test your expression before using it. There are several [online](https://www.regextester.com/) [tools](https://regex.observepoint.com/) that can help.
 
-### Moving completed tasks to a sub-section
+  - **Toggle: Register command for marking a task**  
+    Register a command to mark the task _on the current line (or within the current selection)_ with the first task mark associated with the group.
+      - default: `false`
 
-- **Completed area header**  
-    Completed (or canceled) items will be inserted under the specified header (most recent at the top).
-    - default: `## Log`
+  - **Area heading** (if Task Collection is enabled)  
+    Matching marked items will be inserted under the specified heading (most recent at the top).  
+    
     - Notes:
-      - The default value will be used if the command is invoked and the configured value is empty. 
-      - The heading will be created at the end of the document if it does not exist.
-      - When scanning the document for completed (or canceled) tasks, the contents from this configured header to the next heading or separator (`---`) will be ignored.
-      - Completed (or canceled) tasks will be moved along with their sub items (nested lists, text, or quotes). 
-      - If a completed item has an incomplete child task, the child (and any text following) will remain in the original location.
+        - The area heading must be defined to enable collection for the group.
+        - The heading will be created at the end of the note if it does not exist.
+        - When scanning the note for marked tasks, tasks with a matching mark found between the configured header and the next heading or separator (`---`) will be ignored.
+        - Marked tasks will carry along their sub items (nested lists, text, or quotes). 
+        - If a marked item has an incomplete child task, the child (and any text following) will remain in the original location.
 
-- **Remove the checkbox from moved items** (✨ 0.6.3)
-    Remove the checkbox from completed (or canceled) tasks during the move to the completed area. This transforms tasks into normal list items. Task Collector will not be able to reset these items. They also will not appear in task searches or queries.
-    - default: `false`
+  - **Remove the checkbox from moved items** (✨ 0.6.3, if Task Collection is enabled)
+      Remove the checkbox marked tasks during the move to the configured area. 
+      - This transforms tasks into normal list items. 
+      - Task Collector will not be able to reset these items. They also will not appear in task searches or queries.
+      - default: `false`
     
 ## Right-click editor menu items
 
@@ -204,29 +175,13 @@ For the current document:
         - Task Collector will use `[x]` or `[X]` to complete an item, and `[-]` to cancel an item (if that support has been enabled). It will use a space (`[ ]`) to reset the task, in addition to any of the additional task types.
         - If you enter an unknown value with the keyboard, nothing will happen. 
 
-- **Toggle: Add menu item for completing a task**  
-  Add an item to the right-click menu in edit mode to mark the task _on the current line (or within the current selection)_ complete. If canceled items are supported, an additional menu item will be added to mark selected tasks as canceled.
-    - default: `false`
-
-- **Toggle: Add menu item for resetting a task** (💥 0.6.4)
-  Add an item to the right-click menu in edit mode to reset the task _on the current line (or within the current selection)_.
-    - default: `false`
-
-- **Toggle: Add menu item for completing all tasks** (💥 0.6.4)
-  Add an item to the right-click menu in edit mode to mark _all_ incomplete tasks in the current document complete.  If canceled items are supported, an additional menu item will be added to mark selected tasks as canceled.
-    - default: `false`
-
-- **Toggle: Add menu item for resetting all tasks** (💥 0.6.4)
-  Add an item to the right-click menu to reset _all_ completed (or canceled) tasks.
-    - default: `false`
-
 - **Toggle: Add menu item for moving all completed tasks**  
   Add an item to the right-click menu to move _all_ completed (or canceled) tasks.
     - default: `false`
 
 ## Credits
 
-- [Completed Area Plugin](https://github.com/DahaWong/obsidian-completed) -- general premise of moving completed tasks to a different area within the document (delimited by a heading).
+- [Completed Area Plugin](https://github.com/DahaWong/obsidian-completed) -- general premise of moving completed tasks to a different area within the note (delimited by a heading).
 - [JeppeKlitgaard/ObsidianTweaks](https://github.com/JeppeKlitgaard/ObsidianTweaks/) -- simple/clear event triggers
 - [ivan-lednev/obsidian-task-archiver](https://github.com/ivan-lednev/obsidian-task-archiver) -- Treatment of sub-elements
 - [Darakah/obsidian-timelines](https://github.com/Darakah/obsidian-timelines) -- Editor select/replace
