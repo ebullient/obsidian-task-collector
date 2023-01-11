@@ -3,7 +3,7 @@
 	"name": "Task Collector (TC)",
 	"version": "0.8.2",
 	"minAppVersion": "0.13.10",
-	"description": "Manage completed tasks within a document",
+	"description": "Change task status and collect tasks within a document",
 	"author": "ebullient",
 	"authorUrl": "https://github.com/ebullient",
 	"isDesktopOnly": false

@@ -140,7 +140,7 @@ jobs:
   brat:
     needs: build
     runs-on: ubuntu-latest
-    if: inputs.experimental == false
+    if: github.event.inputs.experimental == false
     steps:
     - uses: actions/checkout@v2
       with:
