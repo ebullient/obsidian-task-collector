@@ -5,6 +5,7 @@ import {
     PluginSettingTab,
     Setting,
     Notice,
+    debounce,
 } from "obsidian";
 import { TaskCollector, _regex } from "./taskcollector-TaskCollector";
 import TaskCollectorPlugin from "./main";
@@ -23,7 +24,8 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
     tc: TaskCollector;
     newSettings: TaskCollectorSettings;
     groupList: HTMLDListElement;
-    cache: Record<string, Set<HTMLInputElement>> = {};
+    markInputCache: Record<string, Set<HTMLInputElement>> = {};
+    otherInputCache: Record<string, HTMLInputElement> = {};
     saveButton: HTMLElement;
 
     constructor(
@@ -98,11 +100,6 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         const redraw =
                             value != this.newSettings.collectionEnabled;
-                        this.tc.logDebug(
-                            "TODO: collectionEnabled",
-                            this.newSettings.collectionEnabled,
-                            value
-                        );
                         this.newSettings.collectionEnabled = value;
                         if (redraw) {
                             this.drawElements();
@@ -120,7 +117,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     .setPlaceholder("")
                     .setValue(this.newSettings.markCycle)
                     .onChange(async (value) => {
-                        this.tc.logDebug("TODO task mark cycle", value);
+                        this.newSettings.markCycle = value;
                     })
             );
 
@@ -180,7 +177,6 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 toggle
                     .setValue(this.newSettings.previewClickModal)
                     .onChange(async (value) => {
-                        this.tc.logDebug("TODO: previewClickModal", value);
                         this.newSettings.previewClickModal = value;
                     })
             );
@@ -194,7 +190,6 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 toggle
                     .setValue(this.newSettings.contextMenu.markTask)
                     .onChange(async (value) => {
-                        this.tc.logDebug("TODO: contextMenu.markTask", value);
                         this.newSettings.contextMenu.markTask = value;
                     })
             );
@@ -208,10 +203,6 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 toggle
                     .setValue(this.newSettings.contextMenu.collectTasks)
                     .onChange(async (value) => {
-                        this.tc.logDebug(
-                            "TODO: contextMenu.collectTasks",
-                            value
-                        );
                         this.newSettings.contextMenu.collectTasks = value;
                     })
             );
@@ -225,14 +216,14 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 toggle
                     .setValue(this.newSettings.debug)
                     .onChange(async (value) => {
-                        this.tc.logDebug("TODO: debug", value);
                         this.newSettings.debug = value;
                     })
             );
     }
 
     showTaskGroups() {
-        this.cache = {};
+        this.markInputCache = {};
+        this.otherInputCache = {};
         this.groupList.empty();
         this.clearButtonErrors();
 
@@ -264,45 +255,45 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     .setDisabled(true);
             });
         }
-        nameSetting.addText((text) =>
+        nameSetting.addText((text) => {
             text
                 .setPlaceholder(COMPLETE_NAME)
                 .setValue(mts.name)
                 .setDisabled(mts.name === DEFAULT_NAME)
-                .onChange((value) => {
-                    const target = this.newSettings.groups[value];
-                    if (!value) {
-                        text.inputEl.addClass("data-value-error");
-                        text.inputEl.setAttribute(
-                            "aria-label",
-                            "A group name is required."
-                        );
-                    } else if (target && target != mts) {
-                        text.inputEl.addClass("data-value-error");
-                        text.inputEl.setAttribute(
-                            "aria-label",
-                            "This name is already used by another group"
-                        );
-                    } else {
-                        text.inputEl.removeClass("data-value-error");
-                        text.inputEl.removeAttribute("aria-label");
-                        Data.moveGroup(
-                            this.newSettings.groups,
-                            mts.name,
-                            value
-                        );
-                        if (value === TEXT_ONLY_NAME) {
-                            mts.marks = TEXT_ONLY_MARK;
-                            // we just created the text group, redraw / rebuild cache
-                            this.drawElements();
+                .onChange(
+                    debounce((value) => {
+                        const target = this.newSettings.groups[value];
+                        if (!value) {
+                            text.inputEl.addClass("data-value-error");
+                            text.inputEl.setAttribute(
+                                "aria-label",
+                                "A group name is required."
+                            );
+                        } else if (target && target != mts) {
+                            text.inputEl.addClass("data-value-error");
+                            text.inputEl.setAttribute(
+                                "aria-label",
+                                "This name is already used by another group"
+                            );
+                        } else {
+                            text.inputEl.removeClass("data-value-error");
+                            text.inputEl.removeAttribute("aria-label");
+                            Data.moveGroup(
+                                this.newSettings.groups,
+                                mts.name,
+                                value
+                            );
+                            if (value === TEXT_ONLY_NAME) {
+                                mts.marks = TEXT_ONLY_MARK;
+                                // we just created the text group, redraw / rebuild cache
+                                this.drawElements();
+                            }
                         }
-                    }
-                    this.tc.logDebug(
-                        "TODO: task group name",
-                        this.newSettings.groups
-                    );
-                })
-        );
+                        this.testForErrors();
+                    }, 50, true)
+                );
+            this.addToCache(text.inputEl, "name-setting");
+        });
         nameSetting.addExtraButton((b) => {
             b.setIcon(mts.name === DEFAULT_NAME ? "info" : "trash")
                 .setTooltip(
@@ -347,20 +338,25 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             }
 
             taskMarks.addText((input) => {
-                input.setPlaceholder("xX").onChange((value) => {
-                    const newMarks = Data.sanitizeMarks(value);
-                    if (newMarks != value) {
-                        input.inputEl.value = newMarks;
-                    }
-                    if (newMarks != mts.marks) {
-                        this.removeMarks(mts.marks, input.inputEl);
+                input.setPlaceholder("xX").onChange(
+                    debounce((value) => {
+                        const newMarks = Data.sanitizeMarks(value);
+                        if (newMarks != value) {
+                            input.inputEl.value = newMarks;
+                        }
+                        if (newMarks != mts.marks) {
+                            this.removeMarks(mts.marks, input.inputEl);
 
-                        mts.marks = newMarks;
-                        taskMarks.controlEl.setAttribute("marks", mts.marks);
+                            mts.marks = newMarks;
+                            taskMarks.controlEl.setAttribute(
+                                "marks",
+                                mts.marks
+                            );
 
-                        this.findDuplicates(input.inputEl);
-                    }
-                });
+                            this.findDuplicates(input.inputEl);
+                        }
+                    }, 50, true)
+                );
                 // sanitize and display initial value
                 mts.marks = Data.sanitizeMarks(mts.marks);
                 input.setValue(mts.marks);
@@ -376,27 +372,39 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     mts
                 )}`
             )
-            .addMomentFormat((momentFormat) =>
+            .addMomentFormat((momentFormat) => {
                 momentFormat
                     .setPlaceholder("YYYY-MM-DD")
                     .setValue(mts.appendDateFormat)
-                    .onChange(async (value) => {
-                        try {
-                            // Try formatting "now" with the specified format string
-                            moment().format(value);
-                            mts.appendDateFormat = value;
-                            this.tc.logDebug(
-                                "append date format",
-                                mts.name,
-                                mts.appendDateFormat
-                            );
-                        } catch (e) {
-                            console.error(
-                                `Error parsing specified date format for ${mts.name}: ${value}`
-                            );
-                        }
-                    })
-            );
+                    .onChange(
+                        debounce((value) => {
+                            try {
+                                // Try formatting "now" with the specified format string
+                                const now = moment().format(value);
+                                momentFormat.inputEl.removeClass(
+                                    "data-value-error"
+                                );
+                                momentFormat.inputEl.setAttribute(
+                                    "aria-label", now
+                                );
+                                mts.appendDateFormat = value;
+                            } catch (e) {
+                                momentFormat.inputEl.addClass(
+                                    "data-value-error"
+                                );
+                                momentFormat.inputEl.setAttribute(
+                                    "aria-label",
+                                    `An error occurred parsing this moment string. See log for details.`
+                                );
+                                console.error(
+                                    `Error parsing specified date format for ${mts.name}: ${value}`
+                                );
+                            }
+                            this.testForErrors();
+                        }, 200, true)
+                    );
+                this.addToCache(momentFormat.inputEl, "moment-format");
+            });
         new Setting(itemEl)
             .setName(
                 `Remove text matching pattern from ${this.getDescription(mts)}`
@@ -410,22 +418,24 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 text
                     .setPlaceholder(" #(todo|task)")
                     .setValue(mts.removeExpr)
-                    .onChange(async (value) => {
-                        try {
-                            // try compiling the regular expression
-                            _regex.tryRemoveTextRegex(value);
-                            mts.removeExpr = value;
-                            this.tc.logDebug(
-                                "remove regex",
-                                mts.name,
-                                mts.removeExpr
-                            );
-                        } catch (e) {
-                            console.error(
-                                `Error parsing specified text replacement regular expression for ${mts.name}: ${value}`
-                            );
-                        }
-                    })
+                    .onChange(
+                        debounce((value) => {
+                            try {
+                                // try compiling the regular expression
+                                _regex.tryRemoveTextRegex(value);
+                                mts.removeExpr = value;
+                                this.tc.logDebug(
+                                    "remove regex",
+                                    mts.name,
+                                    mts.removeExpr
+                                );
+                            } catch (e) {
+                                console.error(
+                                    `Error parsing specified text replacement regular expression for ${mts.name}: ${value}`
+                                );
+                            }
+                        }, 50, true)
+                    )
             );
 
         new Setting(itemEl)
@@ -436,13 +446,8 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     : "A command will be registered for each mark in the group."
             )
             .addToggle((toggle) =>
-                toggle.setValue(mts.registerCommand).onChange(async (value) => {
+                toggle.setValue(mts.registerCommand).onChange((value) => {
                     mts.registerCommand = value;
-                    this.tc.logDebug(
-                        "registerCommand",
-                        mts.name,
-                        mts.registerCommand
-                    );
                 })
             );
 
@@ -452,12 +457,9 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 "A right-click menu item will be added for each mark in the group."
             )
             .addToggle((toggle) =>
-                toggle
-                    .setValue(this.newSettings.contextMenu.markTask)
-                    .onChange(async (value) => {
-                        this.tc.logDebug("TODO: contextMenu.markTask", value);
-                        this.newSettings.contextMenu.markTask = value;
-                    })
+                toggle.setValue(mts.useContextMenu).onChange(async (value) => {
+                    mts.useContextMenu = value;
+                })
             );
 
         if (this.newSettings.collectionEnabled && mts.name !== TEXT_ONLY_NAME) {
@@ -494,7 +496,10 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
 
     private removeMarks(oldValue: string, input: HTMLInputElement) {
         const marks = oldValue ? oldValue.split("") : [];
-        this.tc.logDebug(`removeMarks begin: '${oldValue}'`, this.cache);
+        this.tc.logDebug(
+            `removeMarks begin: '${oldValue}'`,
+            this.markInputCache
+        );
 
         if (input.hasClass("no-marks-defined")) {
             input.removeClass("no-marks-defined");
@@ -503,9 +508,12 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         }
 
         marks.forEach((x) => {
-            this.tc.logDebug(`(TC): remove mark '${x}'`, this.cache[x]);
-            if (this.cache[x]) {
-                const set = this.cache[x];
+            this.tc.logDebug(
+                `(TC): remove mark '${x}'`,
+                this.markInputCache[x]
+            );
+            if (this.markInputCache[x]) {
+                const set = this.markInputCache[x];
                 set.delete(input);
                 this.tryRemoveConflict(x, input);
 
@@ -516,7 +524,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 }
             }
         });
-        this.tc.logDebug(`removeMarks end: '${oldValue}'`, this.cache);
+        this.tc.logDebug(`removeMarks end: '${oldValue}'`, this.markInputCache);
     }
 
     private findDuplicates(input: HTMLInputElement) {
@@ -525,13 +533,13 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             `findDuplicates begin: '${input.value}'`,
             marks,
             input,
-            this.cache
+            this.markInputCache
         );
 
         // add input element into the cache (new marks)
         marks.forEach((x) => {
-            if (this.cache[x]) {
-                const set = this.cache[x];
+            if (this.markInputCache[x]) {
+                const set = this.markInputCache[x];
                 set.add(input);
 
                 if (set.size > 1) {
@@ -545,8 +553,8 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 }
             } else {
                 // no conflict, all is well.
-                this.cache[x] = new Set();
-                this.cache[x].add(input);
+                this.markInputCache[x] = new Set();
+                this.markInputCache[x].add(input);
             }
         });
 
@@ -562,14 +570,14 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             this.tc.logDebug(
                 `findDuplicates end (empty): '${input.value}'`,
                 input,
-                this.cache
+                this.markInputCache
             );
         }
 
         this.tc.logDebug(
             `findDuplicates end: '${input.value}'`,
             input,
-            this.cache
+            this.markInputCache
         );
         this.testForErrors();
     }
@@ -594,8 +602,6 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             return;
         }
         const remaining = input.getAttribute("conflict").replace(mark, "");
-        this.tc.logDebug(`remaining from '${input.value}': '${remaining}'`);
-
         if (remaining.length == 0) {
             // all conflicting marks have been removed
             input.removeAttribute("conflict");
@@ -624,12 +630,14 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
     }
 
     private testForErrors() {
-        const hasErrors = Object.values(this.cache)
+        const hasMarkErrors = Object.values(this.markInputCache)
             .flatMap((s) => Array.from(s.values()))
             .find((i) => i.hasClass("data-value-error"));
-        this.tc.logDebug("testForErrors", hasErrors);
+        const hasMomentErrors = Object.values(this.otherInputCache).find((i) =>
+            i.hasClass("data-value-error")
+        );
 
-        if (hasErrors) {
+        if (hasMarkErrors || hasMomentErrors) {
             this.saveButton.addClass("data-value-error");
             this.saveButton.setAttribute(
                 "aria-label",
@@ -638,6 +646,19 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         } else {
             this.saveButton.removeClass("data-value-error");
             this.saveButton.removeAttribute("aria-label");
+        }
+    }
+
+    private addToCache(input: HTMLInputElement, name: string) {
+        const i= Object.values(this.otherInputCache).length;
+        this.otherInputCache[`${name}-${i}`] = input;
+        input.setAttribute("cache-id", `${name}-${i}`);
+    }
+
+    private removeFromCache(input: HTMLInputElement) {
+        const id = input.getAttribute("cache-id");
+        if (id) {
+            delete this.otherInputCache[id];
         }
     }
 }

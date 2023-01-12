@@ -16,6 +16,7 @@ import { promptForMark } from "./taskcollector-TaskMarkModal";
 import { API } from "./@types/api";
 import { TaskCollectorApi } from "./taskcollector-Api";
 import { Data } from "./taskcollector-Data";
+import { TEXT_ONLY_MARK } from "./taskcollector-Constants";
 
 enum Icons {
     CANCEL = "tc-cancel-item",
@@ -82,19 +83,6 @@ export class TaskCollectorPlugin extends Plugin {
                 }
             },
         };
-
-        if (this.tc.settings.collectionEnabled) {
-            const moveAllTaskCommand: Command = {
-                id: "task-collector-move-completed-tasks",
-                name: "Collect tasks",
-                icon: Icons.MOVE,
-                callback: async () => {
-                    this.collectTasks();
-                },
-            };
-            this.addCommand(moveAllTaskCommand);
-        }
-
         this.addCommand(markTaskCommand);
 
         this.registerHandlers();
@@ -138,11 +126,14 @@ export class TaskCollectorPlugin extends Plugin {
         }
         // dynamic/optional menu items
         Object.entries(this.tc.cache.marks).forEach(([k, ms]) => {
-            this.tc.logDebug("context menu check", k, ms.useContextMenu, ms);
             if (ms.useContextMenu) {
                 menu.addItem((item) =>
                     item
-                        .setTitle(`(TC) Mark Task: ${k}`)
+                        .setTitle(
+                            k === TEXT_ONLY_MARK
+                                ? "(TC) Append to selected text"
+                                : `(TC) Mark Task with '${k}'`
+                        )
                         .setIcon(Icons.MARK)
                         .onClick(async () => {
                             this.markTaskOnLines(k, lines);
@@ -150,16 +141,6 @@ export class TaskCollectorPlugin extends Plugin {
                 );
             }
         });
-        if (this.tc.settings.contextMenu.resetTask) {
-            menu.addItem((item) =>
-                item
-                    .setTitle("(TC) Reset Task")
-                    .setIcon(Icons.RESET)
-                    .onClick(() => {
-                        this.markTaskOnLines(" ", lines);
-                    })
-            );
-        }
         if (
             this.tc.settings.collectionEnabled &&
             this.tc.settings.contextMenu.collectTasks
@@ -180,20 +161,28 @@ export class TaskCollectorPlugin extends Plugin {
             this.tc.logDebug("register handlers");
             this.handlersRegistered = true;
 
+            if (this.tc.settings.collectionEnabled) {
+                const moveAllTaskCommand: Command = {
+                    id: "task-collector-move-completed-tasks",
+                    name: "Collect tasks",
+                    icon: Icons.MOVE,
+                    callback: async () => {
+                        this.collectTasks();
+                    },
+                };
+                this.commands.set("move-completed-tasks", moveAllTaskCommand);
+                this.addCommand(moveAllTaskCommand);
+            }
+
             // Dynamic commands
             Object.entries(this.tc.cache.marks).forEach(([k, ms]) => {
-                this.tc.logDebug(
-                    "register commands",
-                    k,
-                    ms.registerCommand,
-                    ms
-                );
                 if (ms.registerCommand) {
-                    this.tc.logDebug("register command:", k, ms);
-
                     const command: Command = {
                         id: `task-collector-mark-task-${k}`,
-                        name: `Mark selected task with ${k}`,
+                        name:
+                            k == TEXT_ONLY_MARK
+                                ? "Append text to lines"
+                                : `Mark tasks with '${k}'`,
                         icon: Icons.MARK,
                         editorCallback: (
                             editor: Editor,
@@ -216,12 +205,6 @@ export class TaskCollectorPlugin extends Plugin {
                     (this.editTaskContextMenu = this.app.workspace.on(
                         "editor-menu",
                         (menu, editor, info) => {
-                            this.tc.logDebug(
-                                "TODO: editor-menu",
-                                menu,
-                                editor,
-                                info
-                            );
                             //get line selections here
                             this.buildContextMenu(
                                 menu,
@@ -266,12 +249,6 @@ export class TaskCollectorPlugin extends Plugin {
                                                 MarkdownView
                                             );
                                         if (view && view.editor) {
-                                            this.tc.logDebug(
-                                                "TODO: right click on task?",
-                                                ev,
-                                                lineStart,
-                                                line
-                                            );
                                             const menu = new Menu();
                                             this.buildContextMenu(menu, view, [
                                                 lineStart + line,
@@ -286,12 +263,6 @@ export class TaskCollectorPlugin extends Plugin {
                                     checkbox,
                                     "click",
                                     async (ev) => {
-                                        this.tc.logDebug(
-                                            "TODO: left click on task?",
-                                            ev,
-                                            lineStart,
-                                            line
-                                        );
                                         ev.stopImmediatePropagation();
                                         ev.preventDefault();
                                         const mark = await promptForMark(
