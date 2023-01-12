@@ -8,14 +8,14 @@ on:
         description: 'New version or major, minor, patch'
         default: 'patch'
         required: true
-      update-manifest:
+      update_manifest:
         description: 'Update manifest.json'
-        default: "true"
+        default: 'true'
         required: true
-      experimental:
-        description: 'Experimental (skip brat, too)'
-        default: "false"
-        required: false
+      update_brat:
+        description: 'Update brat manifest'
+        default: 'true'
+        required: true
 
 jobs:
   build:
@@ -39,7 +39,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         echo "${{ github.event.inputs.version }}"
-        echo "${{ github.event.inputs.update-manifest }}"
+        echo "${{ github.event.inputs.update_manifest }}"
         git config user.name github-actions
         git config user.email github-actions@github.com
 
@@ -59,7 +59,7 @@ jobs:
           fi
         fi
 
-        if [ "${{ github.event.inputs.update-manifest }}" = "true" ]; then
+        if [ "${{ github.event.inputs.update_manifest }}" = "true" ]; then
           sed -i 's|\(version":\) "[0-9\.]*"|\1 "'$VERSION'"|' manifest.json
         fi
 
@@ -140,7 +140,7 @@ jobs:
   brat:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event.inputs.experimental == false
+    if: ${{ inputs.update_brat }}
     steps:
     - uses: actions/checkout@v2
       with:
