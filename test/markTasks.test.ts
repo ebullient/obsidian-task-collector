@@ -72,3 +72,9 @@ test('Mark tasks within a callout', () => {
     expect(tc.updateLineText('> > - [x] something', 'x')).toEqual('> > - [x] something');
     expect(tc.updateLineText('> > - [x] something', ' ')).toEqual('> > - [ ] something');
 });
+
+test('Mark tasks in a cycle', () => {
+    const cycle = "abcde";
+
+});
+

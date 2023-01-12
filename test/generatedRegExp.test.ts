@@ -212,7 +212,6 @@ describe('Set an append date', () => {
 
         const marked = tc.updateLineText('something  ', '');
         expect(marked).toMatch(tc.cache.undoExpr[TEXT_ONLY_NAME]);
-        expect(tc.updateLineText(marked, ' ')).toEqual('- [ ] something  ');
     });
 });
 

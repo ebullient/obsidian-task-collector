@@ -17,6 +17,11 @@ const DATE_FORMATTING_TOKENS = /^(Y|D|M|H|h|m)+$/;
 const ALL_FORMATTING_TOKENS =
     /(\[[^[]*\])|(\\)?([Hh]mm(ss)?|Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Qo?|N{1,5}|YYYYYY|YYYYY|YYYY|YY|y{2,4}|yo?|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|kk?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g;
 
+export enum Direction {
+    PREV,
+    NEXT,
+}
+
 export class TaskCollector {
     settings: TaskCollectorSettings;
     cache: TaskCollectorCache;
@@ -123,8 +128,42 @@ export class TaskCollector {
     /**
      * Mark selected tasks
      * @param source
+     * @param direction: -1 or 1
      * @param lines
+     */
+    markInCycle(source: string, d: Direction, lines: number[] = []): string {
+        const split = source.split("\n");
+        for (const n of lines) {
+            const taskMatch = this.anyTaskMark.exec(split[n]);
+            const listMatch = this.anyListItem.exec(split[n]);
+            if (taskMatch) {
+                // already a task: change from old to new
+                const old = taskMatch[2];
+                const i = this.settings.markCycle.indexOf(old);
+                const len = this.settings.markCycle.length;
+                const next =
+                    d == Direction.NEXT ? (i + 1) % len : (i + len - 1) % len;
+                split[n] = this.doMarkTask(
+                    split[n],
+                    old,
+                    this.settings.markCycle[next]
+                );
+            } else if (listMatch && listMatch[2]) {
+                // convert to a task, and then mark
+                split[n] = this.updateLineText(
+                    `${listMatch[1]}[ ] ${listMatch[2]}`,
+                    this.settings.markCycle[0]
+                );
+            }
+        }
+        return split.join("\n");
+    }
+
+    /**
+     * Mark selected tasks
+     * @param source
      * @param mark
+     * @param lines
      */
     markSelectedTask(
         source: string,
@@ -136,14 +175,6 @@ export class TaskCollector {
             split[n] = this.updateLineText(split[n], mark);
         }
         return split.join("\n");
-    }
-
-    /**
-     * Reset all marked tasks in the file
-     * @param source
-     */
-    resetAllMarkedTasks(source: string): string {
-        throw new Error("Method not implemented.");
     }
 
     /**
@@ -159,41 +190,30 @@ export class TaskCollector {
             mark = TEXT_ONLY_MARK;
         }
 
+        if (mark === TEXT_ONLY_MARK && this.cache.marks[TEXT_ONLY_MARK]) {
+            // append general text. Do not convert to or mess the task-nature
+            return this.doAppendText(lineText);
+        }
         const taskMatch = this.anyTaskMark.exec(lineText);
         if (taskMatch) {
-            // this is already a task
+            // already a task: change from old to new
             const old = taskMatch[2];
             return this.doMarkTask(lineText, old, mark);
         }
-
-        const match = this.anyListItem.exec(lineText);
-        if (mark === TEXT_ONLY_MARK && this.cache.marks[TEXT_ONLY_MARK]) {
-            // apply to general text. Do not convert to a task
-            lineText = this.doMarkText(lineText);
-        } else if (match && match[2]) {
-            this.logDebug("list item, convert to a task %s", lineText);
-            // convert to a task, and then mark
-            lineText = this.updateLineText(`${match[1]}[ ] ${match[2]}`, mark);
-        } else if (
-            mark !== TEXT_ONLY_MARK &&
-            lineText.match(this.cache.undoExpr[TEXT_ONLY_NAME])
-        ) {
-            this.logDebug("marked plain text, convert to a task %s", lineText);
-            // undo text-only configuration
-            lineText = this.doMarkText(lineText, false);
-            // convert to a task, and then mark
-            const leadingSpace = this.anyText.exec(lineText);
-            lineText = this.updateLineText(
-                `${leadingSpace[1]}- [ ] ${leadingSpace[2]}`,
+        const listMatch = this.anyListItem.exec(lineText);
+        if (listMatch && listMatch[2]) {
+            // convert to a task, and then mark (recurse)
+            return this.updateLineText(
+                `${listMatch[1]}[ ] ${listMatch[2]}`,
                 mark
             );
-        } else {
-            this.logDebug("not a task or list item %s", lineText);
         }
+
+        this.logDebug("not a task or list item %s", lineText);
         return lineText;
     }
 
-    private doMarkText(lineText: string, append = true): string {
+    private doAppendText(lineText: string, append = true): string {
         // remember line ending: block id and strict line ending whitespace
         let blockid = "";
         const strictLineEnding = lineText.endsWith("  ");

@@ -39,6 +39,11 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
     tcp.tc.logDebug("sanitize begin", settings);
     let dirty = false;
 
+    // Make sure characters in cycle are unique
+    if (settings.markCycle) {
+        settings.markCycle = [...new Set(settings.markCycle)].join("");
+    }
+
     // resolve groups with a key / mts.name mismatch
     Object.entries(settings.groups)
         .filter(([name, mts]) => name !== mts.name)

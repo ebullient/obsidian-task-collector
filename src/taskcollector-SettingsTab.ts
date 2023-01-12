@@ -117,7 +117,9 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     .setPlaceholder("")
                     .setValue(this.newSettings.markCycle)
                     .onChange(async (value) => {
-                        this.newSettings.markCycle = value;
+                        this.newSettings.markCycle = [...new Set(value)].join(
+                            ""
+                        );
                     })
             );
 
@@ -256,41 +258,44 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             });
         }
         nameSetting.addText((text) => {
-            text
-                .setPlaceholder(COMPLETE_NAME)
+            text.setPlaceholder(COMPLETE_NAME)
                 .setValue(mts.name)
                 .setDisabled(mts.name === DEFAULT_NAME)
                 .onChange(
-                    debounce((value) => {
-                        const target = this.newSettings.groups[value];
-                        if (!value) {
-                            text.inputEl.addClass("data-value-error");
-                            text.inputEl.setAttribute(
-                                "aria-label",
-                                "A group name is required."
-                            );
-                        } else if (target && target != mts) {
-                            text.inputEl.addClass("data-value-error");
-                            text.inputEl.setAttribute(
-                                "aria-label",
-                                "This name is already used by another group"
-                            );
-                        } else {
-                            text.inputEl.removeClass("data-value-error");
-                            text.inputEl.removeAttribute("aria-label");
-                            Data.moveGroup(
-                                this.newSettings.groups,
-                                mts.name,
-                                value
-                            );
-                            if (value === TEXT_ONLY_NAME) {
-                                mts.marks = TEXT_ONLY_MARK;
-                                // we just created the text group, redraw / rebuild cache
-                                this.drawElements();
+                    debounce(
+                        (value) => {
+                            const target = this.newSettings.groups[value];
+                            if (!value) {
+                                text.inputEl.addClass("data-value-error");
+                                text.inputEl.setAttribute(
+                                    "aria-label",
+                                    "A group name is required."
+                                );
+                            } else if (target && target != mts) {
+                                text.inputEl.addClass("data-value-error");
+                                text.inputEl.setAttribute(
+                                    "aria-label",
+                                    "This name is already used by another group"
+                                );
+                            } else {
+                                text.inputEl.removeClass("data-value-error");
+                                text.inputEl.removeAttribute("aria-label");
+                                Data.moveGroup(
+                                    this.newSettings.groups,
+                                    mts.name,
+                                    value
+                                );
+                                if (value === TEXT_ONLY_NAME) {
+                                    mts.marks = TEXT_ONLY_MARK;
+                                    // we just created the text group, redraw / rebuild cache
+                                    this.drawElements();
+                                }
                             }
-                        }
-                        this.testForErrors();
-                    }, 50, true)
+                            this.testForErrors();
+                        },
+                        50,
+                        true
+                    )
                 );
             this.addToCache(text.inputEl, "name-setting");
         });
@@ -339,23 +344,27 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
 
             taskMarks.addText((input) => {
                 input.setPlaceholder("xX").onChange(
-                    debounce((value) => {
-                        const newMarks = Data.sanitizeMarks(value);
-                        if (newMarks != value) {
-                            input.inputEl.value = newMarks;
-                        }
-                        if (newMarks != mts.marks) {
-                            this.removeMarks(mts.marks, input.inputEl);
+                    debounce(
+                        (value) => {
+                            const newMarks = Data.sanitizeMarks(value);
+                            if (newMarks != value) {
+                                input.inputEl.value = newMarks;
+                            }
+                            if (newMarks != mts.marks) {
+                                this.removeMarks(mts.marks, input.inputEl);
 
-                            mts.marks = newMarks;
-                            taskMarks.controlEl.setAttribute(
-                                "marks",
-                                mts.marks
-                            );
+                                mts.marks = newMarks;
+                                taskMarks.controlEl.setAttribute(
+                                    "marks",
+                                    mts.marks
+                                );
 
-                            this.findDuplicates(input.inputEl);
-                        }
-                    }, 50, true)
+                                this.findDuplicates(input.inputEl);
+                            }
+                        },
+                        50,
+                        true
+                    )
                 );
                 // sanitize and display initial value
                 mts.marks = Data.sanitizeMarks(mts.marks);
@@ -377,31 +386,36 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     .setPlaceholder("YYYY-MM-DD")
                     .setValue(mts.appendDateFormat)
                     .onChange(
-                        debounce((value) => {
-                            try {
-                                // Try formatting "now" with the specified format string
-                                const now = moment().format(value);
-                                momentFormat.inputEl.removeClass(
-                                    "data-value-error"
-                                );
-                                momentFormat.inputEl.setAttribute(
-                                    "aria-label", now
-                                );
-                                mts.appendDateFormat = value;
-                            } catch (e) {
-                                momentFormat.inputEl.addClass(
-                                    "data-value-error"
-                                );
-                                momentFormat.inputEl.setAttribute(
-                                    "aria-label",
-                                    `An error occurred parsing this moment string. See log for details.`
-                                );
-                                console.error(
-                                    `Error parsing specified date format for ${mts.name}: ${value}`
-                                );
-                            }
-                            this.testForErrors();
-                        }, 200, true)
+                        debounce(
+                            (value) => {
+                                try {
+                                    // Try formatting "now" with the specified format string
+                                    const now = moment().format(value);
+                                    momentFormat.inputEl.removeClass(
+                                        "data-value-error"
+                                    );
+                                    momentFormat.inputEl.setAttribute(
+                                        "aria-label",
+                                        now
+                                    );
+                                    mts.appendDateFormat = value;
+                                } catch (e) {
+                                    momentFormat.inputEl.addClass(
+                                        "data-value-error"
+                                    );
+                                    momentFormat.inputEl.setAttribute(
+                                        "aria-label",
+                                        `An error occurred parsing this moment string. See log for details.`
+                                    );
+                                    console.error(
+                                        `Error parsing specified date format for ${mts.name}: ${value}`
+                                    );
+                                }
+                                this.testForErrors();
+                            },
+                            200,
+                            true
+                        )
                     );
                 this.addToCache(momentFormat.inputEl, "moment-format");
             });
@@ -419,22 +433,26 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     .setPlaceholder(" #(todo|task)")
                     .setValue(mts.removeExpr)
                     .onChange(
-                        debounce((value) => {
-                            try {
-                                // try compiling the regular expression
-                                _regex.tryRemoveTextRegex(value);
-                                mts.removeExpr = value;
-                                this.tc.logDebug(
-                                    "remove regex",
-                                    mts.name,
-                                    mts.removeExpr
-                                );
-                            } catch (e) {
-                                console.error(
-                                    `Error parsing specified text replacement regular expression for ${mts.name}: ${value}`
-                                );
-                            }
-                        }, 50, true)
+                        debounce(
+                            (value) => {
+                                try {
+                                    // try compiling the regular expression
+                                    _regex.tryRemoveTextRegex(value);
+                                    mts.removeExpr = value;
+                                    this.tc.logDebug(
+                                        "remove regex",
+                                        mts.name,
+                                        mts.removeExpr
+                                    );
+                                } catch (e) {
+                                    console.error(
+                                        `Error parsing specified text replacement regular expression for ${mts.name}: ${value}`
+                                    );
+                                }
+                            },
+                            50,
+                            true
+                        )
                     )
             );
 
@@ -650,7 +668,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
     }
 
     private addToCache(input: HTMLInputElement, name: string) {
-        const i= Object.values(this.otherInputCache).length;
+        const i = Object.values(this.otherInputCache).length;
         this.otherInputCache[`${name}-${i}`] = input;
         input.setAttribute("cache-id", `${name}-${i}`);
     }
