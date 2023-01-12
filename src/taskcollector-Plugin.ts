@@ -1,5 +1,6 @@
 import {
     Editor,
+    EditorPosition,
     MarkdownView,
     Plugin,
     Command,
@@ -23,6 +24,12 @@ declare module "obsidian" {
             removeCommand(id: string): void;
         };
     }
+}
+
+interface Selection {
+    start: EditorPosition;
+    end?: EditorPosition;
+    lines: number[];
 }
 
 export class TaskCollectorPlugin extends Plugin {
@@ -51,10 +58,9 @@ export class TaskCollectorPlugin extends Plugin {
             editorCallback: async (editor: Editor, view: MarkdownView) => {
                 const mark = await promptForMark(this.app, this.tc);
                 if (mark) {
-                    this.editLines(
-                        mark,
-                        this.getCurrentLinesFromEditor(editor)
-                    );
+                    const selection = this.getCurrentLinesFromEditor(editor);
+                    await this.editLines(mark, selection.lines);
+                    this.restoreCursor(selection, editor);
                 }
             },
         };
@@ -68,42 +74,57 @@ export class TaskCollectorPlugin extends Plugin {
         const activeFile = this.app.workspace.getActiveFile();
         const source = await this.app.vault.read(activeFile);
         const result = this.tc.markInCycle(source, direction, lines);
-        this.app.vault.modify(activeFile, result);
+        await this.app.vault.modify(activeFile, result);
     }
 
     async editLines(mark: string, lines?: number[]): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
         const source = await this.app.vault.read(activeFile);
         const result = this.tc.markSelectedTask(source, mark, lines);
-        this.app.vault.modify(activeFile, result);
+        await this.app.vault.modify(activeFile, result);
     }
 
     async collectTasks(): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
         const source = await this.app.vault.read(activeFile);
         const result = this.tc.moveAllTasks(source);
-        this.app.vault.modify(activeFile, result);
+        await this.app.vault.modify(activeFile, result);
     }
 
-    getCurrentLinesFromEditor(editor: Editor): number[] {
+    getCurrentLinesFromEditor(editor: Editor): Selection {
+        this.tc.logDebug(
+            "from: %o, to: %o, anchor: %o, head: %o, general: %o",
+            editor.getCursor("from"),
+            editor.getCursor("to"),
+            editor.getCursor("anchor"),
+            editor.getCursor("head"),
+            editor.getCursor()
+        );
+
+        let start: EditorPosition;
+        let end: EditorPosition;
         const lines: number[] = [];
         if (editor.somethingSelected()) {
-            const cursorStart = editor.getCursor("from");
-            const cursorEnd = editor.getCursor("to");
-            for (let i = cursorStart.line; i <= cursorEnd.line; i++) {
+            start = editor.getCursor("from");
+            end = editor.getCursor("to");
+            for (let i = start.line; i <= end.line; i++) {
                 lines.push(i);
             }
         } else {
-            const anchor = editor.getCursor("from");
-            lines.push(anchor.line);
+            start = editor.getCursor();
+            lines.push(start.line);
         }
-        return lines;
+        return {
+            start,
+            end,
+            lines,
+        };
     }
 
     buildContextMenu(
         menu: Menu,
         info: MarkdownView | MarkdownFileInfo,
-        lines?: number[]
+        selection: Selection
     ): void {
         if (this.tc.settings.contextMenu.markTask) {
             menu.addItem((item) =>
@@ -111,10 +132,11 @@ export class TaskCollectorPlugin extends Plugin {
                     .setTitle("(TC) Mark Task")
                     .setIcon("check-square")
                     .onClick(async () => {
-                        this.tc.logDebug("Mark task", menu, info, lines);
+                        this.tc.logDebug("Mark task", menu, info, selection);
                         const mark = await promptForMark(this.app, this.tc);
                         if (mark) {
-                            this.editLines(mark, lines);
+                            await this.editLines(mark, selection.lines);
+                            this.restoreCursor(selection, info.editor);
                         }
                     })
             );
@@ -128,9 +150,13 @@ export class TaskCollectorPlugin extends Plugin {
                                 "Mark with next",
                                 menu,
                                 info,
-                                lines
+                                selection
                             );
-                            this.markInCycle(Direction.NEXT, lines);
+                            await this.markInCycle(
+                                Direction.NEXT,
+                                selection.lines
+                            );
+                            this.restoreCursor(selection, info.editor);
                         })
                 );
 
@@ -143,9 +169,13 @@ export class TaskCollectorPlugin extends Plugin {
                                 "Mark with previous",
                                 menu,
                                 info,
-                                lines
+                                selection
                             );
-                            this.markInCycle(Direction.PREV, lines);
+                            await this.markInCycle(
+                                Direction.PREV,
+                                selection.lines
+                            );
+                            this.restoreCursor(selection, info.editor);
                         })
                 );
             }
@@ -153,7 +183,6 @@ export class TaskCollectorPlugin extends Plugin {
         // dynamic/optional menu items
         Object.entries(this.tc.cache.marks).forEach(([k, ms]) => {
             if (ms.useContextMenu) {
-                this.tc.logDebug(`Mark with '${k}'`, menu, info, lines);
                 menu.addItem((item) =>
                     item
                         .setTitle(
@@ -163,7 +192,14 @@ export class TaskCollectorPlugin extends Plugin {
                         )
                         .setIcon("check-circle")
                         .onClick(async () => {
-                            this.editLines(k, lines);
+                            this.tc.logDebug(
+                                `Mark with '${k}'`,
+                                menu,
+                                info,
+                                selection
+                            );
+                            await this.editLines(k, selection.lines);
+                            this.restoreCursor(selection, info.editor);
                         })
                 );
             }
@@ -177,9 +213,18 @@ export class TaskCollectorPlugin extends Plugin {
                     .setTitle("(TC) Collect tasks")
                     .setIcon("tornado")
                     .onClick(async () => {
-                        this.collectTasks();
+                        await this.collectTasks();
+                        this.restoreCursor(selection, info.editor);
                     })
             );
+        }
+    }
+
+    restoreCursor(selection: Selection, editor: Editor) {
+        if (selection.lines.length > 1) {
+            editor.setSelection(selection.start, selection.end);
+        } else {
+            editor.setCursor(selection.start);
         }
     }
 
@@ -244,19 +289,20 @@ export class TaskCollectorPlugin extends Plugin {
                                 : `Mark with '${k}'`,
                         icon:
                             k == TEXT_ONLY_MARK ? "list-plus" : "check-circle",
-                        editorCallback: (
+                        editorCallback: async (
                             editor: Editor,
                             view: MarkdownView
                         ) => {
+                            const selection =
+                                this.getCurrentLinesFromEditor(editor);
                             this.tc.logDebug(
                                 `${command.id}: callback`,
+                                selection,
                                 editor,
                                 view
                             );
-                            this.editLines(
-                                k,
-                                this.getCurrentLinesFromEditor(editor)
-                            );
+                            await this.editLines(k, selection.lines);
+                            this.restoreCursor(selection, editor);
                         },
                     };
                     this.addCommand(command);
@@ -269,7 +315,7 @@ export class TaskCollectorPlugin extends Plugin {
                 this.registerEvent(
                     (this.editTaskContextMenu = this.app.workspace.on(
                         "editor-menu",
-                        (menu, editor, info) => {
+                        async (menu, editor, info) => {
                             //get line selections here
                             this.buildContextMenu(
                                 menu,
@@ -293,13 +339,13 @@ export class TaskCollectorPlugin extends Plugin {
                                 ".task-list-item-checkbox"
                             );
                         if (!checkboxes.length) return;
-
-                        const section = ctx.getSectionInfo(el);
-                        if (!section) return;
-
-                        const { lineStart } = section;
+                        this.tc.logDebug("markdown postprocessor", el, ctx);
 
                         for (const checkbox of Array.from(checkboxes)) {
+                            const section = ctx.getSectionInfo(checkbox);
+                            if (!section) continue;
+
+                            const { lineStart } = section;
                             const line = Number(checkbox.dataset.line);
 
                             if (this.tc.cache.useContextMenu) {
@@ -307,24 +353,19 @@ export class TaskCollectorPlugin extends Plugin {
                                     checkbox.parentElement,
                                     "contextmenu",
                                     (ev) => {
-                                        ev.stopImmediatePropagation();
-                                        ev.preventDefault();
                                         const view =
                                             this.app.workspace.getActiveViewOfType(
                                                 MarkdownView
                                             );
-                                        if (view && view.editor) {
-                                            this.tc.logDebug(
-                                                "Postprocessor: buildmenu",
-                                                view,
-                                                view.editor,
-                                                lineStart,
-                                                line
-                                            );
+                                        if (view) {
                                             const menu = new Menu();
-                                            this.buildContextMenu(menu, view, [
-                                                lineStart + line,
-                                            ]);
+                                            this.buildContextMenu(menu, view, {
+                                                start: {
+                                                    line: lineStart + line,
+                                                    ch: 0,
+                                                },
+                                                lines: [lineStart + line],
+                                            });
                                             menu.showAtMouseEvent(ev);
                                         }
                                     }
@@ -342,10 +383,12 @@ export class TaskCollectorPlugin extends Plugin {
                                             this.tc
                                         );
                                         if (mark) {
-                                            this.editLines(mark, [
+                                            await this.editLines(mark, [
                                                 lineStart + line,
                                             ]);
                                         }
+                                        ev.stopImmediatePropagation();
+                                        ev.preventDefault();
                                     }
                                 );
                             }
