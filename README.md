@@ -3,181 +3,97 @@
 
 Yet another plugin to manage completed tasks, but this one has a task-completion modal to go with it!
 
-## How to install
+- [Configuration reference](docs/README.md)
+- [Commands](#commands)
+- [Marking tasks](#marking-tasks)
+- [Task mark selection](#task-mark-selection)
+
+## Installation
 
 1. Go to **Community Plugins** in your [Obsidian](https://www.obsidian.md) settings and **disable** Safe Mode
 2. Click on **Browse** and search for "task collector"
 3. Click install
 4. Use the toggle on the community plugins tab to enable the plugin.
 
-## TL;DR for task completion
+## TL;DR for marking tasks
 
 1. Open Plugin settings
 2. Edit the task marks for the `default` group to include any characters you use for incomplete tasks.
 3. Edit the task marks for the `complete` group to include any characters you use for completed tasks.
-4. Scroll down to find **Menus and Modals**, and enable the context menus you prefer.
-
-Use the [(TC) Mark task](#tc-mark-task) command from the command palette, or the right-click menu (shown in the clip), or bind it to a hot key. 
+4. _(optional)_ Scroll down to find **[Menus and modals](docs/README.md#menus-and-modals]**, and enable additional context menus.
 
 ![Task Completion](https://user-images.githubusercontent.com/808713/148706433-34d21845-a441-428d-a24c-380c6db457c7.gif)
 
-## Task Groups
-
-Marking tasks is configured in groups:
-
-- Each group can have one or more marks associated with it
-- Each group defines behavior for when that group is applied to a task:
-  - If an _append date_ format is defined for the group:
-    - A date string with that format will be appended to the end of the task when it is marked. 
-    - If task collector changes the mark, the appended date string will be removed before the next mark is applied.
-  - If a  _remove text_ pattern is defined for the group:
-    - Text that matches the provided pattern will be removed when the task is marked. Aside from an immediate "undo", this is not a reversible operation.
-  
 ## Commands
 
-### (TC) Mark Task (✨ 0.6.4)
+Task Collector registers a few commands by default:
 
-1. A dialog will pop up showing known task types in two groups: 
-    - The first group contains marks for "completed" items.
-    - The second group contains all other task marks, minimally a space (`[ ]`).
-2. Use the mouse to select an icon, or type the associated character.
+### (TC) Mark task
 
-> Note:  
-> - Is the pop-up not showing what you expect? Review the marks defined in your task groups.
-> - You can use (type) characters that are not shown in the dialog. They will use the `default` group settings.
+This is a hot-key bindable command for edit-mode that opens a modal dialog for [task mark selection](#task-mark-selection).
 
-When the task is marked: 
+That snappy completion status you wanted is just a few taps away!
 
-1. Text appended by the previous mark will be removed (if it matches)
-2. The task will be marked with the new mark
-3. If a remove text pattern is configured, it will be applied to the task text.
-4. If there is an append date format, a formatted time stamp will be appended to the task.  
+For Reading and Live Preview modes, see [menus and modals](docs/README.md#menus-and-modals).
 
-### (TC) Collect tasks  (✨ 1.0.0)
+### (TC) Collect tasks 
 
 Task Collector can gather and regroup different kinds of tasks into different areas within a note.
 
-1. Enable "Task Collection" 
+1. [Enable "Task collection"](docs/README.md#general-options)
 2. For the group of tasks that you would like to gather: 
-    - Set a completion area header
-    - Decide whether or not the checkbox should be removed when the task is relocated.
+    - Set an Area heading
 
-When you "Collect tasks", the following will happen: 
+See [Task collection](docs/TaskCollection.md) for details.
 
-- Any missing area headings will be added to the end of the document.
-- The document will be scanned from top to bottom, to find all configured headings
-  - You can have more than one heading of each type in the note.
-- Main note content:  
-  - The main content (excluding collection areas) are scanned for tasks that should be moved
-  - Tasks that are discovered will be moved to the next closesd matching section.
-    - If a section is not found between the task and the end of the note, the search resumes from the top.
-- Collection areas:
-  - Collection areas are then scanned for tasks that should be moved to other areas, moving from the top down.
+### '(TC) Mark previous' and '(TC) Mark previous'
 
-As an example, if you start with this:
+If you configure a [Task mark cycle](docs/README.md#general-options), two commands will be registered that allow you to cycle forward or backward through the mark sequence.
 
-```
-- [ ] i1
-- [x] one
-- [>] two
+## Marking tasks
 
-## To Do
+When task collector marks a task:  
 
-## Log
-- [ ] i2
-- [x] three
-- [>] four
+1. _(optional)_ Matched text appended by the previous mark will be removed 
+2. The task will be marked with the new mark
+3. _(optional)_ The remove pattern configured for the new mark will be applied to remove text from the task.
+4. If there is an append date format, a formatted time stamp will be appended to the task.  
 
-## Deferred
-- [ ] i3
-- [x] five
-- [>] six
-```
+## Task mark selection
 
-You can configure group collection so the result is this: 
+Use the `(TC) Mark task` command or right-click context menu (if enabled) to select a task mark using a quick pop-up modal. 
 
-```
-## To Do
-- [ ] i1
-- [ ] i2
-- [ ] i3
+The modal contains marks configured in [task groups](docs/README.md#task-groups). 
 
-## Log
-- [x] one
-- [x] five
-- [x] three
+- The top row contains marks for [completed tasks](#completed-tasks).
+- All other configured marks appear in the next row (or rows, as the collection will wrap).
 
-## Deferred
-- [>] two
-- [>] four
-- [>] six
-```
+**Notes**:
 
-For this case specifically, set the area header for the **default** group to `"## To Do`,
-create a new group called `deferred` that supports one mark (`>`) and uses `## Deferred` as an area header. Set the **complete** group area header to `## Log`.
+- Select a value with your mouse, or the keyboard.
+- The selected value will determine follow-on actions, see [marking tasks](#marking-tasks).
+- Any character you choose will work. If it doesn't match a configured mark, the behavior from the `default` group will apply. 
+
+> Tip:  
+> - Is the pop-up not showing what you expect? Review the marks defined in your [task groups](docs/README.md#task-groups).
 
  ---
-## Settings
 
-Settings have been overhauled for version 1.0
+## Why `mark`?
 
-- Toggle **Enable task collection**  
-    Use this toggle to enable task collection commands and show related options.
-    - default: disabled
+There are not enough words. I chose _mark_, because it can mean the symbol itself (a mark), and also active action (you mark the task). The checkbox is the outer thing. Sometimes these characters indicate the status of a task, and some folks use these to mean something else entirely. So, `mark` it is. Naming things is hard.
 
-- **Task Groups**  
-    Each task group defines a set of behaviors that should be applied when the associated marks are added or removed from a task.
+### Completed tasks
 
-  - **Append date to a marked task**
-    - default: (empty string, disabled)
-    - example: `[(]YYYY-MM-DD[)]`, results in `(2021-09-27)`
-    - Notes:
-      - When a [moment.js date format](https://momentjs.com/docs/#/displaying/format/) is specified, the current date/time will be appended to the task text.
-      - Use square brackets to surround content that is not part of the format string. When working with dataview-friendly annotations, for example, your format string should look somethng like this: `[[completion::]YYYY-MM-DD[]]`.
+Why is there is a toggle for completed tasks if these are all just marks? 
 
-  - **Remove text when a task is marked**  
-    Remove text matching this [regular expression](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions) from the task text. 
-    - default: (empty string, disabled)
-    - example: `#(task|todo)` (remove #task or #todo tags)
-    - Notes:
-        - The global flag, 'g' is applied to a per-line match.
-        - *Be careful!* Test your expression before using it. There are several [online](https://www.regextester.com/) [tools](https://regex.observepoint.com/) that can help.
+The complete toggle is essentially an indicator.
 
-  - **Toggle: Register command for marking a task**  
-    Register a command to mark the task _on the current line (or within the current selection)_ with the first task mark associated with the group.
-      - default: `false`
+- In the mark selection dialog, those used to complete tasks appear in the top row. All others are (sorted) in the bottom row(s).
 
-  - **Area heading** (if Task Collection is enabled)  
-    Matching marked items will be inserted under the specified heading (most recent at the top).  
-    
-    - Notes:
-        - The area heading must be defined to enable collection for the group.
-        - The heading will be created at the end of the note if it does not exist.
-        - When scanning the note for marked tasks, tasks with a matching mark found between the configured header and the next heading or separator (`---`) will be ignored.
-        - Marked tasks will carry along their sub items (nested lists, text, or quotes). 
-        - If a marked item has an incomplete child task, the child (and any text following) will remain in the original location.
+- Task Collector has an API that other plugins or your own scripts can use to determine if a mark indicates a complete task or not.
 
-  - **Remove the checkbox from moved items** (✨ 0.6.3, if Task Collection is enabled)
-      Remove the checkbox marked tasks during the move to the configured area. 
-      - This transforms tasks into normal list items. 
-      - Task Collector will not be able to reset these items. They also will not appear in task searches or queries.
-      - default: `false`
-    
-## Right-click editor menu items
-
-- **Toggle: Add menu item for marking a task** (✨ 0.6.4)
-  Add an item to the right-click menu in edit mode to mark the task _on the current line (or within the current selection)_. 
-  
-  This menu item will trigger a quick pop-up modal to select the desired mark value. You can select an value using a mouse or the keyboard. The selected value will determine follow-on actions: complete, cancel, or reset.
-
-    - default: `false`
-    - Notes:
-        - Task Collector will use `[x]` or `[X]` to complete an item, and `[-]` to cancel an item (if that support has been enabled). It will use a space (`[ ]`) to reset the task, in addition to any of the additional task types.
-        - If you enter an unknown value with the keyboard, nothing will happen. 
-
-- **Toggle: Add menu item for moving all completed tasks**  
-  Add an item to the right-click menu to move _all_ completed (or canceled) tasks.
-    - default: `false`
+---
 
 ## Credits
 
@@ -187,7 +103,5 @@ Settings have been overhauled for version 1.0
 - [Darakah/obsidian-timelines](https://github.com/Darakah/obsidian-timelines) -- Editor select/replace
 - [Customizable Sidebar](https://github.com/phibr0/obsidian-customizable-sidebar) -- GH Action
 - [Dataview](https://github.com/blacksmithgu/obsidian-dataview) -- Jest/Testing
-- [Bootstrap Icons](https://icons.getbootstrap.com/)
-
 
 <a href="https://www.buymeacoffee.com/ebullient" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>

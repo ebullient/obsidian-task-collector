@@ -169,9 +169,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         });
 
         new Setting(this.containerEl)
-            .setName(
-                "Preview / Live preview: Show the selection menu when a checkbox is clicked"
-            )
+            .setName("Prompt on checkbox click in Reading or Live preview mode")
             .setDesc(
                 "When you click a checkbox, display a panel that allows you to select (with mouse or keyboard) the value to assign."
             )
@@ -184,7 +182,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             );
 
         new Setting(this.containerEl)
-            .setName("Add menu item for marking a task")
+            .setName("Add '(TC) Mark task' menu item")
             .setDesc(
                 "Add an item to the right-click menu to mark the task on the current line (or within the current selection). This menu item will trigger a quick pop-up modal to select the desired mark value."
             )
@@ -197,7 +195,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             );
 
         new Setting(this.containerEl)
-            .setName("Add menu item for collecting tasks")
+            .setName("Add `(TC) Collect Tasks` menu item")
             .setDesc(
                 "Add an item to the right-click menu to collect tasks (based on task configuration)."
             )
@@ -457,7 +455,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             );
 
         new Setting(itemEl)
-            .setName("Register Command")
+            .setName("Register '(TC) Mark with... ' command")
             .setDesc(
                 mts.name === TEXT_ONLY_NAME
                     ? "A command will be registered to append text to selected lines"
@@ -470,7 +468,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             );
 
         new Setting(itemEl)
-            .setName("Add menu item for marking a task")
+            .setName("Add '(TC) Mark with... ' menu item")
             .setDesc(
                 "A right-click menu item will be added for each mark in the group."
             )
