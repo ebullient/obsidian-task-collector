@@ -492,7 +492,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 )
                 .addText((text) =>
                     text
-                        .setPlaceholder("## Log")
+                        .setPlaceholder("## Example")
                         .setValue(mts.collection.areaHeading)
                         .onChange(async (value) => {
                             mts.collection.areaHeading = value;
