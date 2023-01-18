@@ -3,7 +3,7 @@
 	"name": "Task Collector (TC)",
 	"version": "1.0.3",
 	"minAppVersion": "0.13.10",
-	"description": "Change task status and collect tasks within a document",
+	"description": "Change task status and collect tasks within a document using hotkeys and context menus.",
 	"author": "ebullient",
 	"authorUrl": "https://github.com/ebullient",
 	"isDesktopOnly": false
