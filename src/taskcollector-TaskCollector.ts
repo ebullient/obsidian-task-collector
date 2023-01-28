@@ -208,6 +208,12 @@ export class TaskCollector {
                 mark
             );
         }
+        if (lineText && this.settings.convertEmptyLines) {
+            return this.updateLineText(
+                `- [ ] ${lineText}`,
+                mark
+            );
+        }
 
         this.logDebug("not a task or list item %s", lineText);
         return lineText;

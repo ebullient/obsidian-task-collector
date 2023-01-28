@@ -219,6 +219,18 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                         this.newSettings.debug = value;
                     })
             );
+
+        new Setting(this.containerEl)
+            .setName("Convert non-list lines")
+            .setDesc("Converts non-list lines when marking tasks")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.newSettings.convertEmptyLines)
+                    .onChange(async (value) => {
+                        this.newSettings.convertEmptyLines= value;
+                    })
+            );
+
     }
 
     showTaskGroups() {
