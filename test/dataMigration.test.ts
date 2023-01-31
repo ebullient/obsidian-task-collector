@@ -66,6 +66,7 @@ export const DEFAULT_MIGRATION = {
         collectTasks: false,
     },
     debug: false,
+    convertEmptyLines: false,
     version: {
         major: 1,
         minor: 0,
