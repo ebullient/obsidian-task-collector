@@ -209,8 +209,10 @@ export class TaskCollector {
             );
         }
         if (lineText && this.settings.convertEmptyLines) {
+            const indentMatch = this.anyText.exec(lineText);
+            // split line on first character
             return this.updateLineText(
-                `- [ ] ${lineText}`,
+                `${indentMatch[1]}- [ ] ${indentMatch[2]}`,
                 mark
             );
         }
