@@ -39,7 +39,8 @@ export const DEFAULT_SETTINGS: TaskCollectorSettings = {
         collectTasks: true,
     },
     debug: false,
-    version: {
+    convertEmptyLines: false,
+    version: {    
         major: 0,
         minor: 0,
         patch: 0,

@@ -9,6 +9,7 @@ export type TaskCollectorSettings = {
         collectTasks: boolean;
     };
     debug: boolean;
+    convertEmptyLines: boolean;
     version: TcVersion;
 };
 

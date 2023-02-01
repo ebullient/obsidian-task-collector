@@ -73,6 +73,29 @@ test('Mark tasks within a callout', () => {
     expect(tc.updateLineText('> > - [x] something', ' ')).toEqual('> > - [ ] something');
 });
 
+test('Mark non-task/list lines when convert non-list lines is true', () => {
+    config.convertEmptyLines = true;
+    tc.init(config);
+    expect(tc.updateLineText('something', 'x')).toEqual('- [x] something');
+});
+
+test('Use indent for non-task/list lines when convertEmptyLines is true', () => {
+    config.convertEmptyLines = true;
+    tc.init(config);
+    expect(tc.updateLineText('\tsomething', 'x')).toEqual('\t- [x] something');
+});
+
+test('Do not mark non-task/list lines when convert non-list lines is false', () => {
+    tc.init(config);
+    expect(tc.updateLineText('something', '-')).toEqual('something');
+});
+
+test('Accomodate callouts for non-task/list lines when convertEmptyLines is true', () => {
+    config.convertEmptyLines = true;
+    tc.init(config); 
+    expect(tc.updateLineText('> something', 'x')).toEqual('> - [x] something');
+});
+
 test('Mark tasks in a cycle', () => {
     const cycle = "abcde";
 
