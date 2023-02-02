@@ -227,10 +227,9 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 toggle
                     .setValue(this.newSettings.convertEmptyLines)
                     .onChange(async (value) => {
-                        this.newSettings.convertEmptyLines= value;
+                        this.newSettings.convertEmptyLines = value;
                     })
             );
-
     }
 
     showTaskGroups() {
