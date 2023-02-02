@@ -73,10 +73,19 @@ describe('Test move with collection enabled', () => {
     test('Move completed tasks with text continuation', () => {
         tc.init(config);
 
-        const start = "\n- [x] a  \n    text continuation  \n    \n    Including a longer paragraph in the same bullet\n";
+        const start = "\n"
+                + "- [x] a  \n"
+                + "    text continuation  \n"
+                + "    \n"
+                + "    Including a longer paragraph in the same bullet\n";
 
         expect(tc.moveAllTasks(start))
-            .toEqual("\n\n## Log\n- [x] a  \n    text continuation  \n    \n    Including a longer paragraph in the same bullet\n");
+            .toEqual("\n\n"
+                    + "## Log\n"
+                    + "- [x] a  \n"
+                    + "    text continuation  \n"
+                    + "    \n"
+                    + "    Including a longer paragraph in the same bullet\n");
     });
 
     test('Move completed tasks within a callout', () => {
@@ -182,6 +191,44 @@ describe('Test move with multiple sections', () => {
             "\n" +
             "## Deferred\n" +
             "- [>] two\n" +
+            "- [>] four\n" +
+            "- [>] six\n" +
+            "";
+
+        expect(tc.moveAllTasks(start)).toEqual(result);
+    });
+
+    test('Move duplicate section', () => {
+        tc.init(config);
+
+        const start =
+            "- [ ] i1\n" +
+            "- [x] one\n" +
+            "- [>] two\n" +
+            "\n" +
+            "## Deferred\n" +
+            "\n" +
+            "## Log\n" +
+            "- [x] three\n" +
+            "- [>] four\n" +
+            "\n" +
+            "## Deferred\n" +
+            "- [x] five\n" +
+            "- [>] six\n" +
+            "";
+
+        const result =
+            "- [ ] i1\n" +
+            "\n" +
+            "## Deferred\n" +
+            "- [>] two\n" +
+            "\n" +
+            "## Log\n" +
+            "- [x] one\n" +
+            "- [x] five\n" +
+            "- [x] three\n" +
+            "\n" +
+            "## Deferred\n" +
             "- [>] four\n" +
             "- [>] six\n" +
             "";

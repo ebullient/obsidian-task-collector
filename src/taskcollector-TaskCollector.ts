@@ -313,7 +313,6 @@ export class TaskCollector {
     /**
      * Move marked task to the appropriate heading
      * @param source
-     * @param lines
      */
     moveAllTasks(source: string): string {
         if (this.cache.areaHeadings.length == 0) {
@@ -321,24 +320,24 @@ export class TaskCollector {
         }
 
         const parsed: string[] = [];
-        const order: string[] = [];
+        const headersInOrder: string[] = [];
 
         // split out content for named sections
-        const sections = this.scan(source, parsed, order);
+        const sections = this.scan(source, parsed, headersInOrder);
 
         // move general tasks to appropriate sections
-        const result = this.move(parsed, sections, order, 0);
+        const result = this.move(parsed, sections, headersInOrder, 0);
 
         // in order of appearance from top to bottom
-        for (let i = 0; i < order.length; i++) {
-            const [heading, bi] = order[i].split("%:%");
+        for (let i = 0; i < headersInOrder.length; i++) {
+            const [heading, bi] = headersInOrder[i].split("%:%");
             const bi2 = Number(bi);
 
             // move existing tasks in sections to other sections
             sections[heading].blocks[bi2].existing = this.move(
                 sections[heading].blocks[bi2].existing,
                 sections,
-                order,
+                headersInOrder,
                 i,
                 this.cache.headingToMark[heading]
             );
@@ -362,7 +361,7 @@ export class TaskCollector {
     private scan(
         source: string,
         parsed: string[],
-        order: string[]
+        headersInOrder: string[]
     ): Record<string, TcSection> {
         const split = source.split("\n");
         this.ensureHeadings(split);
@@ -372,18 +371,18 @@ export class TaskCollector {
 
         // parse / analyze
         for (const line of split) {
-            const trim = line.trim();
+            const trimmed = line.trim();
 
             if (
                 line.startsWith("#") &&
-                contains(this.cache.areaHeadings, trim)
+                contains(this.cache.areaHeadings, trimmed)
             ) {
                 parsed.push(line); // push heading to parsed lines
-                const index = this.createCompletionArea(trim, sections);
+                const index = this.createCompletionArea(trimmed, sections);
 
-                activeSection = sections[trim].blocks[index].existing;
-                parsed.push(`%%--TC--${trim}--${index}--%%`);
-                order.push(`${trim}%:%${index}`);
+                activeSection = sections[trimmed].blocks[index].existing;
+                parsed.push(`%%--TC--${trimmed}--${index}--%%`);
+                headersInOrder.push(`${trimmed}%:%${index}`);
             } else if (
                 activeSection &&
                 (line.startsWith("#") || line.trim() === "---")
@@ -435,7 +434,7 @@ export class TaskCollector {
             if (line.startsWith("%%--TC--")) {
                 // only applies to general text, not completion sections
                 // always preceded by a section heading
-                orderIndex = source.indexOf(line);
+                orderIndex = indexFromLine(line);
                 remaining.push(line);
                 continue;
             }
@@ -557,6 +556,14 @@ export class TaskCollector {
 
 function contains(haystack: string[], needle: string) {
     return haystack.find((s) => s === needle);
+}
+
+function indexFromLine(lineText: string): number {
+    const match = lineText.match(/%%--TC--(.*)--(\d+)--%%/);
+    if (match) {
+        return Number(match[2]);
+    }
+    return undefined;
 }
 
 export const _regex = {
