@@ -16,7 +16,11 @@ on:
         description: 'Update brat manifest'
         default: 'true'
         required: true
-
+      retry:
+        description: "Retry release (clear created tag)"
+        default: false
+        required: true
+        type: boolean
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -44,13 +48,15 @@ jobs:
         git config user.email github-actions@github.com
 
         npm install
-        npm version ${{ github.event.inputs.version }} --no-git-tag-version
+        if [[ "${{ github.event.inputs.retry }}" != "true" ]]; then
+          npm version ${{ github.event.inputs.version }} --no-git-tag-version
+        fi
         VERSION=$(grep '^  "version"' package.json | cut -d'"' -f4)
         echo $VERSION
 
         FLAG=
         if git rev-parse "refs/tags/$VERSION" > /dev/null 2>&1; then
-          if [[ "${{ github.event.inputs.experimental }}" == true ]]; then
+          if [[ "${{ github.event.inputs.retry }}" = "true" ]]; then
             git push origin :refs/tags/$VERSION
             FLAG="-f "
           else
@@ -72,7 +78,7 @@ jobs:
         git push --tags
 
         npm run brat-notes -- ${VERSION}
-        echo "::set-output name=version::${VERSION}"
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
     # Package the required files into a zip
     - name: Package
@@ -92,7 +98,7 @@ jobs:
         release_name: Release ${{ steps.build.outputs.version }}
         body_path: ./release-notes.md
         draft: false
-        prerelease: ${{ inputs.experimental }}
+        prerelease: ${{ github.event.inputs.update_manifest }}
     # Upload the packaged release file
     - name: Upload zip file
       id: upload-zip
