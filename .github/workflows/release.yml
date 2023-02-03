@@ -67,7 +67,7 @@ jobs:
             git push origin :refs/tags/$VERSION
             FLAG="-f "
           else
-            echo "🛑 Tag $NEXT already exists"
+            echo "🛑 Tag $VERSION already exists"
             exit 1
           fi
         fi
@@ -105,7 +105,7 @@ jobs:
         release_name: Release ${{ steps.build.outputs.version }}
         body_path: ./release-notes.md
         draft: false
-        prerelease: ${{ github.event.inputs.update_manifest }}
+        prerelease: ${{ github.event.inputs.update_manifest == "false" }}
     # Upload the packaged release file
     - name: Upload zip file
       id: upload-zip
