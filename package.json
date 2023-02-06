@@ -40,7 +40,7 @@
     "prettier": "^2.8.3",
     "ts-jest": "^27.0.5",
     "tslib": "^2.5.0",
-    "typescript": "4.9.4"
+    "typescript": "4.9.5"
   },
   "auto-changelog": {
     "backfillLimit": false,
