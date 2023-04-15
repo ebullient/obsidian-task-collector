@@ -15,7 +15,8 @@ if you want to view the source, please visit the github repository of this plugi
 const prod = (process.argv[2] === 'production');
 const dir = prod || ! process.env.OUTDIR ? "./build" : process.env.OUTDIR ;
 
-esbuild.build({
+
+esbuild.context({
     banner: {
         js: banner,
     },
@@ -23,7 +24,6 @@ esbuild.build({
     bundle: true,
     external: ['obsidian', 'electron', ...builtins],
     format: 'cjs',
-    watch: !prod,
     target: 'es2020',
     logLevel: "info",
     sourcemap: prod ? false : 'inline',
@@ -33,4 +33,14 @@ esbuild.build({
     plugins: [
         sassPlugin()
     ]
+  }).then(context => {
+    if (!prod) {
+      // Enable watch mode
+      context.watch()
+    } else {
+      // Build once and exit if not in watch mode
+      context.rebuild().then(result => {
+        context.dispose()
+      })
+    }
 }).catch(() => process.exit(1));
