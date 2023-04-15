@@ -253,7 +253,7 @@ export class TaskCollectorPlugin extends Plugin {
                     icon: "forward",
                     editorCallback: (editor: Editor, view: MarkdownView) => {
                         this.tc.logDebug(
-                            `${markWithPrevCommand.id}: callback`,
+                            `${markWithNextCommand.id}: callback`,
                             editor,
                             view
                         );

@@ -10,12 +10,14 @@ on:
         required: true
       update_manifest:
         description: 'Update manifest.json'
-        default: 'true'
+        default: true
         required: true
+        type: boolean
       update_brat:
         description: 'Update brat manifest'
-        default: 'true'
+        default: true
         required: true
+        type: boolean
       retry:
         description: "Retry release (clear created tag)"
         default: false
@@ -47,8 +49,10 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        echo "${{ github.event.inputs.version }}"
-        echo "${{ github.event.inputs.update_manifest }}"
+        echo "version: ${{ github.event.inputs.version }}"
+        echo "update_manifest: ${{ github.event.inputs.update_manifest }}"
+        echo "retry: ${{ github.event.inputs.retry }}"
+
         git config user.name ${{ env.GH_BOT_NAME }}
         git config user.email ${{ env.GH_BOT_EMAIL }}
 
@@ -105,7 +109,7 @@ jobs:
         release_name: Release ${{ steps.build.outputs.version }}
         body_path: ./release-notes.md
         draft: false
-        prerelease: ${{ github.event.inputs.update_manifest == "false" }}
+        prerelease: ${{ github.event.inputs.update_manifest == false }}
     # Upload the packaged release file
     - name: Upload zip file
       id: upload-zip

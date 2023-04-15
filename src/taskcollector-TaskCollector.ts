@@ -141,8 +141,10 @@ export class TaskCollector {
                 const old = taskMatch[2];
                 const i = this.settings.markCycle.indexOf(old);
                 const len = this.settings.markCycle.length;
-                const next =
-                    d == Direction.NEXT ? (i + 1) % len : (i + len - 1) % len;
+                const next = i < 0
+                    ? (d == Direction.NEXT ? 0 : len - 1)
+                    : (d == Direction.NEXT ? (i + 1) % len : (i + len - 1) % len);
+
                 split[n] = this.doMarkTask(
                     split[n],
                     old,
@@ -152,7 +154,7 @@ export class TaskCollector {
                 // convert to a task, and then mark
                 split[n] = this.updateLineText(
                     `${listMatch[1]}[ ] ${listMatch[2]}`,
-                    this.settings.markCycle[0]
+                    this.settings.markCycle[d == Direction.NEXT ? 0 : this.settings.markCycle.length - 1]
                 );
             }
         }
@@ -261,6 +263,11 @@ export class TaskCollector {
     }
 
     private doMarkTask(lineText: string, old: string, mark: string): string {
+        if (old === mark) {
+            this.logDebug("task already marked", lineText);
+            return lineText;
+        }
+
         this.logDebug("mark task", lineText);
         const oldMarkName = this.cache.marks[old]?.name || DEFAULT_NAME;
         const newMarkName = this.cache.marks[mark]?.name || DEFAULT_NAME;

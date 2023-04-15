@@ -1,4 +1,4 @@
-import { TaskCollector } from "../src/taskcollector-TaskCollector";
+import { Direction, TaskCollector } from "../src/taskcollector-TaskCollector";
 import { TaskCollectorSettings } from "../src/@types/settings";
 import * as Moment from 'moment';
 import { COMPLETE_NAME, DEFAULT_COLLECTION, DEFAULT_NAME, DEFAULT_SETTINGS, GROUP_COMPLETE, GROUP_DEFAULT } from "../src/taskcollector-Constants";
@@ -92,12 +92,29 @@ test('Do not mark non-task/list lines when convert non-list lines is false', () 
 
 test('Accomodate callouts for non-task/list lines when convertEmptyLines is true', () => {
     config.convertEmptyLines = true;
-    tc.init(config); 
+    tc.init(config);
     expect(tc.updateLineText('> something', 'x')).toEqual('> - [x] something');
 });
 
 test('Mark tasks in a cycle', () => {
-    const cycle = "abcde";
+    config.markCycle = "abc";
+    tc.init(config);
+    expect(tc.markInCycle('- [ ] something', Direction.NEXT, [0])).toEqual("- [a] something");
+    expect(tc.markInCycle('- [a] something', Direction.NEXT, [0])).toEqual("- [b] something");
+    expect(tc.markInCycle('- [b] something', Direction.NEXT, [0])).toEqual("- [c] something");
+    expect(tc.markInCycle('- [c] something', Direction.NEXT, [0])).toEqual("- [a] something");
 
+    expect(tc.markInCycle('- [ ] something', Direction.PREV, [0])).toEqual("- [c] something");
+    expect(tc.markInCycle('- [a] something', Direction.PREV, [0])).toEqual("- [c] something");
+    expect(tc.markInCycle('- [b] something', Direction.PREV, [0])).toEqual("- [a] something");
+    expect(tc.markInCycle('- [c] something', Direction.PREV, [0])).toEqual("- [b] something");
 });
+
+test('Mark lines as tasks in a cycle', () => {
+    config.markCycle = "abc";
+    tc.init(config);
+    expect(tc.markInCycle('- something', Direction.NEXT, [0])).toEqual("- [a] something");
+    expect(tc.markInCycle('- something', Direction.PREV, [0])).toEqual("- [c] something");
+});
+
 

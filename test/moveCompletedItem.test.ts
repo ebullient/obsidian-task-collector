@@ -53,19 +53,19 @@ describe('Test move with collection enabled', () => {
         config.groups[COMPLETE_NAME].marks += '-';
         tc.init(config);
 
-        const start =
-        "- [ ] one\n" +
-        "- [>] two\n" +
-        "- [-] three\n" +
-        "- [x] four\n";
+        const start = ""
+            + "- [ ] one\n"
+            + "- [>] two\n"
+            + "- [-] three\n"
+            + "- [x] four\n";
 
-        const result =
-            "- [ ] one\n" +
-            "- [>] two\n" +
-            "\n" +
-            "## Log\n" +
-            "- [-] three\n" +
-            "- [x] four\n";
+        const result = ""
+            + "- [ ] one\n"
+            + "- [>] two\n"
+            + "\n"
+            + "## Log\n"
+            + "- [-] three\n"
+            + "- [x] four\n";
 
         expect(tc.moveAllTasks(start)).toEqual(result);
     });
@@ -74,40 +74,48 @@ describe('Test move with collection enabled', () => {
         tc.init(config);
 
         const start = "\n"
-                + "- [x] a  \n"
-                + "    text continuation  \n"
-                + "    \n"
-                + "    Including a longer paragraph in the same bullet\n";
+            + "- [ ] An incomplete item\n"
+            + "- [x] a  \n"
+            + "    text continuation  \n"
+            + "    \n"
+            + "    Including a longer paragraph in the same bullet\n"
+            + "- [ ] An incomplete item\n";
 
-        expect(tc.moveAllTasks(start))
-            .toEqual("\n\n"
-                    + "## Log\n"
-                    + "- [x] a  \n"
-                    + "    text continuation  \n"
-                    + "    \n"
-                    + "    Including a longer paragraph in the same bullet\n");
+        const result = "\n"
+            + "- [ ] An incomplete item\n"
+            + "- [ ] An incomplete item\n"
+            + "\n"
+            + "## Log\n"
+            + "- [x] a  \n"
+            + "    text continuation  \n"
+            + "    \n"
+            + "    Including a longer paragraph in the same bullet\n";
+
+        expect(tc.moveAllTasks(start)).toEqual(result);
     });
 
     test('Move completed tasks within a callout', () => {
         tc.init(config);
 
-        const start =
-        "> - [x] This line ends with two spaces  \n" +
-        ">    which allows text to wrap using strict markdown line wrapping syntax. This line should move, too.  \n" +
-        ">\n" +
-        ">    This is also how you support list items with multiple paragraphs (leading whitespace indent), and it should travel with the previous list item.\n" +
-        ">\n" +
-        "> - [ ] Another item";
+        const start = ""
+            + "> - [ ] Another item\n"
+            + "> - [x] This line ends with two spaces  \n"
+            + ">    which allows text to wrap using strict markdown line wrapping syntax. This line should move, too.  \n"
+            + ">\n"
+            + ">    This is also how you support list items with multiple paragraphs (leading whitespace indent), and it should travel with the previous list item.\n"
+            + ">\n"
+            + "> - [ ] Another item";
 
-        const result =
-        "> - [ ] Another item\n" +
-        "\n" +
-        "## Log\n" +
-        "> - [x] This line ends with two spaces  \n" +
-        ">    which allows text to wrap using strict markdown line wrapping syntax. This line should move, too.  \n" +
-        ">\n" +
-        ">    This is also how you support list items with multiple paragraphs (leading whitespace indent), and it should travel with the previous list item.\n" +
-        ">\n";
+        const result = ""
+            + "> - [ ] Another item\n"
+            + "> - [ ] Another item\n"
+            + "\n"
+            + "## Log\n"
+            + "> - [x] This line ends with two spaces  \n"
+            + ">    which allows text to wrap using strict markdown line wrapping syntax. This line should move, too.  \n"
+            + ">\n"
+            + ">    This is also how you support list items with multiple paragraphs (leading whitespace indent), and it should travel with the previous list item.\n"
+            + ">\n";
 
         expect(tc.moveAllTasks(start)).toEqual(result);
     });
@@ -115,17 +123,21 @@ describe('Test move with collection enabled', () => {
     test('Move completed tasks with associated callout', () => {
         tc.init(config);
 
-        const start =
-        "- [x] The nested quote should move with the item\n" +
-        "    > [!note]\n" +
-        "    > Nested blockquotes associated with it would also be moved.";
+        const start = ""
+            + "- [ ] An incomplete item\n"
+            + "- [x] The nested quote should move with the item\n"
+            + "    > [!note]\n"
+            + "    > Nested blockquotes associated with it would also be moved.\n"
+            + "- [ ] A subsequent item should not be moved\n";
 
-        const result =
-        "\n" +
-        "## Log\n" +
-        "- [x] The nested quote should move with the item\n" +
-        "    > [!note]\n" +
-        "    > Nested blockquotes associated with it would also be moved.\n";
+        const result = ""
+            + "- [ ] An incomplete item\n"
+            + "- [ ] A subsequent item should not be moved\n"
+            + "\n"
+            + "## Log\n"
+            + "- [x] The nested quote should move with the item\n"
+            + "    > [!note]\n"
+            + "    > Nested blockquotes associated with it would also be moved.\n";
 
         expect(tc.moveAllTasks(start)).toEqual(result);
     });
