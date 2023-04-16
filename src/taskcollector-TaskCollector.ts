@@ -39,7 +39,10 @@ export class TaskCollector {
         this.cache = JSON.parse(JSON.stringify(CACHE_DEFAULT));
 
         this.cache.useContextMenu =
-            settings.contextMenu.markTask || settings.contextMenu.resetTask;
+            settings.contextMenu.markTask ||
+            settings.contextMenu.resetTask ||
+            settings.contextMenu.collectTasks ||
+            settings.contextMenu.resetAllTasks;
 
         Object.values(settings.groups).forEach((v) =>
             this.cacheTaskSettings(v, this.cache)
@@ -133,6 +136,7 @@ export class TaskCollector {
      */
     markInCycle(source: string, d: Direction, lines: number[] = []): string {
         const split = source.split("\n");
+        const len = this.settings.markCycle.length;
         for (const n of lines) {
             const taskMatch = this.anyTaskMark.exec(split[n]);
             const listMatch = this.anyListItem.exec(split[n]);
@@ -140,7 +144,6 @@ export class TaskCollector {
                 // already a task: change from old to new
                 const old = taskMatch[2];
                 const i = this.settings.markCycle.indexOf(old);
-                const len = this.settings.markCycle.length;
                 const next =
                     i < 0
                         ? d == Direction.NEXT
@@ -159,11 +162,7 @@ export class TaskCollector {
                 // convert to a task, and then mark
                 split[n] = this.updateLineText(
                     `${listMatch[1]}[ ] ${listMatch[2]}`,
-                    this.settings.markCycle[
-                        d == Direction.NEXT
-                            ? 0
-                            : this.settings.markCycle.length - 1
-                    ]
+                    this.settings.markCycle[d == Direction.NEXT ? 0 : len - 1]
                 );
             }
         }
@@ -324,6 +323,34 @@ export class TaskCollector {
         return lineText.replace(this.stripTask, "$1 $2");
     }
 
+    // Reset all tasks not in a completion area
+
+    resetAllTasks(source: string): string {
+        const lines = source.split("\n");
+        const result: string[] = [];
+
+        let inCompletedSection = false;
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (inCompletedSection) {
+                if (line.startsWith("#") || trimmed === "---") {
+                    inCompletedSection =
+                        contains(this.cache.areaHeadings, trimmed) != undefined;
+                }
+                result.push(line);
+            } else if (
+                trimmed.startsWith("#") &&
+                contains(this.cache.areaHeadings, trimmed)
+            ) {
+                inCompletedSection = true;
+                result.push(line);
+            } else {
+                result.push(line.replace(this.anyTaskMark, `$1 $3`));
+            }
+        }
+        return result.join("\n");
+    }
+
     // Task Collection / Move tasks
 
     /**
@@ -426,9 +453,15 @@ export class TaskCollector {
         let markToMove = null;
         let taskToBeMoved = null;
         let inCallout = false;
+        let i = -1;
 
         for (let line of source) {
-            if (taskToBeMoved && this.isContinuation(line, inCallout)) {
+            i++;
+            if (
+                taskToBeMoved &&
+                !this.isTaskLine(line) &&
+                this.isContinuation(line, inCallout, source, i)
+            ) {
                 // keep task lines together
                 taskToBeMoved.push(line);
                 continue;
@@ -555,15 +588,33 @@ export class TaskCollector {
         return this.blockQuote.test(lineText);
     }
 
-    private isContinuation(lineText: string, inCallout: boolean): boolean {
+    private isTaskLine(lineText: string): boolean {
+        return this.anyTaskMark.test(lineText);
+    }
+
+    private isContinuation(
+        lineText: string,
+        inCallout: boolean,
+        source: string[],
+        i: number
+    ): boolean {
         if (inCallout) {
             const match = this.blockQuote.exec(lineText);
             if (match) {
                 return (
-                    match[1].endsWith(">") ||
-                    match[1].endsWith("  ") ||
-                    match[1].endsWith("\t")
+                    match[1].endsWith(">") || // newline w/in callout
+                    match[1].endsWith("  ") || // leading whitespace
+                    match[1].endsWith("\t") // leading whitespace
                 );
+            }
+        }
+        if (lineText.length == 0) {
+            let j = i + 1;
+            while (j < source.length) {
+                if (source[j].length > 0) {
+                    return this.continuation.test(source[j]);
+                }
+                j++;
             }
         }
         return this.continuation.test(lineText);

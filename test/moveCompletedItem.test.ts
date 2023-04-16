@@ -143,6 +143,38 @@ describe('Test move with collection enabled', () => {
     });
 });
 
+test('Test move lists with mixed completion', () => {
+    tc.init(config);
+
+    const start = ""
+        + "- [x] This line ends with two spaces  \n"
+        + "    which allows text to wrap using strict markdown line wrapping syntax. This line should move, too.  \n"
+        + "\n"
+        + "    This is also how you support list items with multiple paragraphs (leading whitespace indent), and it should travel with the previous list item.\n"
+        + "- [x] If this item is completed,\n"
+        + "    any wrapped text like this should also be moved, as it is indented\n"
+        + "    - [x] If there are nested bullets, it should all stay together. \n"
+        + "    - [ ] This is where things get messy. If this task remained incomplete, it would stay behind\n"
+        + "- [x] If this task is completed,\n"
+        + "    > Nested blockquotes associated with it would also be moved.\n"
+
+    const result = ""
+        + "    - [ ] This is where things get messy. If this task remained incomplete, it would stay behind\n"
+        + "\n"
+        + "## Log\n"
+        + "- [x] This line ends with two spaces  \n"
+        + "    which allows text to wrap using strict markdown line wrapping syntax. This line should move, too.  \n"
+        + "\n"
+        + "    This is also how you support list items with multiple paragraphs (leading whitespace indent), and it should travel with the previous list item.\n"
+        + "- [x] If this item is completed,\n"
+        + "    any wrapped text like this should also be moved, as it is indented\n"
+        + "    - [x] If there are nested bullets, it should all stay together. \n"
+        + "- [x] If this task is completed,\n"
+        + "    > Nested blockquotes associated with it would also be moved.\n";
+
+        expect(tc.moveAllTasks(start)).toEqual(result);
+});
+
 describe('Test move with multiple sections', () => {
     beforeEach(() => {
         config.groups["deferred"] = {

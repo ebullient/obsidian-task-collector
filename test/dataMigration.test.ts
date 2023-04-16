@@ -63,6 +63,7 @@ export const DEFAULT_MIGRATION = {
     contextMenu: {
         markTask: false,
         resetTask: false,
+        resetAllTasks: false,
         collectTasks: false,
     },
     debug: false,
@@ -132,7 +133,8 @@ test('Task Marker: User configuration', async () => {
             contextMenu: {
                 markTask: true,
                 collectTasks: false,
-                resetTask: false
+                resetTask: false,
+                resetAllTasks: false
             },
             groups: {
                 default: {

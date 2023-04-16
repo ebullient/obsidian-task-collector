@@ -123,6 +123,17 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     })
             );
 
+        new Setting(this.containerEl)
+            .setName("Convert non-list lines")
+            .setDesc("Converts non-list lines when marking tasks")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.newSettings.convertEmptyLines)
+                    .onChange(async (value) => {
+                        this.newSettings.convertEmptyLines = value;
+                    })
+            );
+
         new Setting(this.containerEl).setHeading().setName("Task Groups");
 
         this.containerEl.createEl("p", {
@@ -207,6 +218,19 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     })
             );
 
+        new Setting(this.containerEl)
+            .setName("Add '(TC) Reset All Tasks' command and menu item")
+            .setDesc(
+                "Add a command and an item to the right-click menu to reset/clear all tasks in the current file."
+            )
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.newSettings.contextMenu.resetAllTasks)
+                    .onChange(async (value) => {
+                        this.newSettings.contextMenu.resetAllTasks = value;
+                    })
+            );
+
         new Setting(this.containerEl).setHeading().setName("Other settings");
 
         new Setting(this.containerEl)
@@ -217,17 +241,6 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     .setValue(this.newSettings.debug)
                     .onChange(async (value) => {
                         this.newSettings.debug = value;
-                    })
-            );
-
-        new Setting(this.containerEl)
-            .setName("Convert non-list lines")
-            .setDesc("Converts non-list lines when marking tasks")
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.newSettings.convertEmptyLines)
-                    .onChange(async (value) => {
-                        this.newSettings.convertEmptyLines = value;
                     })
             );
     }

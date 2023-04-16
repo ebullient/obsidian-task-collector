@@ -36,6 +36,7 @@ export const DEFAULT_SETTINGS: TaskCollectorSettings = {
     contextMenu: {
         markTask: true,
         resetTask: false,
+        resetAllTasks: false,
         collectTasks: true,
     },
     debug: false,

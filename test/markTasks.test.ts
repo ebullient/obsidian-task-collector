@@ -73,48 +73,56 @@ test('Mark tasks within a callout', () => {
     expect(tc.updateLineText('> > - [x] something', ' ')).toEqual('> > - [ ] something');
 });
 
-test('Mark non-task/list lines when convert non-list lines is true', () => {
-    config.convertEmptyLines = true;
-    tc.init(config);
-    expect(tc.updateLineText('something', 'x')).toEqual('- [x] something');
+describe('Mark lines that are not tasks', () => {
+    test('Mark non-task/list lines when convert non-list lines is true', () => {
+        config.convertEmptyLines = true;
+        tc.init(config);
+        expect(tc.updateLineText('something', 'x')).toEqual('- [x] something');
+    });
+
+    test('Use indent for non-task/list lines when convertEmptyLines is true', () => {
+        config.convertEmptyLines = true;
+        tc.init(config);
+        expect(tc.updateLineText('\tsomething', 'x')).toEqual('\t- [x] something');
+    });
+
+    test('Do not mark non-task/list lines when convert non-list lines is false', () => {
+        tc.init(config);
+        expect(tc.updateLineText('something', '-')).toEqual('something');
+    });
+
+    test('Accomodate callouts for non-task/list lines when convertEmptyLines is true', () => {
+        config.convertEmptyLines = true;
+        tc.init(config);
+        expect(tc.updateLineText('> something', 'x')).toEqual('> - [x] something');
+    });
 });
 
-test('Use indent for non-task/list lines when convertEmptyLines is true', () => {
-    config.convertEmptyLines = true;
-    tc.init(config);
-    expect(tc.updateLineText('\tsomething', 'x')).toEqual('\t- [x] something');
-});
+describe('Task mark cycle', () => {
+    test('Mark tasks forward in a cycle (next)', () => {
+        config.markCycle = "abc";
+        tc.init(config);
+        expect(tc.markInCycle('- [ ] something', Direction.NEXT, [0])).toEqual("- [a] something");
+        expect(tc.markInCycle('- [a] something', Direction.NEXT, [0])).toEqual("- [b] something");
+        expect(tc.markInCycle('- [b] something', Direction.NEXT, [0])).toEqual("- [c] something");
+        expect(tc.markInCycle('- [c] something', Direction.NEXT, [0])).toEqual("- [a] something");
+    });
 
-test('Do not mark non-task/list lines when convert non-list lines is false', () => {
-    tc.init(config);
-    expect(tc.updateLineText('something', '-')).toEqual('something');
-});
+    test('Mark tasks backward in a cycle (prev)', () => {
+        config.markCycle = "abc";
+        tc.init(config);
+        expect(tc.markInCycle('- [ ] something', Direction.PREV, [0])).toEqual("- [c] something");
+        expect(tc.markInCycle('- [a] something', Direction.PREV, [0])).toEqual("- [c] something");
+        expect(tc.markInCycle('- [b] something', Direction.PREV, [0])).toEqual("- [a] something");
+        expect(tc.markInCycle('- [c] something', Direction.PREV, [0])).toEqual("- [b] something");
+    });
 
-test('Accomodate callouts for non-task/list lines when convertEmptyLines is true', () => {
-    config.convertEmptyLines = true;
-    tc.init(config);
-    expect(tc.updateLineText('> something', 'x')).toEqual('> - [x] something');
-});
-
-test('Mark tasks in a cycle', () => {
-    config.markCycle = "abc";
-    tc.init(config);
-    expect(tc.markInCycle('- [ ] something', Direction.NEXT, [0])).toEqual("- [a] something");
-    expect(tc.markInCycle('- [a] something', Direction.NEXT, [0])).toEqual("- [b] something");
-    expect(tc.markInCycle('- [b] something', Direction.NEXT, [0])).toEqual("- [c] something");
-    expect(tc.markInCycle('- [c] something', Direction.NEXT, [0])).toEqual("- [a] something");
-
-    expect(tc.markInCycle('- [ ] something', Direction.PREV, [0])).toEqual("- [c] something");
-    expect(tc.markInCycle('- [a] something', Direction.PREV, [0])).toEqual("- [c] something");
-    expect(tc.markInCycle('- [b] something', Direction.PREV, [0])).toEqual("- [a] something");
-    expect(tc.markInCycle('- [c] something', Direction.PREV, [0])).toEqual("- [b] something");
-});
-
-test('Mark lines as tasks in a cycle', () => {
-    config.markCycle = "abc";
-    tc.init(config);
-    expect(tc.markInCycle('- something', Direction.NEXT, [0])).toEqual("- [a] something");
-    expect(tc.markInCycle('- something', Direction.PREV, [0])).toEqual("- [c] something");
+    test('Mark lines as tasks in a cycle', () => {
+        config.markCycle = "abc";
+        tc.init(config);
+        expect(tc.markInCycle('- something', Direction.NEXT, [0])).toEqual("- [a] something");
+        expect(tc.markInCycle('- something', Direction.PREV, [0])).toEqual("- [c] something");
+    });
 });
 
 

@@ -91,6 +91,13 @@ export class TaskCollectorPlugin extends Plugin {
         await this.app.vault.modify(activeFile, result);
     }
 
+    async resetAllTasks(): Promise<void> {
+        const activeFile = this.app.workspace.getActiveFile();
+        const source = await this.app.vault.read(activeFile);
+        const result = this.tc.resetAllTasks(source);
+        this.app.vault.modify(activeFile, result);
+    }
+
     getCurrentLinesFromEditor(editor: Editor): Selection {
         this.tc.logDebug(
             "from: %o, to: %o, anchor: %o, head: %o, general: %o",
@@ -204,6 +211,20 @@ export class TaskCollectorPlugin extends Plugin {
                 );
             }
         });
+
+        if (this.tc.settings.contextMenu.resetAllTasks) {
+            menu.addItem((item) =>
+                item
+                    .setTitle("(TC) Reset all tasks")
+                    .setIcon("blocks")
+                    .onClick(async () => {
+                        this.tc.logDebug("Reset all tasks", menu, info);
+                        await this.resetAllTasks();
+                        this.restoreCursor(selection, info.editor);
+                    })
+            );
+        }
+
         if (
             this.tc.settings.collectionEnabled &&
             this.tc.settings.contextMenu.collectTasks
@@ -309,6 +330,20 @@ export class TaskCollectorPlugin extends Plugin {
                     this.commands.push(command.id);
                 }
             });
+
+            // If the resetAll command is enabled
+            if (this.tc.settings.contextMenu.resetAllTasks) {
+                const resetAllTaskCommand: Command = {
+                    id: "task-collector-reset-all-tasks",
+                    name: "Reset all tasks",
+                    icon: "blocks",
+                    callback: async () => {
+                        this.resetAllTasks();
+                    },
+                };
+                this.addCommand(resetAllTaskCommand);
+                this.commands.push(resetAllTaskCommand.id);
+            }
 
             // Source / Edit mode: line context event
             if (this.tc.cache.useContextMenu) {

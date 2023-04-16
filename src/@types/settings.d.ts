@@ -6,6 +6,7 @@ export type TaskCollectorSettings = {
     contextMenu: {
         markTask: boolean;
         resetTask: boolean;
+        resetAllTasks: boolean;
         collectTasks: boolean;
     };
     debug: boolean;
