@@ -141,9 +141,14 @@ export class TaskCollector {
                 const old = taskMatch[2];
                 const i = this.settings.markCycle.indexOf(old);
                 const len = this.settings.markCycle.length;
-                const next = i < 0
-                    ? (d == Direction.NEXT ? 0 : len - 1)
-                    : (d == Direction.NEXT ? (i + 1) % len : (i + len - 1) % len);
+                const next =
+                    i < 0
+                        ? d == Direction.NEXT
+                            ? 0
+                            : len - 1
+                        : d == Direction.NEXT
+                        ? (i + 1) % len
+                        : (i + len - 1) % len;
 
                 split[n] = this.doMarkTask(
                     split[n],
@@ -154,7 +159,11 @@ export class TaskCollector {
                 // convert to a task, and then mark
                 split[n] = this.updateLineText(
                     `${listMatch[1]}[ ] ${listMatch[2]}`,
-                    this.settings.markCycle[d == Direction.NEXT ? 0 : this.settings.markCycle.length - 1]
+                    this.settings.markCycle[
+                        d == Direction.NEXT
+                            ? 0
+                            : this.settings.markCycle.length - 1
+                    ]
                 );
             }
         }
