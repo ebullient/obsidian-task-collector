@@ -129,6 +129,7 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
  */
 async function constructSettings(
     tcp: TaskCollectorPlugin,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     orig: any
 ): Promise<TaskCollectorSettings> {
     return orig.version
@@ -184,6 +185,7 @@ type TaskCollectorSettings_v0 = {
 
 async function migrateSettings(
     tcp: TaskCollectorPlugin,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     orig: any
 ): Promise<TaskCollectorSettings> {
     console.info("(TC) Migrating 0.x settings to the current version");

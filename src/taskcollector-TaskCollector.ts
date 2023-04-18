@@ -65,6 +65,7 @@ export class TaskCollector {
         this.logDebug("configuration read", this.settings, this.cache);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     logDebug(message: string, ...optionalParams: any[]): void {
         if (!this.settings || this.settings.debug) {
             console.debug("(TC) " + message, ...optionalParams);
