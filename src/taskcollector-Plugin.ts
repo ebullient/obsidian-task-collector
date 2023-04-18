@@ -21,7 +21,11 @@ import { TEXT_ONLY_MARK } from "./taskcollector-Constants";
 declare module "obsidian" {
     interface App {
         commands: {
+            commands: {
+                [id: string]: Command;
+            };
             removeCommand(id: string): void;
+            executeCommandById: (id: string) => void;
         };
     }
 }
@@ -35,9 +39,10 @@ interface Selection {
 export class TaskCollectorPlugin extends Plugin {
     tc: TaskCollector;
     handlersRegistered = false;
+    commandsRegistered = false;
+
     editTaskContextMenu: EventRef;
     postProcessor: MarkdownPostProcessor;
-    commands: string[] = [];
 
     /** External-facing plugin API. */
     public api: API;
@@ -51,21 +56,7 @@ export class TaskCollectorPlugin extends Plugin {
         );
         await this.loadSettings();
 
-        const markTaskCommand: Command = {
-            id: "task-collector-mark",
-            name: "Mark task",
-            icon: "check-square",
-            editorCallback: async (editor: Editor, view: MarkdownView) => {
-                const mark = await promptForMark(this.app, this.tc);
-                if (mark) {
-                    const selection = this.getCurrentLinesFromEditor(editor);
-                    await this.editLines(mark, selection.lines);
-                    this.restoreCursor(selection, editor);
-                }
-            },
-        };
-        this.addCommand(markTaskCommand);
-
+        this.registerCommands();
         this.registerHandlers();
         this.api = new TaskCollectorApi(this.app, this.tc);
     }
@@ -249,10 +240,26 @@ export class TaskCollectorPlugin extends Plugin {
         }
     }
 
-    registerHandlers(): void {
-        if (!this.handlersRegistered) {
-            this.tc.logDebug("register handlers");
-            this.handlersRegistered = true;
+    registerCommands(): void {
+        if (!this.commandsRegistered) {
+            this.tc.logDebug("register commands");
+            this.commandsRegistered = true;
+
+            const markTaskCommand: Command = {
+                id: "task-collector-mark",
+                name: "Mark task",
+                icon: "check-square",
+                editorCallback: async (editor: Editor, view: MarkdownView) => {
+                    const mark = await promptForMark(this.app, this.tc);
+                    if (mark) {
+                        const selection =
+                            this.getCurrentLinesFromEditor(editor);
+                        await this.editLines(mark, selection.lines);
+                        this.restoreCursor(selection, editor);
+                    }
+                },
+            };
+            this.addCommand(markTaskCommand);
 
             if (this.tc.settings.collectionEnabled) {
                 const moveAllTaskCommand: Command = {
@@ -264,7 +271,6 @@ export class TaskCollectorPlugin extends Plugin {
                     },
                 };
                 this.addCommand(moveAllTaskCommand);
-                this.commands.push(moveAllTaskCommand.id);
             }
 
             if (this.tc.settings.markCycle) {
@@ -272,31 +278,43 @@ export class TaskCollectorPlugin extends Plugin {
                     id: "task-collector-mark-next",
                     name: "Mark with next",
                     icon: "forward",
-                    editorCallback: (editor: Editor, view: MarkdownView) => {
+                    editorCallback: async (
+                        editor: Editor,
+                        view: MarkdownView
+                    ) => {
                         this.tc.logDebug(
                             `${markWithNextCommand.id}: callback`,
                             editor,
                             view
                         );
+                        const selection =
+                            this.getCurrentLinesFromEditor(editor);
+                        await this.markInCycle(Direction.NEXT, selection.lines);
+                        this.restoreCursor(selection, editor);
                     },
                 };
                 this.addCommand(markWithNextCommand);
-                this.commands.push(markWithNextCommand.id);
 
                 const markWithPrevCommand: Command = {
                     id: "task-collector-mark-prev",
                     name: "Mark with previous",
                     icon: "reply",
-                    editorCallback: (editor: Editor, view: MarkdownView) => {
+                    editorCallback: async (
+                        editor: Editor,
+                        view: MarkdownView
+                    ) => {
                         this.tc.logDebug(
                             `${markWithPrevCommand.id}: callback`,
                             editor,
                             view
                         );
+                        const selection =
+                            this.getCurrentLinesFromEditor(editor);
+                        await this.markInCycle(Direction.PREV, selection.lines);
+                        this.restoreCursor(selection, editor);
                     },
                 };
                 this.addCommand(markWithPrevCommand);
-                this.commands.push(markWithPrevCommand.id);
             }
 
             // Per-group/mark commands
@@ -327,11 +345,10 @@ export class TaskCollectorPlugin extends Plugin {
                         },
                     };
                     this.addCommand(command);
-                    this.commands.push(command.id);
                 }
             });
 
-            // If the resetAll command is enabled
+            // If resetAll is enabled
             if (this.tc.settings.contextMenu.resetAllTasks) {
                 const resetAllTaskCommand: Command = {
                     id: "task-collector-reset-all-tasks",
@@ -342,10 +359,28 @@ export class TaskCollectorPlugin extends Plugin {
                     },
                 };
                 this.addCommand(resetAllTaskCommand);
-                this.commands.push(resetAllTaskCommand.id);
             }
+        }
+    }
 
-            // Source / Edit mode: line context event
+    unregisterCommands(): void {
+        this.tc.logDebug("unregister commands");
+        this.commandsRegistered = false;
+
+        const oldCommands = Object.keys(app.commands.commands).filter((p) =>
+            p.startsWith("task-collector-")
+        );
+        for (const command of oldCommands) {
+            app.commands.removeCommand(command);
+        }
+    }
+
+    registerHandlers(): void {
+        if (!this.handlersRegistered) {
+            this.tc.logDebug("register handlers");
+            this.handlersRegistered = true;
+
+            // Source / Live Preview mode: register context menu
             if (this.tc.cache.useContextMenu) {
                 this.registerEvent(
                     (this.editTaskContextMenu = this.app.workspace.on(
@@ -362,7 +397,7 @@ export class TaskCollectorPlugin extends Plugin {
                 );
             }
 
-            // Preview / Live Preview: register post-processor
+            // Reading mode: register post-processor
             if (
                 this.tc.cache.useContextMenu ||
                 this.tc.settings.previewClickModal
@@ -374,7 +409,13 @@ export class TaskCollectorPlugin extends Plugin {
                                 ".task-list-item-checkbox"
                             );
                         if (!checkboxes.length) return;
-                        this.tc.logDebug("markdown postprocessor", el, ctx);
+
+                        this.tc.logDebug(
+                            "markdown postprocessor",
+                            el,
+                            ctx,
+                            checkboxes
+                        );
 
                         for (const checkbox of Array.from(checkboxes)) {
                             const section = ctx.getSectionInfo(checkbox);
@@ -406,7 +447,9 @@ export class TaskCollectorPlugin extends Plugin {
                                     }
                                 );
                             }
+
                             if (this.tc.settings.previewClickModal) {
+                                // reading mode
                                 this.registerDomEvent(
                                     checkbox,
                                     "click",
@@ -438,13 +481,6 @@ export class TaskCollectorPlugin extends Plugin {
         this.tc.logDebug("unregister handlers");
         this.handlersRegistered = false;
 
-        Object.keys(this.commands).forEach((id) => {
-            this.app.commands.removeCommand(id);
-            this.app.commands.removeCommand(`${this.manifest.id}:${id}`);
-        });
-        console.log(this.app.commands);
-        this.commands = [];
-
         if (this.editTaskContextMenu) {
             this.app.workspace.offref(this.editTaskContextMenu);
             this.editTaskContextMenu = null;
@@ -458,6 +494,8 @@ export class TaskCollectorPlugin extends Plugin {
 
     onunload(): void {
         console.log("unloading Task Collector");
+        this.unregisterCommands();
+        this.unregisterHandlers();
     }
 
     async loadSettings(): Promise<void> {
@@ -472,6 +510,10 @@ export class TaskCollectorPlugin extends Plugin {
         if (this.handlersRegistered) {
             this.unregisterHandlers();
             this.registerHandlers();
+        }
+        if (this.commandsRegistered) {
+            this.unregisterCommands();
+            this.registerCommands();
         }
     }
 }
