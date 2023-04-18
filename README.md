@@ -52,7 +52,7 @@ If you configure a [Task mark cycle](docs/README.md#general-options), two comman
 
 ## Marking tasks
 
-When task collector marks a task:  
+When Task Collector marks a task:  
 
 1. _(optional)_ Matched text appended by the previous mark will be removed 
 2. The task will be marked with the new mark
@@ -81,7 +81,9 @@ The modal contains marks configured in [task groups](docs/README.md#task-groups)
 
 ## Why `mark`?
 
-There are not enough words. I chose _mark_, because it can mean the symbol itself (a mark), and also active action (you mark the task). The checkbox is the outer thing. Sometimes these characters indicate the status of a task, and some folks use these to mean something else entirely. So, `mark` it is. Naming things is hard.
+There are not enough words. I chose _mark_, because it can mean the symbol itself (a mark), and also active action (you mark the task). The checkbox is the outer thing. Sometimes these characters indicate the status of a task, and some folks use these to mean something else entirely. So, `mark` it is. 
+
+Naming things is hard.
 
 ### Completed tasks
 

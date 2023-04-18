@@ -111,6 +111,8 @@ One or more task marks can be configured together in a group.
 - **Toggle: Prompt on checkbox click in Reading or Live preview**:  
     When true, the [Task mark selection dialog](../README.md#task-mark-selection) will be opened when you click on a checkbox in Reading or Live Preview mode.
     - *default*: `false`
+    - **Notes**:
+      - This may conflict with a similar handler from the [Tasks](https://obsidian-tasks-group.github.io/obsidian-tasks/) plugin. Use one or the other, not both.
 
 <!-- -->    
 - **Toggle: Add '(TC) Mark task' menu item** (✨ 0.6.4)
