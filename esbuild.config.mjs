@@ -22,12 +22,19 @@ esbuild.context({
     },
     entryPoints: ['src/main.ts', 'src/styles.scss'],
     bundle: true,
-    external: ['obsidian', 'electron', ...builtins],
+    external: [
+        'obsidian',
+        'electron',
+        '@codemirror/language',
+        '@codemirror/state',
+        '@codemirror/view',
+        ...builtins
+    ],
     format: 'cjs',
+    logLevel: 'info',
     target: 'es2020',
-    logLevel: "info",
-    sourcemap: prod ? false : 'inline',
     treeShaking: true,
+    sourcemap: prod ? false : 'inline',
     minify: prod ? true : false,
     outdir: dir,
     plugins: [

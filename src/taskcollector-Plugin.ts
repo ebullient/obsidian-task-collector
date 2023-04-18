@@ -17,6 +17,8 @@ import { API } from "./@types/api";
 import { TaskCollectorApi } from "./taskcollector-Api";
 import { Data } from "./taskcollector-Data";
 import { TEXT_ONLY_MARK } from "./taskcollector-Constants";
+import { EditorView, ViewPlugin } from "@codemirror/view";
+import { Extension } from "@codemirror/state";
 
 declare module "obsidian" {
     interface App {
@@ -44,6 +46,9 @@ export class TaskCollectorPlugin extends Plugin {
     editTaskContextMenu: EventRef;
     postProcessor: MarkdownPostProcessor;
 
+    /** CodeMirror 6 extensions. Tracked via array to allow for dynamic updates. */
+    private cmExtension: Extension[] = [];
+
     /** External-facing plugin API. */
     public api: API;
 
@@ -56,8 +61,15 @@ export class TaskCollectorPlugin extends Plugin {
         );
         await this.loadSettings();
 
+        // Live Preview: register input handler
+        if (this.tc.settings.previewClickModal) {
+            this.cmExtension.push(inlinePlugin(this, this.tc));
+        }
+
         this.registerCommands();
         this.registerHandlers();
+        this.registerEditorExtension(this.cmExtension);
+
         this.api = new TaskCollectorApi(this.app, this.tc);
     }
 
@@ -516,4 +528,79 @@ export class TaskCollectorPlugin extends Plugin {
             this.registerCommands();
         }
     }
+}
+
+export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
+    return ViewPlugin.fromClass(
+        class {
+            private readonly view: EditorView;
+            private readonly eventHandler: (ev: MouseEvent) => void;
+            private readonly tcp: TaskCollectorPlugin;
+
+            constructor(view: EditorView) {
+                this.view = view;
+                this.tcp = tcp;
+
+                this.eventHandler = async (ev: MouseEvent) => {
+                    const { target } = ev;
+                    const currentFile = app.workspace.getActiveFile();
+                    if (
+                        !currentFile ||
+                        !target ||
+                        !(target instanceof HTMLInputElement) ||
+                        target.type !== "checkbox"
+                    ) {
+                        return false;
+                    }
+
+                    const mark = await promptForMark(app, tc);
+
+                    const position = this.view.posAtDOM(target);
+                    const line = view.state.doc.lineAt(position);
+
+                    tc.logDebug(
+                        "TC ViewPlugin: mark task",
+                        currentFile.path,
+                        mark,
+                        line
+                    );
+                    ev.stopImmediatePropagation();
+                    ev.preventDefault();
+
+                    if (tcp.tc.anyTaskMark.test(line.text)) {
+                        const updated = tc.updateLineText(line.text, mark);
+                        const transaction = view.state.update({
+                            changes: {
+                                from: line.from,
+                                to: line.to,
+                                insert: updated,
+                            },
+                        });
+                        this.view.dispatch(transaction);
+                    } else {
+                        ev.stopImmediatePropagation();
+                        ev.preventDefault();
+                        const offset = Number(target.dataset.line);
+
+                        const source = await app.vault.read(currentFile);
+                        const i = source
+                            .split("\n")
+                            .findIndex((c) => c === line.text);
+                        tcp.editLines(mark, [i + offset]);
+                    }
+
+                    return true;
+                };
+                this.eventHandler.bind(this);
+
+                this.view.dom.addEventListener("click", this.eventHandler);
+                console.debug("TC ViewPlugin: create", view);
+            }
+
+            destroy() {
+                this.view.dom.removeEventListener("click", this.eventHandler);
+                console.debug("TC ViewPlugin: destroy", this.view);
+            }
+        }
+    );
 }
