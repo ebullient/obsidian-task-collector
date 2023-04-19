@@ -91,7 +91,6 @@ export class TaskCollectorPlugin extends Plugin {
         // const source = await this.app.vault.read(activeFile);
         // const result = this.tc.markSelectedTask(source, mark, lines);
         // await this.app.vault.modify(activeFile, result);
-
     }
 
     async collectTasks(): Promise<void> {
@@ -435,7 +434,8 @@ export class TaskCollectorPlugin extends Plugin {
                             );
                         if (!checkboxes.length) return;
 
-                        const isLivePreview = !!el.closest(".markdown-rendered");
+                        const isLivePreview =
+                            !!el.closest(".markdown-rendered");
                         this.tc.logDebug(
                             "markdown postprocessor",
                             `use context menu: ${this.tc.cache.useContextMenu};`,
@@ -476,7 +476,10 @@ export class TaskCollectorPlugin extends Plugin {
                                 );
                             }
 
-                            if (this.tc.settings.previewClickModal && !isLivePreview) {
+                            if (
+                                this.tc.settings.previewClickModal &&
+                                !isLivePreview
+                            ) {
                                 // reading mode
                                 this.registerDomEvent(
                                     checkbox,
@@ -592,7 +595,9 @@ export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
                             return tc.markSelectedTask(source, mark, [i]);
                         } else {
                             const offset = Number(target.dataset.line);
-                            return tc.markSelectedTask(source, mark, [i + offset]);
+                            return tc.markSelectedTask(source, mark, [
+                                i + offset,
+                            ]);
                         }
                     });
 
