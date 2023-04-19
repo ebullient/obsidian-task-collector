@@ -180,7 +180,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         });
 
         new Setting(this.containerEl)
-            .setName("Prompt on checkbox click in Reading or Live preview mode")
+            .setName("Click handling: Prompt when the checkbox is clicked in Reading or Live preview mode")
             .setDesc(
                 "When you click a checkbox, display a panel that allows you to select (with mouse or keyboard) the value to assign."
             )

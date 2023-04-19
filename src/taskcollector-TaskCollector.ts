@@ -228,7 +228,7 @@ export class TaskCollector {
             );
         }
 
-        this.logDebug("not a task or list item %s", lineText);
+        this.logDebug("not a task or list item %s", `|${lineText}|`);
         return lineText;
     }
 
@@ -267,17 +267,17 @@ export class TaskCollector {
         if (strictLineEnding) {
             lineText += "  ";
         }
-        this.logDebug("text updated", lineText);
+        this.logDebug("text updated", `|${lineText}|`);
         return lineText;
     }
 
     private doMarkTask(lineText: string, old: string, mark: string): string {
         if (old === mark) {
-            this.logDebug("task already marked", lineText);
+            this.logDebug("task already marked", `|${lineText}|`);
             return lineText;
         }
 
-        this.logDebug("mark task", lineText);
+        this.logDebug("mark task", `|${lineText}|`);
         const oldMarkName = this.cache.marks[old]?.name || DEFAULT_NAME;
         const newMarkName = this.cache.marks[mark]?.name || DEFAULT_NAME;
 
@@ -316,7 +316,7 @@ export class TaskCollector {
         if (strictLineEnding) {
             lineText += "  ";
         }
-        this.logDebug("task marked", lineText);
+        this.logDebug("task marked", `|${lineText}|`);
         return lineText;
     }
 

@@ -64,41 +64,54 @@ export class TaskCollectorPlugin extends Plugin {
         // Live Preview: register input handler
         if (this.tc.settings.previewClickModal) {
             this.cmExtension.push(inlinePlugin(this, this.tc));
+            this.registerEditorExtension(this.cmExtension);
         }
 
         this.registerCommands();
         this.registerHandlers();
-        this.registerEditorExtension(this.cmExtension);
 
         this.api = new TaskCollectorApi(this.app, this.tc);
     }
 
     async markInCycle(direction: Direction, lines?: number[]): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        const source = await this.app.vault.read(activeFile);
-        const result = this.tc.markInCycle(source, direction, lines);
-        await this.app.vault.modify(activeFile, result);
+        await this.app.vault.process(activeFile, (source): string => {
+            return this.tc.markInCycle(source, direction, lines);
+        });
+        // const source = await this.app.vault.read(activeFile);
+        // const result = this.tc.markInCycle(source, direction, lines);
+        // await this.app.vault.modify(activeFile, result);
     }
 
     async editLines(mark: string, lines?: number[]): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        const source = await this.app.vault.read(activeFile);
-        const result = this.tc.markSelectedTask(source, mark, lines);
-        await this.app.vault.modify(activeFile, result);
+        await this.app.vault.process(activeFile, (source): string => {
+            return this.tc.markSelectedTask(source, mark, lines);
+        });
+        // const source = await this.app.vault.read(activeFile);
+        // const result = this.tc.markSelectedTask(source, mark, lines);
+        // await this.app.vault.modify(activeFile, result);
+
     }
 
     async collectTasks(): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        const source = await this.app.vault.read(activeFile);
-        const result = this.tc.moveAllTasks(source);
-        await this.app.vault.modify(activeFile, result);
+        await this.app.vault.process(activeFile, (source): string => {
+            return this.tc.moveAllTasks(source);
+        });
+        // const source = await this.app.vault.read(activeFile);
+        // const result = ;
+        // await this.app.vault.modify(activeFile, result);
     }
 
     async resetAllTasks(): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        const source = await this.app.vault.read(activeFile);
-        const result = this.tc.resetAllTasks(source);
-        this.app.vault.modify(activeFile, result);
+        await this.app.vault.process(activeFile, (source): string => {
+            return this.tc.resetAllTasks(source);
+        });
+        // const source = await this.app.vault.read(activeFile);
+        // const result = this.tc.resetAllTasks(source);
+        // this.app.vault.modify(activeFile, result);
     }
 
     getCurrentLinesFromEditor(editor: Editor): Selection {
@@ -422,10 +435,13 @@ export class TaskCollectorPlugin extends Plugin {
                             );
                         if (!checkboxes.length) return;
 
+                        const isLivePreview = !!el.closest(".markdown-rendered");
                         this.tc.logDebug(
                             "markdown postprocessor",
-                            el,
+                            `use context menu: ${this.tc.cache.useContextMenu};`,
+                            `preview click modal: ${this.tc.settings.previewClickModal};`,
                             ctx,
+                            isLivePreview,
                             checkboxes
                         );
 
@@ -460,7 +476,7 @@ export class TaskCollectorPlugin extends Plugin {
                                 );
                             }
 
-                            if (this.tc.settings.previewClickModal) {
+                            if (this.tc.settings.previewClickModal && !isLivePreview) {
                                 // reading mode
                                 this.registerDomEvent(
                                     checkbox,
@@ -477,8 +493,6 @@ export class TaskCollectorPlugin extends Plugin {
                                                 lineStart + line,
                                             ]);
                                         }
-                                        ev.stopImmediatePropagation();
-                                        ev.preventDefault();
                                     }
                                 );
                             }
@@ -543,51 +557,44 @@ export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
 
                 this.eventHandler = async (ev: MouseEvent) => {
                     const { target } = ev;
-                    const currentFile = app.workspace.getActiveFile();
+                    const activeFile = app.workspace.getActiveFile();
                     if (
-                        !currentFile ||
+                        !activeFile ||
                         !target ||
                         !(target instanceof HTMLInputElement) ||
                         target.type !== "checkbox"
                     ) {
                         return false;
                     }
-
-                    const mark = await promptForMark(app, tc);
-
-                    const position = this.view.posAtDOM(target);
-                    const line = view.state.doc.lineAt(position);
-
-                    tc.logDebug(
-                        "TC ViewPlugin: mark task",
-                        currentFile.path,
-                        mark,
-                        line
-                    );
                     ev.stopImmediatePropagation();
                     ev.preventDefault();
 
-                    if (tcp.tc.anyTaskMark.test(line.text)) {
-                        const updated = tc.updateLineText(line.text, mark);
-                        const transaction = view.state.update({
-                            changes: {
-                                from: line.from,
-                                to: line.to,
-                                insert: updated,
-                            },
-                        });
-                        this.view.dispatch(transaction);
-                    } else {
-                        ev.stopImmediatePropagation();
-                        ev.preventDefault();
-                        const offset = Number(target.dataset.line);
-
-                        const source = await app.vault.read(currentFile);
+                    const mark = await promptForMark(app, tc);
+                    if (!mark) {
+                        return false;
+                    }
+                    await app.vault.process(activeFile, (source): string => {
+                        const position = this.view.posAtDOM(target);
+                        const line = view.state.doc.lineAt(position);
                         const i = source
                             .split("\n")
                             .findIndex((c) => c === line.text);
-                        tcp.editLines(mark, [i + offset]);
-                    }
+
+                        tc.logDebug(
+                            "TC ViewPlugin: mark task",
+                            activeFile.path,
+                            mark,
+                            line,
+                            i
+                        );
+
+                        if (tcp.tc.anyTaskMark.test(line.text)) {
+                            return tc.markSelectedTask(source, mark, [i]);
+                        } else {
+                            const offset = Number(target.dataset.line);
+                            return tc.markSelectedTask(source, mark, [i + offset]);
+                        }
+                    });
 
                     return true;
                 };
