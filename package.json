@@ -24,7 +24,7 @@
   "repository": "github.com:ebullient/obsidian-task-collector",
   "license": "AGPL-3.0-only",
   "devDependencies": {
-    "@types/codemirror": "0.0.108",
+    "@types/codemirror": "5.60.7",
     "@types/jest": "^27.0.2",
     "@types/node": "^18.15.11",
     "@typescript-eslint/eslint-plugin": "^5.57.1",
