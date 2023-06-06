@@ -28,6 +28,18 @@ test('Test default settings', () => {
     expect(tc.updateLineText('- [>] something', ' ')).toEqual('- [ ] something');
 });
 
+test('Test numbered tasks', () => {
+    tc.init(config);
+
+    expect(tc.cache.removeExpr[COMPLETE_NAME]).toBeUndefined();
+    expect(tc.cache.undoExpr[COMPLETE_NAME]).toBeUndefined();
+
+    expect(tc.updateLineText('1. [ ] something', 'x')).toEqual('1. [x] something');
+    expect(tc.updateLineText('11. [x] something', '-')).toEqual('11. [-] something');
+    expect(tc.updateLineText('111. [-] something', '>')).toEqual('111. [>] something');
+    expect(tc.updateLineText('1111. [>] something', ' ')).toEqual('1111. [ ] something');
+});
+
 test('Correctly mark items in a selection', () => {
     tc.init(config);
 
@@ -68,9 +80,11 @@ test('Mark tasks within a callout', () => {
 
     expect(tc.updateLineText('> - [ ] something', '-')).toEqual('> - [-] something');
     expect(tc.updateLineText('> - [-] something', ' ')).toEqual('> - [ ] something');
+    expect(tc.updateLineText('> 10. [-] something', ' ')).toEqual('> 10. [ ] something');
 
     expect(tc.updateLineText('> > - [x] something', 'x')).toEqual('> > - [x] something');
     expect(tc.updateLineText('> > - [x] something', ' ')).toEqual('> > - [ ] something');
+    expect(tc.updateLineText('> > 1. [x] something', ' ')).toEqual('> > 1. [ ] something');
 });
 
 describe('Mark lines that are not tasks', () => {

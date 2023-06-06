@@ -26,13 +26,13 @@ export class TaskCollector {
     settings: TaskCollectorSettings;
     cache: TaskCollectorCache;
 
-    anyListItem = new RegExp(/^([\s>]*- )([^\\[].*)$/);
-    anyTaskMark = new RegExp(/^([\s>]*- \[)(.)(\] .*)$/);
+    anyListItem = new RegExp(/^([\s>]*(?:-|\d+\.) )([^\\[].*)$/);
+    anyTaskMark = new RegExp(/^([\s>]*(?:-|\d+\.) \[)(.)(\] .*)$/);
     anyText = new RegExp(/^([\s>]*)(.*)$/);
     blockQuote = new RegExp(/^(\s*>[\s>]*)(.*)$/);
     blockRef = new RegExp(/^(.*?)( \^[A-Za-z0-9-]+)?$/);
     continuation = new RegExp(/^( {2,}|\t)/);
-    stripTask = new RegExp(/^([\s>]*-) \[.\] (.*)$/);
+    stripTask = new RegExp(/^([\s>]*(?:-|\d+\.)) \[.\] (.*)$/);
 
     init(settings: TaskCollectorSettings): void {
         this.settings = settings;
@@ -202,7 +202,7 @@ export class TaskCollector {
         }
 
         if (mark === TEXT_ONLY_MARK && this.cache.marks[TEXT_ONLY_MARK]) {
-            // append general text. Do not convert to or mess the task-nature
+            // append general text. Do not convert to or mess with the task-nature
             return this.doAppendText(lineText);
         }
         const taskMatch = this.anyTaskMark.exec(lineText);
