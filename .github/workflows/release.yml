@@ -51,8 +51,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         echo "version: ${{ github.event.inputs.version }}"
-        echo "update_manifest: ${{ github.event.inputs.update_manifest }}"
         echo "retry: ${{ github.event.inputs.retry }}"
+        echo "update_manifest: ${{ github.event.inputs.update_manifest }}"
+        echo "update_brat: ${{ github.event.inputs.update_brat }}"
 
         git config user.name ${{ env.GH_BOT_NAME }}
         git config user.email ${{ env.GH_BOT_EMAIL }}
@@ -78,7 +79,7 @@ jobs:
         if [ "${{ github.event.inputs.update_manifest }}" = "true" ]; then
           sed -i 's|\(version":\) "[0-9\.]*"|\1 "'$VERSION'"|' manifest.json
         fi
-        if [ "${{ inputs.update_brat }}" = "true"]; then
+        if [ "${{ github.event.inputs.update_brat }}" = "true"]; then
           sed -i 's|\(version":\) "[0-9\.]*"|\1 "'$VERSION'"|' manifest-beta.json
         fi
 
