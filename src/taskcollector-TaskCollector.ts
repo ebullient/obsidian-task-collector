@@ -1,4 +1,3 @@
-import { moment } from "obsidian";
 import {
     TaskCollectorSettings,
     TaskCollectorCache,
@@ -258,7 +257,7 @@ export class TaskCollector {
                 if (!lineText.endsWith(" ")) {
                     lineText += " ";
                 }
-                lineText += moment().format(appendExpr);
+                lineText += window.moment().format(appendExpr);
             }
         }
 
@@ -308,7 +307,7 @@ export class TaskCollector {
             if (!lineText.endsWith(" ")) {
                 lineText += " ";
             }
-            lineText += moment().format(appendExpr);
+            lineText += window.moment().format(appendExpr);
         }
 
         // append block id & replace ending whitespace

@@ -1,12 +1,12 @@
 import { DEFAULT_SETTINGS, TEXT_ONLY_NAME, TEXT_ONLY_MARK, DEFAULT_NAME, COMPLETE_NAME } from "../src/taskcollector-Constants";
 import { TaskCollectorSettings } from "../src/@types/settings";
 import { TaskCollector } from "../src/taskcollector-TaskCollector";
-import * as Moment from 'moment';
+import moment from 'moment';
 import { Data } from "../src/taskcollector-Data";
 
+window.moment = moment;
 jest.mock('obsidian', () => ({
-    App: jest.fn().mockImplementation(),
-    moment: () => Moment()
+    App: jest.fn().mockImplementation()
 }));
 
 let tc = new TaskCollector();

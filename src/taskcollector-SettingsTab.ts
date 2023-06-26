@@ -1,6 +1,5 @@
 import {
     App,
-    moment,
     ButtonComponent,
     PluginSettingTab,
     Setting,
@@ -414,7 +413,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                             (value) => {
                                 try {
                                     // Try formatting "now" with the specified format string
-                                    const now = moment().format(value);
+                                    const now = window.moment().format(value);
                                     momentFormat.inputEl.removeClass(
                                         "data-value-error"
                                     );
