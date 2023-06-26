@@ -15,8 +15,7 @@ if you want to view the source, please visit the github repository of this plugi
 const prod = (process.argv[2] === 'production');
 const dir = prod || ! process.env.OUTDIR ? "./build" : process.env.OUTDIR ;
 
-
-esbuild.context({
+esbuild.build({
     banner: {
         js: banner,
     },
@@ -44,10 +43,12 @@ esbuild.context({
     if (!prod) {
       // Enable watch mode
       context.watch()
-    } else {
-      // Build once and exit if not in watch mode
-      context.rebuild().then(result => {
-        context.dispose()
-      })
     }
-}).catch(() => process.exit(1));
+}).catch((x) => {
+    if (x.errors) {
+        console.error(x.errors);
+    } else {
+        console.error(x);
+    }
+    process.exit(1)
+});
