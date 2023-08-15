@@ -1,7 +1,7 @@
 import { TaskCollector } from "../src/taskcollector-TaskCollector";
 import { TaskCollectorSettings } from "../src/@types/settings";
 import moment from 'moment';
-import { COMPLETE_NAME, DEFAULT_COLLECTION, DEFAULT_NAME, DEFAULT_SETTINGS, GROUP_COMPLETE, GROUP_DEFAULT } from "../src/taskcollector-Constants";
+import { COMPLETE_NAME, DEFAULT_COLLECTION, DEFAULT_NAME, DEFAULT_SETTINGS, GROUP_COMPLETE } from "../src/taskcollector-Constants";
 
 window.moment = moment;
 jest.mock('obsidian', () => ({
@@ -258,8 +258,7 @@ describe('Test move with multiple sections', () => {
             "\n" +
             "## Deferred\n" +
             "- [x] five\n" +
-            "- [>] six\n" +
-            "";
+            "- [>] six";
 
         const result =
             "- [ ] i1\n" +
@@ -274,8 +273,50 @@ describe('Test move with multiple sections', () => {
             "\n" +
             "## Deferred\n" +
             "- [>] four\n" +
-            "- [>] six\n" +
-            "";
+            "- [>] six";
+
+        expect(tc.moveAllTasks(start)).toEqual(result);
+    });
+
+    test('Move unmarked items with no loss', () => {
+        // Ensure that unmarked items are not lost when moving. Issue #262
+        config.groups[DEFAULT_NAME].collection = {
+            areaHeading: "## 1 - ToDos",
+            removeCheckbox: false,
+        };
+        config.groups[COMPLETE_NAME].collection = {
+            areaHeading: "## 9 - Done √",
+            removeCheckbox: false,
+        };
+        config.groups["deferred"].collection = {
+            areaHeading: "## 2 - Later >",
+            removeCheckbox: false,
+        }
+        tc.init(config);
+
+        const start =
+            "## 1 - ToDos\n" +
+            "- [ ] 1\n" +
+            "- [ ] 2\n" +
+            "- [ ] 3\n" +
+            "## 2 - Later >\n" +
+            "\n" +
+            "## 9 - Done √\n" +
+            "- [ ] aa\n" +
+            "- [ ] bb\n" +
+            "- [ ] cc";
+
+        const result =
+            "## 1 - ToDos\n" +
+            "- [ ] aa\n" +
+            "- [ ] bb\n" +
+            "- [ ] cc\n" +
+            "- [ ] 1\n" +
+            "- [ ] 2\n" +
+            "- [ ] 3\n" +
+            "## 2 - Later >\n" +
+            "\n" +
+            "## 9 - Done √";
 
         expect(tc.moveAllTasks(start)).toEqual(result);
     });

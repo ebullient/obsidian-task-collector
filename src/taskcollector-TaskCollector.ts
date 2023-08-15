@@ -467,15 +467,7 @@ export class TaskCollector {
                 continue;
             }
             if (taskToBeMoved) {
-                const heading =
-                    this.cache.marks[markToMove].collection.areaHeading;
-                const index = this.findNextSection(heading, order, orderIndex);
-
-                // add this task to the list of new tasks for the section
-                taskToBeMoved.forEach((l) =>
-                    sections[heading].blocks[index].newTasks.push(l)
-                );
-
+                this.moveMark(markToMove, taskToBeMoved, sections, order, orderIndex);
                 markToMove = null;
                 taskToBeMoved = null;
                 inCallout = false;
@@ -511,7 +503,27 @@ export class TaskCollector {
                 remaining.push(line);
             }
         }
+        if (taskToBeMoved && markToMove) {
+            this.moveMark(markToMove, taskToBeMoved, sections, order, orderIndex);
+        }
         return remaining;
+    }
+
+    private moveMark(
+            markToMove: string,
+            taskToBeMoved: string[],
+            sections: Record<string, TcSection>,
+            order: string[],
+            orderIndex: number
+    ) {
+        const heading =
+            this.cache.marks[markToMove].collection.areaHeading;
+        const index = this.findNextSection(heading, order, orderIndex);
+
+        // add this task to the list of new tasks for the section
+        taskToBeMoved.forEach((l) =>
+            sections[heading].blocks[index].newTasks.push(l)
+        );
     }
 
     /**
