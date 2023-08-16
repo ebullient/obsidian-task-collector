@@ -30,7 +30,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
     constructor(
         app: App,
         plugin: TaskCollectorPlugin,
-        taskCollector: TaskCollector
+        taskCollector: TaskCollector,
     ) {
         super(app, plugin);
         this.plugin = plugin;
@@ -68,15 +68,15 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 button
                     .setIcon("reset")
                     .setTooltip(
-                        "Reset to previously saved (or generated) values"
+                        "Reset to previously saved (or generated) values",
                     )
                     .onClick(() => {
                         this.newSettings = JSON.parse(
-                            JSON.stringify(this.tc.settings)
+                            JSON.stringify(this.tc.settings),
                         );
                         this.display();
                         new Notice("(TC) Configuration reset");
-                    })
+                    }),
             )
             .addButton((button) => {
                 button
@@ -91,7 +91,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         new Setting(this.containerEl)
             .setName("Task Collection")
             .setDesc(
-                "Enable task collection (additional task group settings when enabled)"
+                "Enable task collection (additional task group settings when enabled)",
             )
             .addToggle((toggle) =>
                 toggle
@@ -103,13 +103,13 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                         if (redraw) {
                             this.drawElements();
                         }
-                    })
+                    }),
             );
 
         new Setting(this.containerEl)
             .setName("Define task mark cycle")
             .setDesc(
-                "Specify characters (as a string) for Previous/Next commands"
+                "Specify characters (as a string) for Previous/Next commands",
             )
             .addText((input) =>
                 input
@@ -117,9 +117,9 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     .setValue(this.newSettings.markCycle)
                     .onChange(async (value) => {
                         this.newSettings.markCycle = [...new Set(value)].join(
-                            ""
+                            "",
                         );
-                    })
+                    }),
             );
 
         new Setting(this.containerEl)
@@ -130,7 +130,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     .setValue(this.newSettings.convertEmptyLines)
                     .onChange(async (value) => {
                         this.newSettings.convertEmptyLines = value;
-                    })
+                    }),
             );
 
         new Setting(this.containerEl).setHeading().setName("Task Groups");
@@ -164,10 +164,10 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                         Data.createSettingsGroup(
                             this.newSettings.groups,
                             name,
-                            {}
+                            {},
                         );
                         this.showTaskGroups();
-                    })
+                    }),
             );
 
         new Setting(this.containerEl).setHeading().setName("Menus and Modals");
@@ -180,56 +180,56 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
 
         new Setting(this.containerEl)
             .setName(
-                "Click handling: Prompt when the checkbox is clicked in Reading or Live preview mode"
+                "Click handling: Prompt when the checkbox is clicked in Reading or Live preview mode",
             )
             .setDesc(
-                "When you click a checkbox, display a panel that allows you to select (with mouse or keyboard) the value to assign."
+                "When you click a checkbox, display a panel that allows you to select (with mouse or keyboard) the value to assign.",
             )
             .addToggle((toggle) =>
                 toggle
                     .setValue(this.newSettings.previewClickModal)
                     .onChange(async (value) => {
                         this.newSettings.previewClickModal = value;
-                    })
+                    }),
             );
 
         new Setting(this.containerEl)
             .setName("Add '(TC) Mark task' menu item")
             .setDesc(
-                "Add an item to the right-click menu to mark the task on the current line (or within the current selection). This menu item will trigger a quick pop-up modal to select the desired mark value."
+                "Add an item to the right-click menu to mark the task on the current line (or within the current selection). This menu item will trigger a quick pop-up modal to select the desired mark value.",
             )
             .addToggle((toggle) =>
                 toggle
                     .setValue(this.newSettings.contextMenu.markTask)
                     .onChange(async (value) => {
                         this.newSettings.contextMenu.markTask = value;
-                    })
+                    }),
             );
 
         new Setting(this.containerEl)
             .setName("Add `(TC) Collect Tasks` menu item")
             .setDesc(
-                "Add an item to the right-click menu to collect tasks (based on task configuration)."
+                "Add an item to the right-click menu to collect tasks (based on task configuration).",
             )
             .addToggle((toggle) =>
                 toggle
                     .setValue(this.newSettings.contextMenu.collectTasks)
                     .onChange(async (value) => {
                         this.newSettings.contextMenu.collectTasks = value;
-                    })
+                    }),
             );
 
         new Setting(this.containerEl)
             .setName("Add '(TC) Reset All Tasks' command and menu item")
             .setDesc(
-                "Add a command and an item to the right-click menu to reset/clear all tasks in the current file."
+                "Add a command and an item to the right-click menu to reset/clear all tasks in the current file.",
             )
             .addToggle((toggle) =>
                 toggle
                     .setValue(this.newSettings.contextMenu.resetAllTasks)
                     .onChange(async (value) => {
                         this.newSettings.contextMenu.resetAllTasks = value;
-                    })
+                    }),
             );
 
         new Setting(this.containerEl).setHeading().setName("Other settings");
@@ -242,7 +242,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     .setValue(this.newSettings.debug)
                     .onChange(async (value) => {
                         this.newSettings.debug = value;
-                    })
+                    }),
             );
     }
 
@@ -275,7 +275,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             nameSetting.addExtraButton((b) => {
                 b.setIcon("info")
                     .setTooltip(
-                        "This is a special group that supports appending text to arbitrary lines of text"
+                        "This is a special group that supports appending text to arbitrary lines of text",
                     )
                     .setDisabled(true);
             });
@@ -292,13 +292,13 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                 text.inputEl.addClass("data-value-error");
                                 text.inputEl.setAttribute(
                                     "aria-label",
-                                    "A group name is required."
+                                    "A group name is required.",
                                 );
                             } else if (target && target != mts) {
                                 text.inputEl.addClass("data-value-error");
                                 text.inputEl.setAttribute(
                                     "aria-label",
-                                    "This name is already used by another group"
+                                    "This name is already used by another group",
                                 );
                             } else {
                                 text.inputEl.removeClass("data-value-error");
@@ -306,7 +306,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                 Data.moveGroup(
                                     this.newSettings.groups,
                                     mts.name,
-                                    value
+                                    value,
                                 );
                                 if (value === TEXT_ONLY_NAME) {
                                     mts.marks = TEXT_ONLY_MARK;
@@ -317,8 +317,8 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                             this.testForErrors();
                         },
                         50,
-                        true
-                    )
+                        true,
+                    ),
                 );
             this.addToCache(text.inputEl, "name-setting");
         });
@@ -327,7 +327,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 .setTooltip(
                     mts.name === DEFAULT_NAME
                         ? "Default task settings"
-                        : "Delete this group"
+                        : "Delete this group",
                 )
                 .setDisabled(mts.name === DEFAULT_NAME)
                 .onClick(async () => {
@@ -350,18 +350,18 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 taskMarks.addToggle((t) => {
                     t.setValue(mts.complete);
                     t.setTooltip(
-                        "If enabled, this group represents completed items. Completed items appear in the top row of the selection menu."
+                        "If enabled, this group represents completed items. Completed items appear in the top row of the selection menu.",
                     ).onChange(async (value) => {
                         mts.complete = value;
                     });
                 });
                 taskMarks.setDesc(
                     "Set one or marks associated with this group as a string. e.g. '>?!'. Use a space for unmarked tasks. " +
-                        "Enable the toggle if this group represents completed tasks."
+                        "Enable the toggle if this group represents completed tasks.",
                 );
             } else {
                 taskMarks.setDesc(
-                    "Set one or marks associated with this group as a string. e.g. '>?!'. Use a space for unmarked tasks. "
+                    "Set one or marks associated with this group as a string. e.g. '>?!'. Use a space for unmarked tasks. ",
                 );
             }
 
@@ -379,15 +379,15 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                 mts.marks = newMarks;
                                 taskMarks.controlEl.setAttribute(
                                     "marks",
-                                    mts.marks
+                                    mts.marks,
                                 );
 
                                 this.findDuplicates(input.inputEl);
                             }
                         },
                         50,
-                        true
-                    )
+                        true,
+                    ),
                 );
                 // sanitize and display initial value
                 mts.marks = Data.sanitizeMarks(mts.marks);
@@ -401,8 +401,8 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             .setName(`Append date to ${this.getDescription(mts)}`)
             .setDesc(
                 `Append today's date in the given moment.js format to the end of the ${this.getDescription(
-                    mts
-                )}`
+                    mts,
+                )}`,
             )
             .addMomentFormat((momentFormat) => {
                 momentFormat
@@ -415,41 +415,41 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                     // Try formatting "now" with the specified format string
                                     const now = window.moment().format(value);
                                     momentFormat.inputEl.removeClass(
-                                        "data-value-error"
+                                        "data-value-error",
                                     );
                                     momentFormat.inputEl.setAttribute(
                                         "aria-label",
-                                        now
+                                        now,
                                     );
                                     mts.appendDateFormat = value;
                                 } catch (e) {
                                     momentFormat.inputEl.addClass(
-                                        "data-value-error"
+                                        "data-value-error",
                                     );
                                     momentFormat.inputEl.setAttribute(
                                         "aria-label",
-                                        `An error occurred parsing this moment string. See log for details.`
+                                        `An error occurred parsing this moment string. See log for details.`,
                                     );
                                     console.error(
-                                        `Error parsing specified date format for ${mts.name}: ${value}`
+                                        `Error parsing specified date format for ${mts.name}: ${value}`,
                                     );
                                 }
                                 this.testForErrors();
                             },
                             200,
-                            true
-                        )
+                            true,
+                        ),
                     );
                 this.addToCache(momentFormat.inputEl, "moment-format");
             });
         new Setting(itemEl)
             .setName(
-                `Remove text matching pattern from ${this.getDescription(mts)}`
+                `Remove text matching pattern from ${this.getDescription(mts)}`,
             )
             .setDesc(
                 `Text matching this regular expression will be removed from ${this.getDescription(
-                    mts
-                )}. Be careful! Test your expression first. The global flag ('g') is used for a per-line match.`
+                    mts,
+                )}. Be careful! Test your expression first. The global flag ('g') is used for a per-line match.`,
             )
             .addText((text) =>
                 text
@@ -465,18 +465,18 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                     this.tc.logDebug(
                                         "remove regex",
                                         mts.name,
-                                        mts.removeExpr
+                                        mts.removeExpr,
                                     );
                                 } catch (e) {
                                     console.error(
-                                        `Error parsing specified text replacement regular expression for ${mts.name}: ${value}`
+                                        `Error parsing specified text replacement regular expression for ${mts.name}: ${value}`,
                                     );
                                 }
                             },
                             50,
-                            true
-                        )
-                    )
+                            true,
+                        ),
+                    ),
             );
 
         new Setting(itemEl)
@@ -484,23 +484,23 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             .setDesc(
                 mts.name === TEXT_ONLY_NAME
                     ? "A command will be registered to append text to selected lines"
-                    : "A command will be registered for each mark in the group."
+                    : "A command will be registered for each mark in the group.",
             )
             .addToggle((toggle) =>
                 toggle.setValue(mts.registerCommand).onChange((value) => {
                     mts.registerCommand = value;
-                })
+                }),
             );
 
         new Setting(itemEl)
             .setName("Add '(TC) Mark with... ' menu item")
             .setDesc(
-                "A right-click menu item will be added for each mark in the group."
+                "A right-click menu item will be added for each mark in the group.",
             )
             .addToggle((toggle) =>
                 toggle.setValue(mts.useContextMenu).onChange(async (value) => {
                     mts.useContextMenu = value;
-                })
+                }),
             );
 
         if (this.newSettings.collectionEnabled && mts.name !== TEXT_ONLY_NAME) {
@@ -511,7 +511,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 .setName("Area heading")
                 .setClass("area-heading")
                 .setDesc(
-                    "Marked tasks will be collected and moved under the specified heading. Task collection for a group only occurs when an area heading is configured."
+                    "Marked tasks will be collected and moved under the specified heading. Task collection for a group only occurs when an area heading is configured.",
                 )
                 .addText((text) =>
                     text
@@ -519,7 +519,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                         .setValue(mts.collection.areaHeading)
                         .onChange(async (value) => {
                             mts.collection.areaHeading = value;
-                        })
+                        }),
                 );
             new Setting(itemEl)
                 .setName("Remove checkbox")
@@ -530,7 +530,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                         .setValue(mts.collection.removeCheckbox)
                         .onChange(async (value) => {
                             mts.collection.removeCheckbox = value;
-                        })
+                        }),
                 );
         }
     }
@@ -539,7 +539,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         const marks = oldValue ? oldValue.split("") : [];
         this.tc.logDebug(
             `removeMarks begin: '${oldValue}'`,
-            this.markInputCache
+            this.markInputCache,
         );
 
         if (input.hasClass("no-marks-defined")) {
@@ -551,7 +551,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         marks.forEach((x) => {
             this.tc.logDebug(
                 `(TC): remove mark '${x}'`,
-                this.markInputCache[x]
+                this.markInputCache[x],
             );
             if (this.markInputCache[x]) {
                 const set = this.markInputCache[x];
@@ -574,7 +574,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             `findDuplicates begin: '${input.value}'`,
             marks,
             input,
-            this.markInputCache
+            this.markInputCache,
         );
 
         // add input element into the cache (new marks)
@@ -588,8 +588,8 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     set.forEach((i) => this.trySetConflict(x, i));
                     console.error(
                         `(TC) More then one group uses task mark ${this.showMark(
-                            x
-                        )}`
+                            x,
+                        )}`,
                     );
                 }
             } else {
@@ -606,19 +606,19 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 "aria-label",
                 this.newSettings.groups[TEXT_ONLY_NAME]
                     ? "Must define one or more marks for this group."
-                    : `Must define one or more marks for this group. Change the name to '${TEXT_ONLY_NAME}' for special text-only behavior.`
+                    : `Must define one or more marks for this group. Change the name to '${TEXT_ONLY_NAME}' for special text-only behavior.`,
             );
             this.tc.logDebug(
                 `findDuplicates end (empty): '${input.value}'`,
                 input,
-                this.markInputCache
+                this.markInputCache,
             );
         }
 
         this.tc.logDebug(
             `findDuplicates end: '${input.value}'`,
             input,
-            this.markInputCache
+            this.markInputCache,
         );
         this.testForErrors();
     }
@@ -631,10 +631,10 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         input.addClass("data-value-error");
         input.setAttribute(
             "aria-label",
-            `More than one task group uses ${this.showMark(conflict)}`
+            `More than one task group uses ${this.showMark(conflict)}`,
         );
         this.tc.logDebug(
-            `conflicts for '${input.value}': '${this.showMark(conflict)}'`
+            `conflicts for '${input.value}': '${this.showMark(conflict)}'`,
         );
     }
 
@@ -675,14 +675,14 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             .flatMap((s) => Array.from(s.values()))
             .find((i) => i.hasClass("data-value-error"));
         const hasMomentErrors = Object.values(this.otherInputCache).find((i) =>
-            i.hasClass("data-value-error")
+            i.hasClass("data-value-error"),
         );
 
         if (hasMarkErrors || hasMomentErrors) {
             this.saveButton.addClass("data-value-error");
             this.saveButton.setAttribute(
                 "aria-label",
-                `There are configuration errors. Correct those before saving.`
+                `There are configuration errors. Correct those before saving.`,
             );
         } else {
             this.saveButton.removeClass("data-value-error");

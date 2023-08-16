@@ -3,7 +3,7 @@ import { TaskCollector } from "./taskcollector-TaskCollector";
 
 export function promptForMark(
     app: App,
-    taskCollector: TaskCollector
+    taskCollector: TaskCollector,
 ): Promise<string> {
     return new Promise((resolve) => {
         const modal = new TaskMarkModal(app, taskCollector);
@@ -27,7 +27,7 @@ export class TaskMarkModal extends Modal {
 
     onOpen(): void {
         const selector = this.contentEl.createDiv(
-            "taskcollector-selector markdown-preview-view"
+            "taskcollector-selector markdown-preview-view",
         );
 
         const completedList = selector.createEl("ul");
@@ -35,7 +35,7 @@ export class TaskMarkModal extends Modal {
         this.addTaskValues(
             completedList,
             this.taskCollector.cache.completedMarks,
-            true
+            true,
         );
 
         const list = selector.createEl("ul");
@@ -43,7 +43,7 @@ export class TaskMarkModal extends Modal {
         this.addTaskValues(
             list,
             this.taskCollector.cache.incompleteMarks,
-            false
+            false,
         );
 
         const footer = selector.createEl("nav");
@@ -78,7 +78,7 @@ export class TaskMarkModal extends Modal {
     addTaskValues(
         list: HTMLUListElement,
         choices: string,
-        markComplete: boolean
+        markComplete: boolean,
     ): void {
         const self = this;
         for (const character of choices) {

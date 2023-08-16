@@ -51,7 +51,7 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
             dirty = true; // ensure name & mts.name agree
             if (settings.groups[mts.name]) {
                 console.warn(
-                    `(TC) Group named ${mts.name} already exists. Reverting group name to ${name}`
+                    `(TC) Group named ${mts.name} already exists. Reverting group name to ${name}`,
                 );
                 mts.name = name;
             } else {
@@ -67,22 +67,22 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
 
     // check for multiple groups with empty marks
     const textOnlyGroups = Object.entries(settings.groups).filter(
-        ([_, mts]) => !hasMark(mts)
+        ([_, mts]) => !hasMark(mts),
     );
     if (textOnlyGroups.length > 1) {
         dirty = true;
         console.warn(
-            `(TC) There can be only one group for text-only settings (${TEXT_ONLY_NAME}).`
+            `(TC) There can be only one group for text-only settings (${TEXT_ONLY_NAME}).`,
         );
         if (!settings.groups[TEXT_ONLY_NAME]) {
             // There is no text only group. Use the first found
             console.info(
-                `(TC) Configuration: renamed group ${textOnlyGroups[0][1].name} to ${TEXT_ONLY_NAME}.`
+                `(TC) Configuration: renamed group ${textOnlyGroups[0][1].name} to ${TEXT_ONLY_NAME}.`,
             );
             moveGroup(
                 settings.groups,
                 textOnlyGroups[0][1].name,
-                TEXT_ONLY_NAME
+                TEXT_ONLY_NAME,
             );
         }
         let used = "";
@@ -101,7 +101,7 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
     ) {
         // Make sure the text only group has the required name
         console.info(
-            `(TC) Configuration: renamed group ${textOnlyGroups[0][1].name} to ${TEXT_ONLY_NAME}.`
+            `(TC) Configuration: renamed group ${textOnlyGroups[0][1].name} to ${TEXT_ONLY_NAME}.`,
         );
         moveGroup(settings.groups, textOnlyGroups[0][1].name, TEXT_ONLY_NAME);
     }
@@ -115,7 +115,7 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
 
     if (dirty) {
         new Notice(
-            `(TC) Configuration settings were modified. See console for details.`
+            `(TC) Configuration settings were modified. See console for details.`,
         );
     }
     tcp.tc.logDebug("sanitize end", settings);
@@ -130,7 +130,7 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
 async function constructSettings(
     tcp: TaskCollectorPlugin,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    orig: any
+    orig: any,
 ): Promise<TaskCollectorSettings> {
     return orig.version
         ? await adaptSettings(tcp, orig)
@@ -144,7 +144,7 @@ async function constructSettings(
  */
 async function adaptSettings(
     tcp: TaskCollectorPlugin,
-    obj: Partial<TaskCollectorSettings>
+    obj: Partial<TaskCollectorSettings>,
 ): Promise<TaskCollectorSettings> {
     const settings: TaskCollectorSettings = {
         ...DEFAULT_SETTINGS,
@@ -186,7 +186,7 @@ type TaskCollectorSettings_v0 = {
 async function migrateSettings(
     tcp: TaskCollectorPlugin,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    orig: any
+    orig: any,
 ): Promise<TaskCollectorSettings> {
     console.info("(TC) Migrating 0.x settings to the current version");
     console.debug("0.x settings", orig);
@@ -196,7 +196,7 @@ async function migrateSettings(
         ...orig,
     };
     const settings: TaskCollectorSettings = JSON.parse(
-        JSON.stringify(DEFAULT_SETTINGS)
+        JSON.stringify(DEFAULT_SETTINGS),
     ); // deep copy
 
     // Menus and Modals
@@ -277,7 +277,7 @@ async function migrateSettings(
 function createSettingsGroup(
     groups: Record<string, ManipulationSettings>,
     name: string,
-    data: Partial<ManipulationSettings>
+    data: Partial<ManipulationSettings>,
 ): void {
     groups[name] = {
         ...GROUP_DEFAULT,
@@ -315,7 +315,7 @@ function hasMark(group: ManipulationSettings) {
 function moveGroup(
     groups: Record<string, ManipulationSettings>,
     oldName: string,
-    newName: string
+    newName: string,
 ) {
     if (!groups || !oldName || !newName || newName === oldName) {
         return;
@@ -333,7 +333,7 @@ function nextRandom(used: string): string[] {
     let i = 0;
     do {
         const mark = String.fromCharCode(
-            0x2654 + Math.random() * (0x2667 - 0x2654 + 1)
+            0x2654 + Math.random() * (0x2667 - 0x2654 + 1),
         );
         if (used.indexOf(mark) < 0) {
             used += mark;

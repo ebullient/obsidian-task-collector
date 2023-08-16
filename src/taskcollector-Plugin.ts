@@ -57,7 +57,7 @@ export class TaskCollectorPlugin extends Plugin {
 
         this.tc = new TaskCollector();
         this.addSettingTab(
-            new TaskCollectorSettingsTab(this.app, this, this.tc)
+            new TaskCollectorSettingsTab(this.app, this, this.tc),
         );
         await this.loadSettings();
 
@@ -120,7 +120,7 @@ export class TaskCollectorPlugin extends Plugin {
             editor.getCursor("to"),
             editor.getCursor("anchor"),
             editor.getCursor("head"),
-            editor.getCursor()
+            editor.getCursor(),
         );
 
         let start: EditorPosition;
@@ -146,7 +146,7 @@ export class TaskCollectorPlugin extends Plugin {
     buildContextMenu(
         menu: Menu,
         info: MarkdownView | MarkdownFileInfo,
-        selection: Selection
+        selection: Selection,
     ): void {
         if (this.tc.settings.contextMenu.markTask) {
             menu.addItem((item) =>
@@ -160,7 +160,7 @@ export class TaskCollectorPlugin extends Plugin {
                             await this.editLines(mark, selection.lines);
                             this.restoreCursor(selection, info.editor);
                         }
-                    })
+                    }),
             );
             if (this.tc.settings.markCycle) {
                 menu.addItem((item) =>
@@ -172,14 +172,14 @@ export class TaskCollectorPlugin extends Plugin {
                                 "Mark with next",
                                 menu,
                                 info,
-                                selection
+                                selection,
                             );
                             await this.markInCycle(
                                 Direction.NEXT,
-                                selection.lines
+                                selection.lines,
                             );
                             this.restoreCursor(selection, info.editor);
-                        })
+                        }),
                 );
 
                 menu.addItem((item) =>
@@ -191,14 +191,14 @@ export class TaskCollectorPlugin extends Plugin {
                                 "Mark with previous",
                                 menu,
                                 info,
-                                selection
+                                selection,
                             );
                             await this.markInCycle(
                                 Direction.PREV,
-                                selection.lines
+                                selection.lines,
                             );
                             this.restoreCursor(selection, info.editor);
-                        })
+                        }),
                 );
             }
         }
@@ -210,7 +210,7 @@ export class TaskCollectorPlugin extends Plugin {
                         .setTitle(
                             k === TEXT_ONLY_MARK
                                 ? "(TC) Append text"
-                                : `(TC) Mark with '${k}'`
+                                : `(TC) Mark with '${k}'`,
                         )
                         .setIcon("check-circle")
                         .onClick(async () => {
@@ -218,11 +218,11 @@ export class TaskCollectorPlugin extends Plugin {
                                 `Mark with '${k}'`,
                                 menu,
                                 info,
-                                selection
+                                selection,
                             );
                             await this.editLines(k, selection.lines);
                             this.restoreCursor(selection, info.editor);
-                        })
+                        }),
                 );
             }
         });
@@ -236,7 +236,7 @@ export class TaskCollectorPlugin extends Plugin {
                         this.tc.logDebug("Reset all tasks", menu, info);
                         await this.resetAllTasks();
                         this.restoreCursor(selection, info.editor);
-                    })
+                    }),
             );
         }
 
@@ -251,7 +251,7 @@ export class TaskCollectorPlugin extends Plugin {
                     .onClick(async () => {
                         await this.collectTasks();
                         this.restoreCursor(selection, info.editor);
-                    })
+                    }),
             );
         }
     }
@@ -304,12 +304,12 @@ export class TaskCollectorPlugin extends Plugin {
                     icon: "forward",
                     editorCallback: async (
                         editor: Editor,
-                        view: MarkdownView
+                        view: MarkdownView,
                     ) => {
                         this.tc.logDebug(
                             `${markWithNextCommand.id}: callback`,
                             editor,
-                            view
+                            view,
                         );
                         const selection =
                             this.getCurrentLinesFromEditor(editor);
@@ -325,12 +325,12 @@ export class TaskCollectorPlugin extends Plugin {
                     icon: "reply",
                     editorCallback: async (
                         editor: Editor,
-                        view: MarkdownView
+                        view: MarkdownView,
                     ) => {
                         this.tc.logDebug(
                             `${markWithPrevCommand.id}: callback`,
                             editor,
-                            view
+                            view,
                         );
                         const selection =
                             this.getCurrentLinesFromEditor(editor);
@@ -354,7 +354,7 @@ export class TaskCollectorPlugin extends Plugin {
                             k == TEXT_ONLY_MARK ? "list-plus" : "check-circle",
                         editorCallback: async (
                             editor: Editor,
-                            view: MarkdownView
+                            view: MarkdownView,
                         ) => {
                             const selection =
                                 this.getCurrentLinesFromEditor(editor);
@@ -362,7 +362,7 @@ export class TaskCollectorPlugin extends Plugin {
                                 `${command.id}: callback`,
                                 selection,
                                 editor,
-                                view
+                                view,
                             );
                             await this.editLines(k, selection.lines);
                             this.restoreCursor(selection, editor);
@@ -392,7 +392,7 @@ export class TaskCollectorPlugin extends Plugin {
         this.commandsRegistered = false;
 
         const oldCommands = Object.keys(app.commands.commands).filter((p) =>
-            p.startsWith("task-collector-")
+            p.startsWith("task-collector-"),
         );
         for (const command of oldCommands) {
             app.commands.removeCommand(command);
@@ -414,10 +414,10 @@ export class TaskCollectorPlugin extends Plugin {
                             this.buildContextMenu(
                                 menu,
                                 info,
-                                this.getCurrentLinesFromEditor(editor)
+                                this.getCurrentLinesFromEditor(editor),
                             );
-                        }
-                    ))
+                        },
+                    )),
                 );
             }
 
@@ -430,7 +430,7 @@ export class TaskCollectorPlugin extends Plugin {
                     (this.postProcessor = (el, ctx) => {
                         const checkboxes =
                             el.querySelectorAll<HTMLInputElement>(
-                                ".task-list-item-checkbox"
+                                ".task-list-item-checkbox",
                             );
                         if (!checkboxes.length) return;
 
@@ -442,7 +442,7 @@ export class TaskCollectorPlugin extends Plugin {
                             `preview click modal: ${this.tc.settings.previewClickModal};`,
                             ctx,
                             isLivePreview,
-                            checkboxes
+                            checkboxes,
                         );
 
                         for (const checkbox of Array.from(checkboxes)) {
@@ -459,7 +459,7 @@ export class TaskCollectorPlugin extends Plugin {
                                     (ev) => {
                                         const view =
                                             this.app.workspace.getActiveViewOfType(
-                                                MarkdownView
+                                                MarkdownView,
                                             );
                                         if (view) {
                                             const menu = new Menu();
@@ -472,7 +472,7 @@ export class TaskCollectorPlugin extends Plugin {
                                             });
                                             menu.showAtMouseEvent(ev);
                                         }
-                                    }
+                                    },
                                 );
                             }
 
@@ -489,18 +489,18 @@ export class TaskCollectorPlugin extends Plugin {
                                         ev.preventDefault();
                                         const mark = await promptForMark(
                                             this.app,
-                                            this.tc
+                                            this.tc,
                                         );
                                         if (mark) {
                                             await this.editLines(mark, [
                                                 lineStart + line,
                                             ]);
                                         }
-                                    }
+                                    },
                                 );
                             }
                         }
-                    })
+                    }),
                 );
             }
         }
@@ -588,7 +588,7 @@ export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
                             activeFile.path,
                             mark,
                             line,
-                            i
+                            i,
                         );
 
                         if (tcp.tc.anyTaskMark.test(line.text)) {
@@ -613,6 +613,6 @@ export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
                 this.view.dom.removeEventListener("click", this.eventHandler);
                 console.debug("TC ViewPlugin: destroy", this.view);
             }
-        }
+        },
     );
 }

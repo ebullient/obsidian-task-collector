@@ -44,7 +44,7 @@ export class TaskCollector {
             settings.contextMenu.resetAllTasks;
 
         Object.values(settings.groups).forEach((v) =>
-            this.cacheTaskSettings(v, this.cache)
+            this.cacheTaskSettings(v, this.cache),
         );
 
         // Store sorted unique list of completion area headings
@@ -55,10 +55,10 @@ export class TaskCollector {
             this.cache.areaHeadings.sort();
         }
         this.cache.completedMarks = Data.sanitizeMarks(
-            this.cache.completedMarks
+            this.cache.completedMarks,
         );
         this.cache.incompleteMarks = Data.sanitizeMarks(
-            this.cache.incompleteMarks
+            this.cache.incompleteMarks,
         );
 
         this.logDebug("configuration read", this.settings, this.cache);
@@ -78,13 +78,13 @@ export class TaskCollector {
      */
     private cacheTaskSettings(
         mts: ManipulationSettings,
-        cache: TaskCollectorCache
+        cache: TaskCollectorCache,
     ) {
         mts.marks.split("").forEach((x) => {
             if (cache.marks[x]) {
                 const name = cache.marks[x].name;
                 console.warn(
-                    `Two groups of settings contain ${x}: ${name} and ${mts.name}. Using ${name}`
+                    `Two groups of settings contain ${x}: ${name} and ${mts.name}. Using ${name}`,
                 );
             } else {
                 // allow for lookup of this configuration per character
@@ -156,13 +156,13 @@ export class TaskCollector {
                 split[n] = this.doMarkTask(
                     split[n],
                     old,
-                    this.settings.markCycle[next]
+                    this.settings.markCycle[next],
                 );
             } else if (listMatch && listMatch[2]) {
                 // convert to a task, and then mark
                 split[n] = this.updateLineText(
                     `${listMatch[1]}[ ] ${listMatch[2]}`,
-                    this.settings.markCycle[d == Direction.NEXT ? 0 : len - 1]
+                    this.settings.markCycle[d == Direction.NEXT ? 0 : len - 1],
                 );
             }
         }
@@ -178,7 +178,7 @@ export class TaskCollector {
     markSelectedTask(
         source: string,
         mark: string,
-        lines: number[] = []
+        lines: number[] = [],
     ): string {
         const split = source.split("\n");
         for (const n of lines) {
@@ -215,7 +215,7 @@ export class TaskCollector {
             // convert to a task, and then mark (recurse)
             return this.updateLineText(
                 `${listMatch[1]}[ ] ${listMatch[2]}`,
-                mark
+                mark,
             );
         }
         if (lineText && this.settings.convertEmptyLines) {
@@ -223,7 +223,7 @@ export class TaskCollector {
             // split line on first character
             return this.updateLineText(
                 `${indentMatch[1]}- [ ] ${indentMatch[2]}`,
-                mark
+                mark,
             );
         }
 
@@ -382,7 +382,7 @@ export class TaskCollector {
                 sections,
                 headersInOrder,
                 i,
-                this.cache.headingToMark[heading]
+                this.cache.headingToMark[heading],
             );
         }
 
@@ -393,7 +393,7 @@ export class TaskCollector {
                     const h = match[1];
                     const i = Number(match[2]);
                     return sections[h].blocks[i].newTasks.concat(
-                        ...sections[h].blocks[i].existing
+                        ...sections[h].blocks[i].existing,
                     );
                 }
                 return l;
@@ -404,7 +404,7 @@ export class TaskCollector {
     private scan(
         source: string,
         parsed: string[],
-        headersInOrder: string[]
+        headersInOrder: string[],
     ): Record<string, TcSection> {
         const split = source.split("\n");
         this.ensureHeadings(split);
@@ -446,7 +446,7 @@ export class TaskCollector {
         sections: Record<string, TcSection>,
         order: string[],
         orderIndex: number,
-        excluded?: string
+        excluded?: string,
     ): string[] {
         const remaining: string[] = [];
 
@@ -467,7 +467,13 @@ export class TaskCollector {
                 continue;
             }
             if (taskToBeMoved) {
-                this.moveMark(markToMove, taskToBeMoved, sections, order, orderIndex);
+                this.moveMark(
+                    markToMove,
+                    taskToBeMoved,
+                    sections,
+                    order,
+                    orderIndex,
+                );
                 markToMove = null;
                 taskToBeMoved = null;
                 inCallout = false;
@@ -504,25 +510,30 @@ export class TaskCollector {
             }
         }
         if (taskToBeMoved && markToMove) {
-            this.moveMark(markToMove, taskToBeMoved, sections, order, orderIndex);
+            this.moveMark(
+                markToMove,
+                taskToBeMoved,
+                sections,
+                order,
+                orderIndex,
+            );
         }
         return remaining;
     }
 
     private moveMark(
-            markToMove: string,
-            taskToBeMoved: string[],
-            sections: Record<string, TcSection>,
-            order: string[],
-            orderIndex: number
+        markToMove: string,
+        taskToBeMoved: string[],
+        sections: Record<string, TcSection>,
+        order: string[],
+        orderIndex: number,
     ) {
-        const heading =
-            this.cache.marks[markToMove].collection.areaHeading;
+        const heading = this.cache.marks[markToMove].collection.areaHeading;
         const index = this.findNextSection(heading, order, orderIndex);
 
         // add this task to the list of new tasks for the section
         taskToBeMoved.forEach((l) =>
-            sections[heading].blocks[index].newTasks.push(l)
+            sections[heading].blocks[index].newTasks.push(l),
         );
     }
 
@@ -536,7 +547,7 @@ export class TaskCollector {
     private findNextSection(
         heading: string,
         order: string[],
-        start: number
+        start: number,
     ): number {
         let wrap = false;
         for (let i = start; !wrap || i != start; i++) {
@@ -554,7 +565,7 @@ export class TaskCollector {
 
     private createCompletionArea(
         name: string,
-        sections: Record<string, TcSection>
+        sections: Record<string, TcSection>,
     ): number {
         if (!sections[name]) {
             sections[name] = {
@@ -608,7 +619,7 @@ export class TaskCollector {
         lineText: string,
         inCallout: boolean,
         source: string[],
-        i: number
+        i: number,
     ): boolean {
         if (inCallout) {
             const match = this.blockQuote.exec(lineText);
