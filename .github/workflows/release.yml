@@ -79,7 +79,7 @@ jobs:
         if [ "${{ github.event.inputs.update_manifest }}" = "true" ]; then
           sed -i 's|\(version":\) "[0-9\.]*"|\1 "'$VERSION'"|' manifest.json
         fi
-        if [ "${{ github.event.inputs.update_brat }}" = "true"]; then
+        if [ "${{ github.event.inputs.update_brat }}" = "true" ]; then
           sed -i 's|\(version":\) "[0-9\.]*"|\1 "'$VERSION'"|' manifest-beta.json
         fi
 
