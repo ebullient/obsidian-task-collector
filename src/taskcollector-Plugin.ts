@@ -78,9 +78,6 @@ export class TaskCollectorPlugin extends Plugin {
         await this.app.vault.process(activeFile, (source): string => {
             return this.tc.markInCycle(source, direction, lines);
         });
-        // const source = await this.app.vault.read(activeFile);
-        // const result = this.tc.markInCycle(source, direction, lines);
-        // await this.app.vault.modify(activeFile, result);
     }
 
     async editLines(mark: string, lines?: number[]): Promise<void> {
@@ -88,9 +85,6 @@ export class TaskCollectorPlugin extends Plugin {
         await this.app.vault.process(activeFile, (source): string => {
             return this.tc.markSelectedTask(source, mark, lines);
         });
-        // const source = await this.app.vault.read(activeFile);
-        // const result = this.tc.markSelectedTask(source, mark, lines);
-        // await this.app.vault.modify(activeFile, result);
     }
 
     async collectTasks(): Promise<void> {
@@ -98,9 +92,6 @@ export class TaskCollectorPlugin extends Plugin {
         await this.app.vault.process(activeFile, (source): string => {
             return this.tc.moveAllTasks(source);
         });
-        // const source = await this.app.vault.read(activeFile);
-        // const result = ;
-        // await this.app.vault.modify(activeFile, result);
     }
 
     async resetAllTasks(): Promise<void> {
@@ -108,9 +99,6 @@ export class TaskCollectorPlugin extends Plugin {
         await this.app.vault.process(activeFile, (source): string => {
             return this.tc.resetAllTasks(source);
         });
-        // const source = await this.app.vault.read(activeFile);
-        // const result = this.tc.resetAllTasks(source);
-        // this.app.vault.modify(activeFile, result);
     }
 
     getCurrentLinesFromEditor(editor: Editor): Selection {

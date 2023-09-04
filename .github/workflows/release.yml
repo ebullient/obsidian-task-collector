@@ -34,14 +34,14 @@ jobs:
     outputs:
       version: ${{ steps.build.outputs.version }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0 # otherwise, you will failed to push refs to dest repo
 
     - name: Use Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '16.7'
+        node-version: '18.5'
         cache: 'npm'
 
     # Build the plugin

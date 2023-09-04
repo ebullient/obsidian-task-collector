@@ -1,7 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from 'builtin-modules';
-import {sassPlugin} from 'esbuild-sass-plugin'
+import { sassPlugin } from 'esbuild-sass-plugin'
 import { config } from "dotenv";
 
 config();
@@ -13,9 +13,9 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = (process.argv[2] === 'production');
-const dir = prod || ! process.env.OUTDIR ? "./build" : process.env.OUTDIR ;
+const dir = prod || !process.env.OUTDIR ? "./build" : process.env.OUTDIR;
 
-esbuild.build({
+const parameters = {
     banner: {
         js: banner,
     },
@@ -24,9 +24,11 @@ esbuild.build({
     external: [
         'obsidian',
         'electron',
+        "codemirror",
         '@codemirror/language',
         '@codemirror/state',
         '@codemirror/view',
+        'moment',
         ...builtins
     ],
     format: 'cjs',
@@ -34,21 +36,23 @@ esbuild.build({
     target: 'es2020',
     treeShaking: true,
     sourcemap: prod ? false : 'inline',
-    minify: prod ? true : false,
+    minify: prod,
     outdir: dir,
     plugins: [
         sassPlugin()
     ]
-  }).then(context => {
-    if (!prod) {
-      // Enable watch mode
-      context.watch()
-    }
-}).catch((x) => {
-    if (x.errors) {
-        console.error(x.errors);
-    } else {
-        console.error(x);
-    }
-    process.exit(1)
-});
+};
+
+if (prod) {
+    await esbuild.build(parameters).catch((x) => {
+        if (x.errors) {
+            console.error(x.errors);
+        } else {
+            console.error(x);
+        }
+        process.exit(1)
+    });
+} else {
+    let ctx = await esbuild.context(parameters);
+    await ctx.watch()
+}
