@@ -68,6 +68,7 @@ export const DEFAULT_MIGRATION = {
     },
     debug: false,
     convertEmptyLines: false,
+    skipSectionMatch: "",
     version: {
         major: 1,
         minor: 0,

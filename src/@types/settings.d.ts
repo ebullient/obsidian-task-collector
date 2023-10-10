@@ -3,6 +3,7 @@ export type TaskCollectorSettings = {
     collectionEnabled: boolean;
     previewClickModal: boolean;
     markCycle: string;
+    skipSectionMatch: string;
     contextMenu: {
         markTask: boolean;
         resetTask: boolean;
@@ -41,8 +42,9 @@ export type TaskCollectorCache = {
     marks: Record<string, ManipulationSettings>; // (char, settings)
     removeExpr: Record<string, RegExp>; // (settings name, removeTextRegex)
     undoExpr: Record<string, RegExp>; // (settings name, undoRegex)
+    skipSectionExpr: RegExp | null;
     completedMarks: string; // marks that should be treated as "complete"
-    incompleteMarks: string; // marks that should be trated as "incomplete"
+    incompleteMarks: string; // marks that should be treated as "incomplete"
     areaHeadings: string[]; // configured area headings
     headingToMark: Record<string, string>; // heading to string of marks
 };
