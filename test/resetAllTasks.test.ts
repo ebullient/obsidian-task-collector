@@ -98,3 +98,52 @@ test('Reset with collection enabled', () => {
     const result = tc.resetAllTasks(start);
     expect(result).toEqual(expected);
 });
+
+test('Reset with collection enabled and skipped section', () => {
+    config.groups["deferred"] = {
+        ...JSON.parse(JSON.stringify(GROUP_COMPLETE)),
+        marks: ">",
+    }
+    config.skipSectionMatch = "# ❧ ";
+    tc.init(config);
+
+    const startSkipped = ""
+        + "- [ ] i1\n"
+        + "- [x] one\n"
+        + "- [>] two\n"
+        + "\n"
+        + "## To Do\n"
+        + "\n"
+        + "## Log\n"
+        + "- [ ] i2\n"
+        + "- [x] three\n"
+        + "- [>] four\n"
+        + "\n"
+        + "## ❧ Deferred\n"
+        + "- [ ] i3\n"
+        + "- [x] five\n"
+        + "- [>] six\n"
+        + "";
+
+    // items in "completion" areas are left alone
+    const expected = ""
+        + "- [ ] i1\n"
+        + "- [ ] one\n"
+        + "- [ ] two\n"
+        + "\n"
+        + "## To Do\n"
+        + "\n"
+        + "## Log\n"
+        + "- [ ] i2\n"
+        + "- [x] three\n"
+        + "- [>] four\n"
+        + "\n"
+        + "## ❧ Deferred\n"
+        + "- [ ] i3\n"
+        + "- [x] five\n"
+        + "- [>] six\n"
+        + "";
+
+    const result = tc.resetAllTasks(startSkipped);
+    expect(result).toEqual(expected);
+});

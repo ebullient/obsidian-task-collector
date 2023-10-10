@@ -32,8 +32,20 @@ Other references:
     - **Notes**:
       - `(TC) Mark previous` and `(TC) Mark next` are not registered unless or until a task mark cycle is defined.
 
+<!-- -->
+- **Toggle: Convert non-list lines**  (✨ 1.0.4)
+    Convert lines that are not tasks into tasks when you mark them.
+    - *default*: disabled
 
 <!-- -->
+- **Skip matching sections** _(optional)_  (✨ 1.0.13)
+    When collecting tasks, skip any sections that match the specified pattern.
+    - *default*: (empty string, disabled)
+    - **Notes**:
+        - *Be careful!* Test your expression before using it. There are several [online](https://www.regextester.com/) [tools](https://regex.observepoint.com/) that can help.
+
+<!-- -->
+
 ---
 
 ## Task groups
@@ -74,7 +86,6 @@ One or more task marks can be configured together in a group.
     - *default*: (empty string, disabled)
     - *example*: `#(task|todo)` (remove #task or #todo tags)
     - **Notes**:
-        - The global flag, 'g' is applied to a per-line match.
         - *Be careful!* Test your expression before using it. There are several [online](https://www.regextester.com/) [tools](https://regex.observepoint.com/) that can help.
         - Aside from an immediate "undo", this is not a reversible operation.
         - See [marking tasks](../README.md#marking-tasks)

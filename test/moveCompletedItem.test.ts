@@ -320,4 +320,32 @@ describe('Test move with multiple sections', () => {
 
         expect(tc.moveAllTasks(start)).toEqual(result);
     });
+
+    test('Move completed tasks around skipped section', () => {
+        config.groups[COMPLETE_NAME].marks += '-';
+        config.skipSectionMatch = "# ❧ ";
+        tc.init(config);
+
+        const start = ""
+            + "- [ ] one\n"
+            + "- [>] two\n"
+            + "## ❧ Ignore me\n"
+            + "- [-] three\n"
+            + "## ❧ Ignore me twice\n"
+            + "- [x] four\n";
+
+        const result = ""
+            + "- [ ] one\n"
+            + "## ❧ Ignore me\n"
+            + "- [-] three\n"
+            + "## ❧ Ignore me twice\n"
+            + "- [x] four\n"
+            + "\n"
+            + "## Deferred\n"
+            + "- [>] two\n"
+            + "\n"
+            + "## Log\n";
+
+        expect(tc.moveAllTasks(start)).toEqual(result);
+    });
 });

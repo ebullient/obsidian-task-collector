@@ -133,6 +133,20 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     }),
             );
 
+        new Setting(this.containerEl)
+            .setName("Skip matching sections")
+            .setDesc(
+                "When collecting tasks, skip content of sections that match the specified pattern",
+            )
+            .addText((input) =>
+                input
+                    .setPlaceholder("")
+                    .setValue(this.newSettings.skipSectionMatch)
+                    .onChange(async (value) => {
+                        this.newSettings.skipSectionMatch = value;
+                    }),
+            );
+
         new Setting(this.containerEl).setHeading().setName("Task Groups");
 
         this.containerEl.createEl("p", {

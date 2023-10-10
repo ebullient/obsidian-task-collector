@@ -41,6 +41,7 @@ export const DEFAULT_SETTINGS: TaskCollectorSettings = {
     },
     debug: false,
     convertEmptyLines: false,
+    skipSectionMatch: "",
     version: {
         major: 0,
         minor: 0,
@@ -76,9 +77,8 @@ export const DEFAULT_COLLECTION = {
 export const CACHE_DEFAULT: TaskCollectorCache = {
     useContextMenu: false,
     completedMarks: "",
-    // completedTaskRegExp: null,
     incompleteMarks: "",
-    // incompleteTaskRegExp: null,
+    skipSectionExpr: null,
     marks: {},
     removeExpr: {},
     undoExpr: {},

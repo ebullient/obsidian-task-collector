@@ -60,6 +60,9 @@ export class TaskCollector {
         this.cache.incompleteMarks = Data.sanitizeMarks(
             this.cache.incompleteMarks,
         );
+        this.cache.skipSectionExpr = trySkipSectionRegex(
+            settings.skipSectionMatch,
+        );
 
         this.logDebug("configuration read", this.settings, this.cache);
     }
@@ -323,28 +326,29 @@ export class TaskCollector {
         return lineText.replace(this.stripTask, "$1 $2");
     }
 
-    // Reset all tasks not in a completion area
+    // Reset all tasks not in a completion/skipped area
 
     resetAllTasks(source: string): string {
         const lines = source.split("\n");
         const result: string[] = [];
 
         let inCompletedSection = false;
+        let inSkippedSection = false;
         for (const line of lines) {
             const trimmed = line.trim();
-            if (inCompletedSection) {
+            if (inCompletedSection || inSkippedSection) {
                 if (line.startsWith("#") || trimmed === "---") {
+                    inSkippedSection = this.isSkippedSection(line);
                     inCompletedSection =
                         contains(this.cache.areaHeadings, trimmed) != undefined;
                 }
                 result.push(line);
-            } else if (
-                trimmed.startsWith("#") &&
-                contains(this.cache.areaHeadings, trimmed)
-            ) {
-                inCompletedSection = true;
+            } else if (trimmed.startsWith("#") || trimmed === "---") {
+                inCompletedSection =
+                    contains(this.cache.areaHeadings, trimmed) != undefined;
+                inSkippedSection = this.isSkippedSection(line);
                 result.push(line);
-            } else {
+            } else if (!(inCompletedSection || inSkippedSection)) {
                 result.push(line.replace(this.anyTaskMark, `$1 $3`));
             }
         }
@@ -453,10 +457,15 @@ export class TaskCollector {
         let markToMove = null;
         let taskToBeMoved = null;
         let inCallout = false;
+        let inSkippedSection = false;
         let i = -1;
 
         for (let line of source) {
             i++;
+            if (line.startsWith("#") || line.trim() === "---") {
+                inSkippedSection = this.isSkippedSection(line);
+                console.debug("TC: section", line, inSkippedSection);
+            }
             if (
                 taskToBeMoved &&
                 !this.isTaskLine(line) &&
@@ -487,7 +496,9 @@ export class TaskCollector {
             }
 
             const taskMatch = this.anyTaskMark.exec(line);
-            if (taskMatch) {
+            if (inSkippedSection) {
+                remaining.push(line);
+            } else if (taskMatch) {
                 const mark = taskMatch[2];
                 if (excluded && excluded.indexOf(mark) >= 0) {
                     // we are in the target section for this mark
@@ -607,6 +618,13 @@ export class TaskCollector {
         );
     }
 
+    private isSkippedSection(lineText: string): boolean {
+        return (
+            this.cache.skipSectionExpr &&
+            this.cache.skipSectionExpr.test(lineText)
+        );
+    }
+
     private isCallout(lineText: string): boolean {
         return this.blockQuote.test(lineText);
     }
@@ -661,7 +679,12 @@ export const _regex = {
     tryIncompleteRegex,
     tryUndoRegex,
     tryRemoveTextRegex,
+    trySkipSectionRegex,
 };
+
+function trySkipSectionRegex(param: string): RegExp {
+    return param ? new RegExp(param) : null;
+}
 
 function tryCompleteRegex(param: string): RegExp {
     return new RegExp(`^([\\s>]*- \\[)[${param}](\\] .*)$`);
@@ -672,7 +695,7 @@ function tryIncompleteRegex(param: string): RegExp {
 }
 
 function tryRemoveTextRegex(param: string): RegExp {
-    return param ? new RegExp(param, "g") : null;
+    return param ? new RegExp(param) : null;
 }
 
 function tryUndoRegex(appendDateFormat: string): RegExp {
