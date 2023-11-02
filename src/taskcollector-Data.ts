@@ -1,5 +1,4 @@
 // eslint-disable-file @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
-import { Notice } from "obsidian";
 import {
     ManipulationSettings,
     TaskCollectorSettings,
@@ -114,7 +113,7 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
     }
 
     if (dirty) {
-        new Notice(
+        tcp.tc.notify(
             `(TC) Configuration settings were modified. See console for details.`,
         );
     }

@@ -1,3 +1,4 @@
+import { Notice } from "obsidian";
 import {
     TaskCollectorSettings,
     TaskCollectorCache,
@@ -67,10 +68,22 @@ export class TaskCollector {
         this.logDebug("configuration read", this.settings, this.cache);
     }
 
+    isDirty(newSettings: TaskCollectorSettings) {
+        return JSON.stringify(this.settings) !== JSON.stringify(newSettings);
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     logDebug(message: string, ...optionalParams: any[]): void {
         if (!this.settings || this.settings.debug) {
             console.debug("(TC) " + message, ...optionalParams);
+        }
+    }
+
+    notify(message: string) {
+        if (this.settings && this.settings.hideNotifications) {
+            console.log(message);
+        } else {
+            new Notice(message);
         }
     }
 

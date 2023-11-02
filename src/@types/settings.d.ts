@@ -12,6 +12,7 @@ export type TaskCollectorSettings = {
     };
     debug: boolean;
     convertEmptyLines: boolean;
+    hideNotifications: boolean;
     version: TcVersion;
 };
 

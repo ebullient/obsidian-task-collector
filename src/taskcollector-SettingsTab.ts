@@ -37,11 +37,13 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         this.tc = taskCollector;
     }
 
-    save() {
+    async save() {
         Data.sanitize(this.plugin, this.newSettings);
-        this.tc.init(this.newSettings);
-        this.plugin.saveSettings();
-        new Notice("(TC) Configuration saved");
+        if (this.tc.isDirty(this.newSettings)) {
+            this.tc.init(this.newSettings);
+            await this.plugin.saveSettings();
+            this.tc.notify("(TC) Configuration saved");
+        }
     }
 
     /** Save on exit */
@@ -75,6 +77,12 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                             JSON.stringify(this.tc.settings),
                         );
                         this.display();
+                        const message = "(TC) Configuration reset";
+                        if (this.tc.settings.hideNotifications) {
+                            console.log(message);
+                        } else {
+                            new Notice(message);
+                        }
                         new Notice("(TC) Configuration reset");
                     }),
             )
@@ -82,8 +90,8 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 button
                     .setIcon("save")
                     .setTooltip("Save current values")
-                    .onClick(() => {
-                        this.save();
+                    .onClick(async () => {
+                        await this.save();
                     });
                 this.saveButton = button.buttonEl;
             });
@@ -247,6 +255,19 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             );
 
         new Setting(this.containerEl).setHeading().setName("Other settings");
+
+        new Setting(this.containerEl)
+            .setName("Hide notifications")
+            .setDesc(
+                "Hide pop-up notification messages (messages will be logged in the developer console)",
+            )
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.newSettings.hideNotifications)
+                    .onChange(async (value) => {
+                        this.newSettings.hideNotifications = value;
+                    }),
+            );
 
         new Setting(this.containerEl)
             .setName("Debug")

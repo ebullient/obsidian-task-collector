@@ -521,7 +521,6 @@ export class TaskCollectorPlugin extends Plugin {
     }
 
     async saveSettings(): Promise<void> {
-        this.tc.logDebug("save settings");
         await this.saveData(this.tc.settings);
 
         if (this.handlersRegistered) {
