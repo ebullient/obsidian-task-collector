@@ -166,8 +166,8 @@ export class TaskCollector {
                             ? 0
                             : len - 1
                         : d == Direction.NEXT
-                        ? (i + 1) % len
-                        : (i + len - 1) % len;
+                          ? (i + 1) % len
+                          : (i + len - 1) % len;
 
                 split[n] = this.doMarkTask(
                     split[n],
