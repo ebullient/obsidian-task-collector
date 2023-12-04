@@ -35,7 +35,7 @@
     "dotenv": "^16.3.1",
     "esbuild": "0.19.8",
     "esbuild-sass-plugin": "^2.16.0",
-    "eslint": "^8.54.0",
+    "eslint": "^8.55.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "moment": "^2.29.4",
