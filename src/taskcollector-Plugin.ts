@@ -563,30 +563,33 @@ export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
                     if (!mark) {
                         return false;
                     }
-                    await this.tcp.app.vault.process(activeFile, (source): string => {
-                        const position = this.view.posAtDOM(target);
-                        const line = view.state.doc.lineAt(position);
-                        const i = source
-                            .split("\n")
-                            .findIndex((c) => c === line.text);
+                    await this.tcp.app.vault.process(
+                        activeFile,
+                        (source): string => {
+                            const position = this.view.posAtDOM(target);
+                            const line = view.state.doc.lineAt(position);
+                            const i = source
+                                .split("\n")
+                                .findIndex((c) => c === line.text);
 
-                        tc.logDebug(
-                            "TC ViewPlugin: mark task",
-                            activeFile.path,
-                            mark,
-                            line,
-                            i,
-                        );
+                            tc.logDebug(
+                                "TC ViewPlugin: mark task",
+                                activeFile.path,
+                                mark,
+                                line,
+                                i,
+                            );
 
-                        if (tcp.tc.anyTaskMark.test(line.text)) {
-                            return tc.markSelectedTask(source, mark, [i]);
-                        } else {
-                            const offset = Number(target.dataset.line);
-                            return tc.markSelectedTask(source, mark, [
-                                i + offset,
-                            ]);
-                        }
-                    });
+                            if (tcp.tc.anyTaskMark.test(line.text)) {
+                                return tc.markSelectedTask(source, mark, [i]);
+                            } else {
+                                const offset = Number(target.dataset.line);
+                                return tc.markSelectedTask(source, mark, [
+                                    i + offset,
+                                ]);
+                            }
+                        },
+                    );
 
                     return true;
                 };
