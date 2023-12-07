@@ -547,23 +547,23 @@ export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
 
                 this.eventHandler = async (ev: MouseEvent) => {
                     const { target } = ev;
-                    const activeFile = app.workspace.getActiveFile();
+                    const activeFile = this.tcp.app.workspace.getActiveFile();
                     if (
                         !activeFile ||
-                        !target ||
                         !(target instanceof HTMLInputElement) ||
                         target.type !== "checkbox"
                     ) {
                         return false;
                     }
+                    console.debug("TC ViewPlugin: click", target);
                     ev.stopImmediatePropagation();
                     ev.preventDefault();
 
-                    const mark = await promptForMark(app, tc);
+                    const mark = await promptForMark(this.tcp.app, tc);
                     if (!mark) {
                         return false;
                     }
-                    await app.vault.process(activeFile, (source): string => {
+                    await this.tcp.app.vault.process(activeFile, (source): string => {
                         const position = this.view.posAtDOM(target);
                         const line = view.state.doc.lineAt(position);
                         const i = source
@@ -593,12 +593,12 @@ export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
                 this.eventHandler.bind(this);
 
                 this.view.dom.addEventListener("click", this.eventHandler);
-                console.debug("TC ViewPlugin: create", view);
+                console.debug("TC ViewPlugin: create click handler");
             }
 
             destroy() {
                 this.view.dom.removeEventListener("click", this.eventHandler);
-                console.debug("TC ViewPlugin: destroy", this.view);
+                console.debug("TC ViewPlugin: destroy click handler");
             }
         },
     );
