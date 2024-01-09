@@ -198,12 +198,12 @@ export class TaskCollectorPlugin extends Plugin {
                         .setTitle(
                             k === TEXT_ONLY_MARK
                                 ? "(TC) Append text"
-                                : `(TC) Mark with '${k}'`,
+                                : `(TC) Change to '[${k}]' (${ms.name})`,
                         )
                         .setIcon("check-circle")
                         .onClick(async () => {
                             this.tc.logDebug(
-                                `Mark with '${k}'`,
+                                `Change to '${k}'`,
                                 menu,
                                 info,
                                 selection,

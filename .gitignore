@@ -7,6 +7,7 @@
 
 # npm
 node_modules
+.env
 
 # build
 build
