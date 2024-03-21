@@ -40,6 +40,11 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
     async save() {
         Data.sanitize(this.plugin, this.newSettings);
         if (this.tc.isDirty(this.newSettings)) {
+            if (this.tc.handlerChanged(this.newSettings)) {
+                new Notice(
+                    "Updated Live Preview settings. Restart Obsidian to apply changes.",
+                );
+            }
             this.tc.init(this.newSettings);
             await this.plugin.saveSettings();
             this.tc.notify("(TC) Configuration saved");
@@ -83,7 +88,6 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                         } else {
                             new Notice(message);
                         }
-                        new Notice("(TC) Configuration reset");
                     }),
             )
             .addButton((button) => {
@@ -97,7 +101,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             });
 
         new Setting(this.containerEl)
-            .setName("Task Collection")
+            .setName("Task collection")
             .setDesc(
                 "Enable task collection (additional task group settings when enabled)",
             )
@@ -155,7 +159,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     }),
             );
 
-        new Setting(this.containerEl).setHeading().setName("Task Groups");
+        new Setting(this.containerEl).setHeading().setName("Task groups");
 
         this.containerEl.createEl("p", {
             text:
@@ -192,7 +196,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     }),
             );
 
-        new Setting(this.containerEl).setHeading().setName("Menus and Modals");
+        new Setting(this.containerEl).setHeading().setName("Menus and modals");
 
         this.containerEl.createEl("p", {
             text:
@@ -229,7 +233,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             );
 
         new Setting(this.containerEl)
-            .setName("Add `(TC) Collect Tasks` menu item")
+            .setName("Add `(TC) Collect tasks` menu item")
             .setDesc(
                 "Add an item to the right-click menu to collect tasks (based on task configuration).",
             )
@@ -242,7 +246,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             );
 
         new Setting(this.containerEl)
-            .setName("Add '(TC) Reset All Tasks' command and menu item")
+            .setName("Add '(TC) Reset all tasks' command and menu item")
             .setDesc(
                 "Add a command and an item to the right-click menu to reset/clear all tasks in the current file.",
             )

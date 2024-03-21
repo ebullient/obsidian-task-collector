@@ -68,6 +68,10 @@ export class TaskCollector {
         this.logDebug("configuration read", this.settings, this.cache);
     }
 
+    handlerChanged(newSettings: TaskCollectorSettings) {
+        return this.settings.previewClickModal != newSettings.previewClickModal;
+    }
+
     isDirty(newSettings: TaskCollectorSettings) {
         return JSON.stringify(this.settings) !== JSON.stringify(newSettings);
     }
