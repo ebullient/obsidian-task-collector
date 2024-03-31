@@ -551,11 +551,12 @@ export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
                     if (
                         !activeFile ||
                         !(target instanceof HTMLInputElement) ||
-                        target.type !== "checkbox"
+                        target.type !== "checkbox" ||
+                        target.classList.contains("metadata-input-checkbox")
                     ) {
                         return false;
                     }
-                    console.debug("TC ViewPlugin: click", target);
+                    console.debug("TC ViewPlugin: click", target, target.classList);
                     ev.stopImmediatePropagation();
                     ev.preventDefault();
 
