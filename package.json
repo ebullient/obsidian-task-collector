@@ -28,7 +28,7 @@
     "@types/codemirror": "5.60.15",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.11.28",
-    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.4.0",
     "@typescript-eslint/parser": "^7.2.0",
     "auto-changelog": "^2.4.0",
     "builtin-modules": "^3.3.0",
