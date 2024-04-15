@@ -556,7 +556,11 @@ export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
                     ) {
                         return false;
                     }
-                    console.debug("TC ViewPlugin: click", target, target.classList);
+                    console.debug(
+                        "TC ViewPlugin: click",
+                        target,
+                        target.classList,
+                    );
                     ev.stopImmediatePropagation();
                     ev.preventDefault();
 
