@@ -48,7 +48,7 @@
   "dependencies": {
     "@codemirror/language": "https://github.com/lishid/cm-language",
     "@codemirror/state": "^6.4.1",
-    "@codemirror/view": "^6.28.1"
+    "@codemirror/view": "^6.28.2"
   },
   "auto-changelog": {
     "backfillLimit": false,
