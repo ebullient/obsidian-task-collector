@@ -379,11 +379,11 @@ export class TaskCollectorPlugin extends Plugin {
         this.tc.logDebug("unregister commands");
         this.commandsRegistered = false;
 
-        const oldCommands = Object.keys(app.commands.commands).filter((p) =>
-            p.startsWith("task-collector-"),
+        const oldCommands = Object.keys(this.app.commands.commands).filter(
+            (p) => p.startsWith("task-collector-"),
         );
         for (const command of oldCommands) {
-            app.commands.removeCommand(command);
+            this.app.commands.removeCommand(command);
         }
     }
 
