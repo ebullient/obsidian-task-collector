@@ -26,8 +26,8 @@ export class TaskCollector {
     settings: TaskCollectorSettings;
     cache: TaskCollectorCache;
 
-    anyListItem = new RegExp(/^([\s>]*(?:-|\d+\.) )([^\\[].*)$/);
-    anyTaskMark = new RegExp(/^([\s>]*(?:-|\d+\.) \[)(.)(\] .*)$/);
+    anyListItem = new RegExp(/^([\s>]*(?:-|\*|\d+\.) )([^\\[].*)$/);
+    anyTaskMark = new RegExp(/^([\s>]*(?:-|\*|\d+\.) \[)(.)(\] .*)$/);
     anyText = new RegExp(/^([\s>]*)(.*)$/);
     blockQuote = new RegExp(/^(\s*>[\s>]*)(.*)$/);
     blockRef = new RegExp(/^(.*?)( \^[A-Za-z0-9-]+)?$/);
