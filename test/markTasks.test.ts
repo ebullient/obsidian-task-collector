@@ -28,6 +28,18 @@ test('Test default settings', () => {
     expect(tc.updateLineText('- [>] something', ' ')).toEqual('- [ ] something');
 });
 
+test('Test asterisk task list', () => {
+    tc.init(config);
+
+    expect(tc.cache.removeExpr[COMPLETE_NAME]).toBeUndefined();
+    expect(tc.cache.undoExpr[COMPLETE_NAME]).toBeUndefined();
+
+    expect(tc.updateLineText('* [ ] something', 'x')).toEqual('* [x] something');
+    expect(tc.updateLineText('* [x] something', '-')).toEqual('* [-] something');
+    expect(tc.updateLineText('* [-] something', '>')).toEqual('* [>] something');
+    expect(tc.updateLineText('* [>] something', ' ')).toEqual('* [ ] something');
+});
+
 test('Test numbered tasks', () => {
     tc.init(config);
 
