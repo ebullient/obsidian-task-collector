@@ -166,23 +166,27 @@ export class TaskCollector {
                 const i = this.settings.markCycle.indexOf(old);
                 const next =
                     i < 0
-                        ? d == Direction.NEXT
-                            ? 0
-                            : len - 1
-                        : d == Direction.NEXT
-                          ? (i + 1) % len
-                          : (i + len - 1) % len;
+                        ? d == Direction.NEXT // i < 0
+                            ? 0 // NEXT
+                            : len - 1 // PREV
+                        : d == Direction.NEXT // i >= 0
+                          ? (i + 1) % len // NEXT
+                          : (i + len - 1) % len; // PREV
 
-                split[n] = this.doMarkTask(
-                    split[n],
-                    old,
-                    this.settings.markCycle[next],
-                );
+                const chosenMark = this.settings.markCycle[next];
+                if (chosenMark === "§") {
+                    split[n] = this.doRemoveTask(split[n]);
+                } else {
+                    split[n] = this.doMarkTask(split[n], old, chosenMark);
+                }
             } else if (listMatch && listMatch[2]) {
+                const cycle = this.settings.markCycle.replace("§", "");
+                const chosenMark =
+                    cycle[d == Direction.NEXT ? 0 : cycle.length - 1];
                 // convert to a task, and then mark
                 split[n] = this.updateLineText(
                     `${listMatch[1]}[ ] ${listMatch[2]}`,
-                    this.settings.markCycle[d == Direction.NEXT ? 0 : len - 1],
+                    chosenMark,
                 );
             }
         }

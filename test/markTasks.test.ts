@@ -149,6 +149,26 @@ describe('Task mark cycle', () => {
         expect(tc.markInCycle('- something', Direction.NEXT, [0])).toEqual("- [a] something");
         expect(tc.markInCycle('- something', Direction.PREV, [0])).toEqual("- [c] something");
     });
+
+    test('Mark tasks forward in a cycle (next) include remove task', () => {
+        config.markCycle = " ab§";
+        config.markCycleRemoveTask = true;
+        tc.init(config);
+        expect(tc.markInCycle('- something', Direction.NEXT, [0])).toEqual("- [ ] something");
+        expect(tc.markInCycle('- [ ] something', Direction.NEXT, [0])).toEqual("- [a] something");
+        expect(tc.markInCycle('- [a] something', Direction.NEXT, [0])).toEqual("- [b] something");
+        expect(tc.markInCycle('- [b] something', Direction.NEXT, [0])).toEqual("- something");
+    });
+
+    test('Mark tasks backward in a cycle (prev) include remove task', () => {
+        config.markCycle = " ab§";
+        config.markCycleRemoveTask = true;
+        tc.init(config);
+        expect(tc.markInCycle('- [b] something', Direction.PREV, [0])).toEqual("- [a] something");
+        expect(tc.markInCycle('- [a] something', Direction.PREV, [0])).toEqual("- [ ] something");
+        expect(tc.markInCycle('- [ ] something', Direction.PREV, [0])).toEqual("- something");
+        expect(tc.markInCycle('- something', Direction.PREV, [0])).toEqual("- [b] something");
+    });
 });
 
 

@@ -3,6 +3,7 @@ export type TaskCollectorSettings = {
     collectionEnabled: boolean;
     previewClickModal: boolean;
     markCycle: string;
+    markCycleRemoveTask: boolean;
     skipSectionMatch: string;
     contextMenu: {
         markTask: boolean;

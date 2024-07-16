@@ -121,18 +121,42 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         new Setting(this.containerEl)
             .setName("Define task mark cycle")
             .setDesc(
-                "Specify characters (as a string) for Previous/Next commands",
+                "Specify characters (as a string) for Previous/Next commands. Use the button to include checkbox removal in the cycle.",
             )
             .addText((input) =>
                 input
                     .setPlaceholder("")
-                    .setValue(this.newSettings.markCycle)
+                    .setValue(this.newSettings.markCycle.replace("§", ""))
                     .onChange(async (value) => {
                         this.newSettings.markCycle = [...new Set(value)].join(
                             "",
                         );
                     }),
-            );
+            )
+            .addExtraButton((button) => {
+                const el = button
+                    .setTooltip(
+                        "Include checkbox removal in the cycle: " +
+                            this.newSettings.markCycleRemoveTask,
+                    )
+                    .setIcon("cross-in-box")
+                    .onClick(() => {
+                        this.newSettings.markCycleRemoveTask =
+                            !this.newSettings.markCycleRemoveTask;
+                        el.classList.toggle(
+                            "is-active",
+                            this.newSettings.markCycleRemoveTask,
+                        );
+                        button.setTooltip(
+                            "Include checkbox removal in the cycle: " +
+                                this.newSettings.markCycleRemoveTask,
+                        );
+                    }).extraSettingsEl;
+                el.classList.toggle(
+                    "is-active",
+                    this.newSettings.markCycleRemoveTask,
+                );
+            });
 
         new Setting(this.containerEl)
             .setName("Convert non-list lines")

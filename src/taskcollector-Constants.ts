@@ -31,6 +31,7 @@ export const DEFAULT_SETTINGS: TaskCollectorSettings = {
         },
     },
     markCycle: "",
+    markCycleRemoveTask: false,
     collectionEnabled: false,
     previewClickModal: true,
     contextMenu: {

@@ -58,6 +58,7 @@ export const DEFAULT_MIGRATION = {
         }
     },
     markCycle: "",
+    markCycleRemoveTask: false,
     collectionEnabled: true,
     previewClickModal: false,
     contextMenu: {
@@ -130,6 +131,7 @@ test('Task Marker: User configuration', async () => {
         JSON.parse(JSON.stringify(DEFAULT_MIGRATION)),
         {
             markCycle: " x/>-",
+            markCycleRemoveTask: false,
             previewClickModal: false,
             collectionEnabled: false,
             contextMenu: {

@@ -41,6 +41,10 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
     // Make sure characters in cycle are unique
     if (settings.markCycle) {
         settings.markCycle = [...new Set(settings.markCycle)].join("");
+        settings.markCycle.replace("§", "");
+        if (settings.markCycleRemoveTask) {
+            settings.markCycle += "§";
+        }
     }
 
     // resolve groups with a key / mts.name mismatch
