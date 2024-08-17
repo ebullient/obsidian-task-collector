@@ -191,9 +191,6 @@ async function migrateSettings(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     orig: any,
 ): Promise<TaskCollectorSettings> {
-    console.info("(TC) Migrating 0.x settings to the current version");
-    console.debug("0.x settings", orig);
-
     const old = {
         ...DEFAULT_SETTINGS_0,
         ...orig,
@@ -256,7 +253,7 @@ async function migrateSettings(
                 useContextMenu: orig["rightClickAppend"],
             });
         }
-        console.log(settings.groups);
+        tcp.tc.logDebug("groups", settings.groups);
 
         // Task Marker default
         settings.collectionEnabled = false;

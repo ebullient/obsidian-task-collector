@@ -485,7 +485,7 @@ export class TaskCollector {
             i++;
             if (line.startsWith("#") || line.trim() === "---") {
                 inSkippedSection = this.isSkippedSection(line);
-                console.debug("TC: section", line, inSkippedSection);
+                this.logDebug("TC: section", line, inSkippedSection);
             }
             if (
                 taskToBeMoved &&

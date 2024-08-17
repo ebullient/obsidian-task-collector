@@ -556,7 +556,7 @@ export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
                     ) {
                         return false;
                     }
-                    console.debug(
+                    tcp.tc.logDebug(
                         "TC ViewPlugin: click",
                         target,
                         target.classList,
@@ -601,12 +601,12 @@ export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
                 this.eventHandler.bind(this);
 
                 this.view.dom.addEventListener("click", this.eventHandler);
-                console.debug("TC ViewPlugin: create click handler");
+                tcp.tc.logDebug("TC ViewPlugin: create click handler");
             }
 
             destroy() {
                 this.view.dom.removeEventListener("click", this.eventHandler);
-                console.debug("TC ViewPlugin: destroy click handler");
+                tcp.tc.logDebug("TC ViewPlugin: destroy click handler");
             }
         },
     );

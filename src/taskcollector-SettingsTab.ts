@@ -83,11 +83,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                         );
                         this.display();
                         const message = "(TC) Configuration reset";
-                        if (this.tc.settings.hideNotifications) {
-                            console.log(message);
-                        } else {
-                            new Notice(message);
-                        }
+                        this.tc.notify(message);
                     }),
             )
             .addButton((button) => {
