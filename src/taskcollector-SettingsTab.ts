@@ -491,6 +491,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                     );
                                     console.error(
                                         `Error parsing specified date format for ${mts.name}: ${value}`,
+                                        e,
                                     );
                                 }
                                 this.testForErrors();
@@ -529,6 +530,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                 } catch (e) {
                                     console.error(
                                         `Error parsing specified text replacement regular expression for ${mts.name}: ${value}`,
+                                        e,
                                     );
                                 }
                             },

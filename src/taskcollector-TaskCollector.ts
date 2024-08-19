@@ -111,8 +111,8 @@ export class TaskCollector {
                 cache.marks[x] = mts;
 
                 // This specific configuration may want to add a context menu
-                cache.useContextMenu == cache.useContextMenu ||
-                    mts.useContextMenu;
+                cache.useContextMenu =
+                    cache.useContextMenu || mts.useContextMenu;
 
                 // store the regex for matching text to remove
                 if (mts.removeExpr) {
