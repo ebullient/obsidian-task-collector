@@ -9,6 +9,7 @@ import {
     MarkdownPostProcessor,
     MarkdownPreviewRenderer,
     MarkdownFileInfo,
+    TFile,
 } from "obsidian";
 import { Direction, TaskCollector } from "./taskcollector-TaskCollector";
 import { TaskCollectorSettingsTab } from "./taskcollector-SettingsTab";
@@ -82,7 +83,15 @@ export class TaskCollectorPlugin extends Plugin {
 
     async editLines(mark: string, lines?: number[]): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        await this.app.vault.process(activeFile, (source): string => {
+        await this.editLinesInFile(activeFile, mark, lines);
+    }
+
+    async editLinesInFile(
+        file: TFile,
+        mark: string,
+        lines?: number[],
+    ): Promise<void> {
+        await this.app.vault.process(file, (source): string => {
             return this.tc.markSelectedTask(source, mark, lines);
         });
     }
@@ -420,10 +429,13 @@ export class TaskCollectorPlugin extends Plugin {
                             el.querySelectorAll<HTMLInputElement>(
                                 ".task-list-item-checkbox",
                             );
-                        if (!checkboxes.length) return;
+                        if (!checkboxes.length || !ctx.sourcePath) {
+                            return;
+                        }
 
                         const isLivePreview =
                             !!el.closest(".markdown-rendered");
+
                         this.tc.logDebug(
                             "markdown postprocessor",
                             `use context menu: ${this.tc.cache.useContextMenu};`,
@@ -431,6 +443,10 @@ export class TaskCollectorPlugin extends Plugin {
                             ctx,
                             isLivePreview,
                             checkboxes,
+                        );
+
+                        const targetFile = this.app.vault.getFileByPath(
+                            ctx.sourcePath,
                         );
 
                         for (const checkbox of Array.from(checkboxes)) {
@@ -480,9 +496,11 @@ export class TaskCollectorPlugin extends Plugin {
                                             this.tc,
                                         );
                                         if (mark) {
-                                            await this.editLines(mark, [
-                                                lineStart + line,
-                                            ]);
+                                            await this.editLinesInFile(
+                                                targetFile,
+                                                mark,
+                                                [lineStart + line],
+                                            );
                                         }
                                     },
                                 );
