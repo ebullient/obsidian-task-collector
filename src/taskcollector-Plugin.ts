@@ -31,6 +31,10 @@ declare module "obsidian" {
             executeCommandById: (id: string) => void;
         };
     }
+
+    interface MarkdownPostProcessorContext {
+        containerEl: HTMLElement;
+    }
 }
 
 interface Selection {
@@ -429,32 +433,61 @@ export class TaskCollectorPlugin extends Plugin {
                             el.querySelectorAll<HTMLInputElement>(
                                 ".task-list-item-checkbox",
                             );
-                        if (!checkboxes.length || !ctx.sourcePath) {
+                        const section = ctx.getSectionInfo(el);
+
+                        if (!checkboxes.length || !ctx.sourcePath || !section) {
                             return;
                         }
-
-                        const isLivePreview =
-                            !!el.closest(".markdown-rendered");
-
-                        this.tc.logDebug(
-                            "markdown postprocessor",
-                            `use context menu: ${this.tc.cache.useContextMenu};`,
-                            `preview click modal: ${this.tc.settings.previewClickModal};`,
-                            ctx,
-                            isLivePreview,
-                            checkboxes,
-                        );
-
                         const targetFile = this.app.vault.getFileByPath(
                             ctx.sourcePath,
                         );
+                        let { lineStart } = section;
+
+                        this.tc.logDebug(
+                            "markdown postprocessor",
+                            targetFile,
+                            lineStart,
+                            ctx,
+                            section,
+                            checkboxes,
+                        );
+
+                        let parent = ctx["containerEl"] as HTMLElement;
+                        while (
+                            parent &&
+                            !parent.classList.contains("markdown-reading-view")
+                        ) {
+                            if (parent.classList.contains("markdown-embed")) {
+                                break;
+                            }
+                            parent = parent.parentNode as HTMLElement;
+                        }
+
+                        if (parent.hasAttribute("src")) {
+                            const src = parent.getAttribute("src");
+                            const blockRef = src.split("#^")[1];
+                            const header = src.split("#")[1];
+                            const metadata =
+                                this.app.metadataCache.getFileCache(targetFile);
+                            if (blockRef) {
+                                const block = metadata.blocks[blockRef];
+                                if (block) {
+                                    lineStart += block.position.start.line;
+                                }
+                            } else if (header) {
+                                const heading = metadata.headings.find(
+                                    (h) => h.heading === header,
+                                );
+                                if (heading) {
+                                    lineStart += heading.position.start.line;
+                                }
+                            }
+                        }
 
                         for (const checkbox of Array.from(checkboxes)) {
-                            const section = ctx.getSectionInfo(checkbox);
-                            if (!section) continue;
-
-                            const { lineStart } = section;
-                            const line = Number(checkbox.dataset.line);
+                            const line =
+                                Number(lineStart) +
+                                Number(checkbox.dataset.line);
 
                             if (this.tc.cache.useContextMenu) {
                                 this.registerDomEvent(
@@ -469,10 +502,10 @@ export class TaskCollectorPlugin extends Plugin {
                                             const menu = new Menu();
                                             this.buildContextMenu(menu, view, {
                                                 start: {
-                                                    line: lineStart + line,
+                                                    line,
                                                     ch: 0,
                                                 },
-                                                lines: [lineStart + line],
+                                                lines: [line],
                                             });
                                             menu.showAtMouseEvent(ev);
                                         }
@@ -480,10 +513,7 @@ export class TaskCollectorPlugin extends Plugin {
                                 );
                             }
 
-                            if (
-                                this.tc.settings.previewClickModal &&
-                                !isLivePreview
-                            ) {
+                            if (this.tc.settings.previewClickModal) {
                                 // reading mode
                                 this.registerDomEvent(
                                     checkbox,
@@ -496,10 +526,13 @@ export class TaskCollectorPlugin extends Plugin {
                                             this.tc,
                                         );
                                         if (mark) {
+                                            checkbox.checked = mark !== " ";
+                                            checkbox.parentElement.dataset.task =
+                                                mark;
                                             await this.editLinesInFile(
                                                 targetFile,
                                                 mark,
-                                                [lineStart + line],
+                                                [line],
                                             );
                                         }
                                     },
