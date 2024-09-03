@@ -27,7 +27,7 @@
   "devDependencies": {
     "@types/codemirror": "5.60.15",
     "@types/jest": "^29.5.12",
-    "@types/node": "^22.4.1",
+    "@types/node": "^22.5.2",
     "@typescript-eslint/eslint-plugin": "^8.3.0",
     "@typescript-eslint/parser": "^8.4.0",
     "auto-changelog": "^2.4.0",
