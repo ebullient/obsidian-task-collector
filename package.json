@@ -29,7 +29,7 @@
     "@types/jest": "^29.5.13",
     "@types/node": "^22.7.4",
     "@typescript-eslint/eslint-plugin": "^8.8.0",
-    "@typescript-eslint/parser": "^8.6.0",
+    "@typescript-eslint/parser": "^8.8.0",
     "auto-changelog": "^2.5.0",
     "builtin-modules": "^4.0.0",
     "dotenv": "^16.4.5",
