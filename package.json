@@ -29,7 +29,7 @@
     "@eslint/js": "^9.13.0",
     "@types/codemirror": "5.60.15",
     "@types/jest": "^29.5.13",
-    "@types/node": "^22.7.5",
+    "@types/node": "^22.7.7",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "auto-changelog": "^2.5.0",
     "builtin-modules": "^4.0.0",
