@@ -23,7 +23,7 @@
   ],
   "author": "ebullient",
   "repository": "github.com:ebullient/obsidian-task-collector",
-  "license": "AGPL-3.0-only",
+  "license": "MIT",
   "devDependencies": {
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.13.0",
