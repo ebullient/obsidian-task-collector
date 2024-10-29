@@ -14,23 +14,6 @@ body:
         - Is this actually a bug? If this is something that you wish the plugin could do, please submit a feature request instead.
 
   - type: textarea
-    id: input-data
-    attributes:
-      label: Input data (markdown source)
-      description: |
-        Include a sample markdown snippet that triggers the issue. Use backticks to format the code snippet.
-
-        - ⚠️ Don't include personal or sensitive information
-        - 🚀 Use the Obsidian sandbox vault + this plugin and that snippet to ensure the issue is reproducible.
-      placeholder: |
-        I am trying to use this markdown to ...
-
-        ```markdown
-        ```
-    validations:
-      required: true
-
-  - type: textarea
     id: expected
     attributes:
       label: Expected Behavior
@@ -86,9 +69,9 @@ body:
       required: true
 
   - type: input
-    id: tasks-version
+    id: plugin-version
     attributes:
-      label: Tasks Plugin Version
+      label: Plugin Version
       description: Which plugin version are you using?
       placeholder: 1.11.0
     validations:
