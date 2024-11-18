@@ -26,7 +26,7 @@
   "license": "MIT",
   "devDependencies": {
     "@eslint/eslintrc": "^3.1.0",
-    "@eslint/js": "^9.14.0",
+    "@eslint/js": "^9.15.0",
     "@types/codemirror": "5.60.15",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.8.7",
