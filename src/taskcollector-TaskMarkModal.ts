@@ -1,5 +1,5 @@
-import { App, Modal } from "obsidian";
-import { TaskCollector } from "./taskcollector-TaskCollector";
+import { type App, Modal } from "obsidian";
+import type { TaskCollector } from "./taskcollector-TaskCollector";
 
 export function promptForMark(
     app: App,
@@ -52,9 +52,7 @@ export class TaskMarkModal extends Modal {
         const bksp = footer.createSpan();
         bksp.innerHTML = "<b>bksp</b> to remove <code>[]</code>";
 
-        const self = this;
-
-        const keyListener = function (event: KeyboardEvent) {
+        const keyListener = (event: KeyboardEvent) => {
             switch (event.key) {
                 case "ArrowLeft":
                 case "ArrowRight":
@@ -64,10 +62,10 @@ export class TaskMarkModal extends Modal {
                 case "Tab":
                     break;
                 default: {
-                    self.chosenMark = event.key;
+                    this.chosenMark = event.key;
                     event.preventDefault();
                     event.stopImmediatePropagation();
-                    self.close();
+                    this.close();
                 }
             }
         };
@@ -80,33 +78,31 @@ export class TaskMarkModal extends Modal {
         choices: string,
         markComplete: boolean,
     ): void {
-        const self = this;
         for (const character of choices) {
             const li = list.createEl("li", {
-                cls:
-                    "task-list-item " + (character == " " ? "" : " is-checked"),
+                cls: `task-list-item ${character === " " ? "" : " is-checked"}`,
                 attr: {
                     "data-task": character,
                 },
             });
-            li.addEventListener("click", function (event) {
-                self.chosenMark = character;
-                self.close();
+            li.addEventListener("click", (event) => {
+                this.chosenMark = character;
+                this.close();
             });
 
             const input = li.createEl("input", {
                 cls: "task-list-item-checkbox",
                 attr: {
-                    id: "task-list-item-checkbox-" + character,
+                    id: `task-list-item-checkbox-${character}`,
                     type: "checkbox",
                     style: "pointer-events: none;",
                 },
             });
-            if (character != " ") {
+            if (character !== " ") {
                 input.setAttribute("checked", "");
             }
             li.createEl("span", {
-                text: character == " " ? "␣" : character,
+                text: character === " " ? "␣" : character,
                 attr: {
                     style: "pointer-events: none;",
                 },

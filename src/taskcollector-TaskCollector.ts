@@ -1,15 +1,15 @@
 import { Notice } from "obsidian";
-import {
-    TaskCollectorSettings,
-    TaskCollectorCache,
+import type {
     ManipulationSettings,
+    TaskCollectorCache,
+    TaskCollectorSettings,
     TcSection,
 } from "./@types/settings";
 import {
     CACHE_DEFAULT,
-    TEXT_ONLY_NAME,
-    TEXT_ONLY_MARK,
     DEFAULT_NAME,
+    TEXT_ONLY_MARK,
+    TEXT_ONLY_NAME,
 } from "./taskcollector-Constants";
 import { Data } from "./taskcollector-Data";
 
@@ -18,8 +18,8 @@ const ALL_FORMATTING_TOKENS =
     /(\[[^[]*\])|(\\)?([Hh]mm(ss)?|Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Qo?|N{1,5}|YYYYYY|YYYYY|YYYY|YY|y{2,4}|yo?|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|kk?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g;
 
 export enum Direction {
-    PREV,
-    NEXT,
+    PREV = "PREV",
+    NEXT = "NEXT",
 }
 
 export class TaskCollector {
@@ -44,9 +44,9 @@ export class TaskCollector {
             settings.contextMenu.collectTasks ||
             settings.contextMenu.resetAllTasks;
 
-        Object.values(settings.groups).forEach((v) =>
-            this.cacheTaskSettings(v, this.cache),
-        );
+        for (const v of Object.values(settings.groups)) {
+            this.cacheTaskSettings(v, this.cache);
+        }
 
         // Store sorted unique list of completion area headings
         if (this.settings.collectionEnabled) {
@@ -69,7 +69,9 @@ export class TaskCollector {
     }
 
     handlerChanged(newSettings: TaskCollectorSettings) {
-        return this.settings.previewClickModal != newSettings.previewClickModal;
+        return (
+            this.settings.previewClickModal !== newSettings.previewClickModal
+        );
     }
 
     isDirty(newSettings: TaskCollectorSettings) {
@@ -77,14 +79,15 @@ export class TaskCollector {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     logDebug(message: string, ...optionalParams: any[]): void {
         if (!this.settings || this.settings.debug) {
-            console.debug("(TC) " + message, ...optionalParams);
+            console.debug(`(TC) ${message}`, ...optionalParams);
         }
     }
 
     notify(message: string) {
-        if (this.settings && this.settings.hideNotifications) {
+        if (this.settings?.hideNotifications) {
             console.log(message);
         } else {
             new Notice(message);
@@ -100,7 +103,7 @@ export class TaskCollector {
         mts: ManipulationSettings,
         cache: TaskCollectorCache,
     ) {
-        mts.marks.split("").forEach((x) => {
+        for (const x of mts.marks.split("")) {
             if (cache.marks[x]) {
                 const name = cache.marks[x].name;
                 console.warn(
@@ -127,7 +130,7 @@ export class TaskCollector {
                 }
 
                 // store the area heading for this mark
-                if (mts.collection && mts.collection.areaHeading) {
+                if (mts.collection?.areaHeading) {
                     if (cache.headingToMark[mts.collection.areaHeading]) {
                         cache.headingToMark[mts.collection.areaHeading] += x;
                     } else {
@@ -143,7 +146,7 @@ export class TaskCollector {
                     }
                 }
             }
-        });
+        }
     }
 
     // Mark tasks
@@ -166,10 +169,10 @@ export class TaskCollector {
                 const i = this.settings.markCycle.indexOf(old);
                 const next =
                     i < 0
-                        ? d == Direction.NEXT // i < 0
+                        ? d === Direction.NEXT // i < 0
                             ? 0 // NEXT
                             : len - 1 // PREV
-                        : d == Direction.NEXT // i >= 0
+                        : d === Direction.NEXT // i >= 0
                           ? (i + 1) % len // NEXT
                           : (i + len - 1) % len; // PREV
 
@@ -179,10 +182,10 @@ export class TaskCollector {
                 } else {
                     split[n] = this.doMarkTask(split[n], old, chosenMark);
                 }
-            } else if (listMatch && listMatch[2]) {
+            } else if (listMatch?.[2]) {
                 const cycle = this.settings.markCycle.replace("§", "");
                 const chosenMark =
-                    cycle[d == Direction.NEXT ? 0 : cycle.length - 1];
+                    cycle[d === Direction.NEXT ? 0 : cycle.length - 1];
                 // convert to a task, and then mark
                 split[n] = this.updateLineText(
                     `${listMatch[1]}[ ] ${listMatch[2]}`,
@@ -217,10 +220,12 @@ export class TaskCollector {
      * @param lineText
      * @param mark
      */
-    updateLineText(lineText: string, mark: string): string {
+    updateLineText(lineText: string, existingMark: string): string {
+        let mark = existingMark;
         if (mark === "Backspace") {
             return this.doRemoveTask(lineText);
-        } else if (mark === "") {
+        }
+        if (mark === "") {
             mark = TEXT_ONLY_MARK;
         }
 
@@ -235,7 +240,7 @@ export class TaskCollector {
             return this.doMarkTask(lineText, old, mark);
         }
         const listMatch = this.anyListItem.exec(lineText);
-        if (listMatch && listMatch[2]) {
+        if (listMatch?.[2]) {
             // convert to a task, and then mark (recurse)
             return this.updateLineText(
                 `${listMatch[1]}[ ] ${listMatch[2]}`,
@@ -255,12 +260,13 @@ export class TaskCollector {
         return lineText;
     }
 
-    private doAppendText(lineText: string, append = true): string {
+    private doAppendText(existingLine: string, append = true): string {
+        let lineText = existingLine;
         // remember line ending: block id and strict line ending whitespace
         let blockid = "";
         const strictLineEnding = lineText.endsWith("  ");
         const match = this.blockRef.exec(lineText);
-        if (match && match[2]) {
+        if (match?.[2]) {
             lineText = match[1];
             blockid = match[2];
         }
@@ -294,7 +300,12 @@ export class TaskCollector {
         return lineText;
     }
 
-    private doMarkTask(lineText: string, old: string, mark: string): string {
+    private doMarkTask(
+        existingLine: string,
+        old: string,
+        mark: string,
+    ): string {
+        let lineText = existingLine;
         if (old === mark) {
             this.logDebug("task already marked", `|${lineText}|`);
             return lineText;
@@ -311,7 +322,7 @@ export class TaskCollector {
         let blockid = "";
         const strictLineEnding = lineText.endsWith("  ");
         const match = this.blockRef.exec(lineText);
-        if (match && match[2]) {
+        if (match?.[2]) {
             lineText = match[1];
             blockid = match[2];
         }
@@ -361,16 +372,17 @@ export class TaskCollector {
                 if (line.startsWith("#") || trimmed === "---") {
                     inSkippedSection = this.isSkippedSection(line);
                     inCompletedSection =
-                        contains(this.cache.areaHeadings, trimmed) != undefined;
+                        contains(this.cache.areaHeadings, trimmed) !==
+                        undefined;
                 }
                 result.push(line);
             } else if (trimmed.startsWith("#") || trimmed === "---") {
                 inCompletedSection =
-                    contains(this.cache.areaHeadings, trimmed) != undefined;
+                    contains(this.cache.areaHeadings, trimmed) !== undefined;
                 inSkippedSection = this.isSkippedSection(line);
                 result.push(line);
             } else if (!(inCompletedSection || inSkippedSection)) {
-                result.push(line.replace(this.anyTaskMark, `$1 $3`));
+                result.push(line.replace(this.anyTaskMark, "$1 $3"));
             }
         }
         return result.join("\n");
@@ -383,7 +395,7 @@ export class TaskCollector {
      * @param source
      */
     moveAllTasks(source: string): string {
-        if (this.cache.areaHeadings.length == 0) {
+        if (this.cache.areaHeadings.length === 0) {
             return source;
         }
 
@@ -470,9 +482,10 @@ export class TaskCollector {
         source: string[],
         sections: Record<string, TcSection>,
         order: string[],
-        orderIndex: number,
+        prevOrder: number,
         excluded?: string,
     ): string[] {
+        let orderIndex = prevOrder;
         const remaining: string[] = [];
 
         let markToMove = null;
@@ -564,9 +577,9 @@ export class TaskCollector {
         const index = this.findNextSection(heading, order, orderIndex);
 
         // add this task to the list of new tasks for the section
-        taskToBeMoved.forEach((l) =>
-            sections[heading].blocks[index].newTasks.push(l),
-        );
+        for (const l of taskToBeMoved) {
+            sections[heading].blocks[index].newTasks.push(l);
+        }
     }
 
     /**
@@ -582,8 +595,8 @@ export class TaskCollector {
         start: number,
     ): number {
         let wrap = false;
-        for (let i = start; !wrap || i != start; i++) {
-            if (i == order.length) {
+        for (let i = start; !wrap || i !== start; i++) {
+            if (i === order.length) {
                 i = 0;
                 wrap = true;
             }
@@ -612,7 +625,7 @@ export class TaskCollector {
     }
 
     private ensureHeadings(split: string[]) {
-        this.cache.areaHeadings.forEach((h) => {
+        for (const h of this.cache.areaHeadings) {
             if (!contains(split, h)) {
                 if (split[split.length - 1].trim() !== "") {
                     split.push("");
@@ -620,30 +633,19 @@ export class TaskCollector {
                 split.push(h);
                 split.push("");
             }
-        });
+        }
     }
 
     private isCollected(mark: string) {
-        return (
-            this.cache.marks[mark] &&
-            this.cache.marks[mark].collection &&
-            this.cache.marks[mark].collection.areaHeading
-        );
+        return this.cache.marks[mark]?.collection?.areaHeading;
     }
 
     private removeCheckbox(mark: string) {
-        return (
-            this.cache.marks[mark] &&
-            this.cache.marks[mark].collection &&
-            this.cache.marks[mark].collection.removeCheckbox
-        );
+        return this.cache.marks[mark]?.collection?.removeCheckbox;
     }
 
     private isSkippedSection(lineText: string): boolean {
-        return (
-            this.cache.skipSectionExpr &&
-            this.cache.skipSectionExpr.test(lineText)
-        );
+        return this.cache.skipSectionExpr?.test(lineText);
     }
 
     private isCallout(lineText: string): boolean {
@@ -670,7 +672,7 @@ export class TaskCollector {
                 );
             }
         }
-        if (lineText.length == 0) {
+        if (lineText.length === 0) {
             let j = i + 1;
             while (j < source.length) {
                 if (source[j].length > 0) {
@@ -749,7 +751,7 @@ function tryUndoRegex(appendDateFormat: string): RegExp {
     const matchString = `\\s*${array.join("")}\\s*`;
 
     // allow a block reference at the end of the line
-    return new RegExp(matchString + "( \\^[A-Za-z0-9-]+)?$");
+    return new RegExp(`${matchString}( \\^[A-Za-z0-9-]+)?$`);
 }
 
 function replaceLiterals(segment: string) {

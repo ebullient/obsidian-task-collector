@@ -1,14 +1,16 @@
 import {
-    App,
-    ButtonComponent,
+    type App,
+    type ButtonComponent,
+    Notice,
     PluginSettingTab,
     Setting,
-    Notice,
     debounce,
 } from "obsidian";
-import { TaskCollector, _regex } from "./taskcollector-TaskCollector";
-import TaskCollectorPlugin from "./main";
-import { ManipulationSettings, TaskCollectorSettings } from "./@types/settings";
+import type {
+    ManipulationSettings,
+    TaskCollectorSettings,
+} from "./@types/settings";
+import type TaskCollectorPlugin from "./main";
 import {
     COMPLETE_NAME,
     DEFAULT_COLLECTION,
@@ -17,6 +19,7 @@ import {
     TEXT_ONLY_NAME,
 } from "./taskcollector-Constants";
 import { Data } from "./taskcollector-Data";
+import { type TaskCollector, _regex } from "./taskcollector-TaskCollector";
 
 export class TaskCollectorSettingsTab extends PluginSettingTab {
     plugin: TaskCollectorPlugin;
@@ -106,7 +109,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     .setValue(this.newSettings.collectionEnabled)
                     .onChange(async (value) => {
                         const redraw =
-                            value != this.newSettings.collectionEnabled;
+                            value !== this.newSettings.collectionEnabled;
                         this.newSettings.collectionEnabled = value;
                         if (redraw) {
                             this.drawElements();
@@ -132,8 +135,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             .addExtraButton((button) => {
                 const el = button
                     .setTooltip(
-                        "Include checkbox removal in the cycle: " +
-                            this.newSettings.markCycleRemoveTask,
+                        `Include checkbox removal in the cycle: ${this.newSettings.markCycleRemoveTask}`,
                     )
                     .setIcon("cross-in-box")
                     .onClick(() => {
@@ -144,8 +146,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                             this.newSettings.markCycleRemoveTask,
                         );
                         button.setTooltip(
-                            "Include checkbox removal in the cycle: " +
-                                this.newSettings.markCycleRemoveTask,
+                            `Include checkbox removal in the cycle: ${this.newSettings.markCycleRemoveTask}`,
                         );
                     }).extraSettingsEl;
                 el.classList.toggle(
@@ -315,11 +316,11 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         this.createGroupItem(this.newSettings.groups[DEFAULT_NAME]);
 
         // any/everything else
-        Object.values(this.newSettings.groups)
-            .filter((mts) => mts.name != DEFAULT_NAME)
-            .forEach((mts) => {
+        for (const mts of Object.values(this.newSettings.groups)) {
+            if (mts.name !== DEFAULT_NAME) {
                 this.createGroupItem(mts);
-            });
+            }
+        }
     }
 
     createGroupItem(mts: ManipulationSettings) {
@@ -353,7 +354,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                     "aria-label",
                                     "A group name is required.",
                                 );
-                            } else if (target && target != mts) {
+                            } else if (target && target !== mts) {
                                 text.inputEl.addClass("data-value-error");
                                 text.inputEl.setAttribute(
                                     "aria-label",
@@ -429,10 +430,10 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     debounce(
                         (value) => {
                             const newMarks = Data.sanitizeMarks(value);
-                            if (newMarks != value) {
+                            if (newMarks !== value) {
                                 input.inputEl.value = newMarks;
                             }
-                            if (newMarks != mts.marks) {
+                            if (newMarks !== mts.marks) {
                                 this.removeMarks(mts.marks, input.inputEl);
 
                                 mts.marks = newMarks;
@@ -487,7 +488,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                     );
                                     momentFormat.inputEl.setAttribute(
                                         "aria-label",
-                                        `An error occurred parsing this moment string. See log for details.`,
+                                        "An error occurred parsing this moment string. See log for details.",
                                     );
                                     console.error(
                                         `Error parsing specified date format for ${mts.name}: ${value}`,
@@ -609,7 +610,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             input.removeAttribute("aria-label");
         }
 
-        marks.forEach((x) => {
+        for (const x of marks) {
             this.tc.logDebug(
                 `(TC): remove mark '${x}'`,
                 this.markInputCache[x],
@@ -621,11 +622,14 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
 
                 // if there is only one element left in the array,
                 // remove the current character from the list of conflicts
-                if (set.size == 1) {
-                    set.forEach((i) => this.tryRemoveConflict(x, i));
+                if (set.size === 1) {
+                    for (const i of set) {
+                        this.tryRemoveConflict(x, i);
+                    }
                 }
             }
-        });
+        }
+
         this.tc.logDebug(`removeMarks end: '${oldValue}'`, this.markInputCache);
     }
 
@@ -639,14 +643,16 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         );
 
         // add input element into the cache (new marks)
-        marks.forEach((x) => {
+        for (const x of marks) {
             if (this.markInputCache[x]) {
                 const set = this.markInputCache[x];
                 set.add(input);
 
                 if (set.size > 1) {
                     // we have a conflict over a defined task mark
-                    set.forEach((i) => this.trySetConflict(x, i));
+                    for (const i of set) {
+                        this.trySetConflict(x, i);
+                    }
                     console.error(
                         `(TC) More then one group uses task mark ${this.showMark(
                             x,
@@ -658,9 +664,9 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 this.markInputCache[x] = new Set();
                 this.markInputCache[x].add(input);
             }
-        });
+        }
 
-        if (marks.length == 0) {
+        if (marks.length === 0) {
             input.addClass("no-marks-defined");
             input.addClass("data-value-error");
             input.setAttribute(
@@ -704,7 +710,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             return;
         }
         const remaining = input.getAttribute("conflict").replace(mark, "");
-        if (remaining.length == 0) {
+        if (remaining.length === 0) {
             // all conflicting marks have been removed
             input.removeAttribute("conflict");
             input.removeClass("data-value-error");
@@ -722,7 +728,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
     }
 
     private showMark(x: string) {
-        return x == TEXT_ONLY_MARK ? "(empty)" : x;
+        return x === TEXT_ONLY_MARK ? "(empty)" : x;
     }
 
     private clearButtonErrors() {
@@ -743,7 +749,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
             this.saveButton.addClass("data-value-error");
             this.saveButton.setAttribute(
                 "aria-label",
-                `There are configuration errors. Correct those before saving.`,
+                "There are configuration errors. Correct those before saving.",
             );
         } else {
             this.saveButton.removeClass("data-value-error");

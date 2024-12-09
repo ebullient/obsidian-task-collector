@@ -1,19 +1,19 @@
 // eslint-disable-file @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
-import {
+import type {
     ManipulationSettings,
     TaskCollectorSettings,
     TcVersion,
 } from "./@types/settings";
 import {
+    COMPLETE_NAME,
+    DEFAULT_NAME,
     DEFAULT_SETTINGS,
     DEFAULT_SETTINGS_0,
     GROUP_DEFAULT,
-    TEXT_ONLY_NAME,
     TEXT_ONLY_MARK,
-    DEFAULT_NAME,
-    COMPLETE_NAME,
+    TEXT_ONLY_NAME,
 } from "./taskcollector-Constants";
-import { TaskCollectorPlugin } from "./taskcollector-Plugin";
+import type { TaskCollectorPlugin } from "./taskcollector-Plugin";
 
 export const Data = {
     constructSettings,
@@ -48,9 +48,8 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
     }
 
     // resolve groups with a key / mts.name mismatch
-    Object.entries(settings.groups)
-        .filter(([name, mts]) => name !== mts.name)
-        .forEach(([name, mts]) => {
+    for (const [name, mts] of Object.entries(settings.groups)) {
+        if (name !== mts.name) {
             dirty = true; // ensure name & mts.name agree
             if (settings.groups[mts.name]) {
                 console.warn(
@@ -61,7 +60,8 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
                 // move to the new name
                 moveGroup(settings.groups, name, mts.name);
             }
-        });
+        }
+    }
 
     if (hasMark(settings.groups[TEXT_ONLY_NAME])) {
         dirty = true; // ensure text only group has no marks
@@ -89,17 +89,16 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
             );
         }
         let used = "";
-        let nextMark;
+        let nextMark: string;
         // filter from the top (post-move)
-        Object.entries(settings.groups)
-            .filter(([_, mts]) => !hasMark(mts))
-            .filter(([name, _]) => name !== TEXT_ONLY_NAME)
-            .forEach(([name, _]) => {
+        for (const [name, mts] of Object.entries(settings.groups)) {
+            if (!hasMark(mts) && name !== TEXT_ONLY_NAME) {
                 [used, nextMark] = nextRandom(used);
                 settings.groups[name].marks = nextMark;
-            });
+            }
+        }
     } else if (
-        textOnlyGroups.length == 1 &&
+        textOnlyGroups.length === 1 &&
         textOnlyGroups[0][1].name !== TEXT_ONLY_NAME
     ) {
         // Make sure the text only group has the required name
@@ -112,13 +111,13 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
     // The text-only group is not subject to task collection
     if (settings.groups[TEXT_ONLY_NAME]) {
         if (settings.groups[TEXT_ONLY_NAME].collection) {
-            delete settings.groups[TEXT_ONLY_NAME].collection;
+            settings.groups[TEXT_ONLY_NAME].collection = undefined;
         }
     }
 
     if (dirty) {
         tcp.tc.notify(
-            `(TC) Configuration settings were modified. See console for details.`,
+            "(TC) Configuration settings were modified. See console for details.",
         );
     }
     tcp.tc.logDebug("sanitize end", settings);
@@ -132,7 +131,7 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
  */
 async function constructSettings(
     tcp: TaskCollectorPlugin,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: : old config formats
     orig: any,
 ): Promise<TaskCollectorSettings> {
     return orig.version
@@ -188,7 +187,7 @@ type TaskCollectorSettings_v0 = {
 
 async function migrateSettings(
     tcp: TaskCollectorPlugin,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: old config formats
     orig: any,
 ): Promise<TaskCollectorSettings> {
     const old = {
@@ -208,9 +207,7 @@ async function migrateSettings(
 
     // Groups and marks
 
-    let marks;
-
-    marks = "x";
+    let marks = "x";
     if (!old.onlyLowercaseX) {
         marks += "X";
     }
@@ -234,23 +231,23 @@ async function migrateSettings(
 
     // Task Marker
 
-    if (orig["cycleTaskValues"]) {
-        settings.markCycle = orig["cycleTaskValues"];
-        if (orig["incompleteTaskValuesRow2"]) {
+    if (orig.cycleTaskValues) {
+        settings.markCycle = orig.cycleTaskValues;
+        if (orig.incompleteTaskValuesRow2) {
             createSettingsGroup(settings.groups, "group-2", {
-                marks: sanitizeMarks(orig["incompleteTaskValuesRow2"]),
-                appendDateFormat: orig["appendTextFormatMarkRow2"],
+                marks: sanitizeMarks(orig.incompleteTaskValuesRow2),
+                appendDateFormat: orig.appendTextFormatMarkRow2,
             });
         }
-        if (orig["appendTextFormatMark"]) {
+        if (orig.appendTextFormatMark) {
             settings.groups[DEFAULT_NAME].appendDateFormat =
-                orig["appendTextFormatMark"];
+                orig.appendTextFormatMark;
         }
-        if (orig["appendTextFormatAppend"]) {
+        if (orig.appendTextFormatAppend) {
             createSettingsGroup(settings.groups, TEXT_ONLY_NAME, {
                 marks: TEXT_ONLY_MARK,
-                appendDateFormat: orig["appendTextFormatAppend"],
-                useContextMenu: orig["rightClickAppend"],
+                appendDateFormat: orig.appendTextFormatAppend,
+                useContextMenu: orig.rightClickAppend,
             });
         }
         tcp.tc.logDebug("groups", settings.groups);
@@ -330,16 +327,17 @@ function moveGroup(
 }
 
 function nextRandom(used: string): string[] {
+    let next = used;
     let i = 0;
     do {
         const mark = String.fromCharCode(
             0x2654 + Math.random() * (0x2667 - 0x2654 + 1),
         );
-        if (used.indexOf(mark) < 0) {
-            used += mark;
-            return [used, mark];
+        if (next.indexOf(mark) < 0) {
+            next += mark;
+            return [next, mark];
         }
         i++;
     } while (i < 10);
-    return [used, String.fromCharCode(0x24e7)];
+    return [next, String.fromCharCode(0x24e7)];
 }
