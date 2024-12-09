@@ -29,7 +29,7 @@
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@eslint/eslintrc": "^3.2.0",
-    "@eslint/js": "^9.15.0",
+    "@eslint/js": "^9.16.0",
     "@types/codemirror": "5.60.15",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.9.3",
