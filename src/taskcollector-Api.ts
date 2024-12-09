@@ -1,6 +1,6 @@
-import { App } from "obsidian";
-import { API } from "./@types/api";
-import { TaskCollector } from "./taskcollector-TaskCollector";
+import type { App } from "obsidian";
+import type { API } from "./@types/api";
+import type { TaskCollector } from "./taskcollector-TaskCollector";
 import { promptForMark } from "./taskcollector-TaskMarkModal";
 
 export class TaskCollectorApi implements API {

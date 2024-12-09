@@ -1,25 +1,25 @@
+import type { Extension } from "@codemirror/state";
+import { type EditorView, ViewPlugin } from "@codemirror/view";
 import {
-    Editor,
-    EditorPosition,
-    MarkdownView,
-    Plugin,
-    Command,
-    Menu,
-    EventRef,
-    MarkdownPostProcessor,
+    type Command,
+    type Editor,
+    type EditorPosition,
+    type EventRef,
+    type MarkdownFileInfo,
+    type MarkdownPostProcessor,
     MarkdownPreviewRenderer,
-    MarkdownFileInfo,
-    TFile,
+    MarkdownView,
+    Menu,
+    Plugin,
+    type TFile,
 } from "obsidian";
-import { Direction, TaskCollector } from "./taskcollector-TaskCollector";
-import { TaskCollectorSettingsTab } from "./taskcollector-SettingsTab";
-import { promptForMark } from "./taskcollector-TaskMarkModal";
-import { API } from "./@types/api";
+import type { API } from "./@types/api";
 import { TaskCollectorApi } from "./taskcollector-Api";
-import { Data } from "./taskcollector-Data";
 import { TEXT_ONLY_MARK } from "./taskcollector-Constants";
-import { EditorView, ViewPlugin } from "@codemirror/view";
-import { Extension } from "@codemirror/state";
+import { Data } from "./taskcollector-Data";
+import { TaskCollectorSettingsTab } from "./taskcollector-SettingsTab";
+import { Direction, TaskCollector } from "./taskcollector-TaskCollector";
+import { promptForMark } from "./taskcollector-TaskMarkModal";
 
 declare module "obsidian" {
     interface App {
@@ -58,7 +58,7 @@ export class TaskCollectorPlugin extends Plugin {
     public api: API;
 
     async onload(): Promise<void> {
-        console.info("loading Task Collector (TC) v" + this.manifest.version);
+        console.info(`loading Task Collector (TC) v${this.manifest.version}`);
 
         this.tc = new TaskCollector();
         this.addSettingTab(
@@ -204,7 +204,7 @@ export class TaskCollectorPlugin extends Plugin {
             }
         }
         // dynamic/optional menu items
-        Object.entries(this.tc.cache.marks).forEach(([k, ms]) => {
+        for (const [k, ms] of Object.entries(this.tc.cache.marks)) {
             if (ms.useContextMenu) {
                 menu.addItem((item) =>
                     item
@@ -226,7 +226,7 @@ export class TaskCollectorPlugin extends Plugin {
                         }),
                 );
             }
-        });
+        }
 
         if (this.tc.settings.contextMenu.resetAllTasks) {
             menu.addItem((item) =>
@@ -343,16 +343,16 @@ export class TaskCollectorPlugin extends Plugin {
             }
 
             // Per-group/mark commands
-            Object.entries(this.tc.cache.marks).forEach(([k, ms]) => {
+            for (const [k, ms] of Object.entries(this.tc.cache.marks)) {
                 if (ms.registerCommand) {
                     const command: Command = {
                         id: `task-collector-mark-task-${k}`,
                         name:
-                            k == TEXT_ONLY_MARK
+                            k === TEXT_ONLY_MARK
                                 ? "Append text"
                                 : `Mark with '${k}'`,
                         icon:
-                            k == TEXT_ONLY_MARK ? "list-plus" : "check-circle",
+                            k === TEXT_ONLY_MARK ? "list-plus" : "check-circle",
                         editorCallback: async (
                             editor: Editor,
                             view: MarkdownView,
@@ -371,7 +371,7 @@ export class TaskCollectorPlugin extends Plugin {
                     };
                     this.addCommand(command);
                 }
-            });
+            }
 
             // If resetAll is enabled
             if (this.tc.settings.contextMenu.resetAllTasks) {
@@ -407,19 +407,18 @@ export class TaskCollectorPlugin extends Plugin {
 
             // Source / Live Preview mode: register context menu
             if (this.tc.cache.useContextMenu) {
-                this.registerEvent(
-                    (this.editTaskContextMenu = this.app.workspace.on(
-                        "editor-menu",
-                        async (menu, editor, info) => {
-                            //get line selections here
-                            this.buildContextMenu(
-                                menu,
-                                info,
-                                this.getCurrentLinesFromEditor(editor),
-                            );
-                        },
-                    )),
+                this.editTaskContextMenu = this.app.workspace.on(
+                    "editor-menu",
+                    async (menu, editor, info) => {
+                        //get line selections here
+                        this.buildContextMenu(
+                            menu,
+                            info,
+                            this.getCurrentLinesFromEditor(editor),
+                        );
+                    },
                 );
+                this.registerEvent(this.editTaskContextMenu);
             }
 
             // Reading mode: register post-processor
@@ -427,120 +426,117 @@ export class TaskCollectorPlugin extends Plugin {
                 this.tc.cache.useContextMenu ||
                 this.tc.settings.previewClickModal
             ) {
-                this.registerMarkdownPostProcessor(
-                    (this.postProcessor = (el, ctx) => {
-                        const checkboxes =
-                            el.querySelectorAll<HTMLInputElement>(
-                                ".task-list-item-checkbox",
+                this.postProcessor = (el, ctx) => {
+                    const checkboxes = el.querySelectorAll<HTMLInputElement>(
+                        ".task-list-item-checkbox",
+                    );
+                    const section = ctx.getSectionInfo(el);
+
+                    if (!checkboxes.length || !ctx.sourcePath || !section) {
+                        return;
+                    }
+                    const targetFile = this.app.vault.getFileByPath(
+                        ctx.sourcePath,
+                    );
+                    let { lineStart } = section;
+
+                    this.tc.logDebug(
+                        "markdown postprocessor",
+                        targetFile,
+                        lineStart,
+                        ctx,
+                        section,
+                        checkboxes,
+                    );
+
+                    let parent = ctx.containerEl as HTMLElement;
+                    while (
+                        parent &&
+                        !parent.classList.contains("markdown-reading-view")
+                    ) {
+                        if (parent.classList.contains("markdown-embed")) {
+                            break;
+                        }
+                        parent = parent.parentNode as HTMLElement;
+                    }
+
+                    if (parent.hasAttribute("src")) {
+                        const src = parent.getAttribute("src");
+                        const blockRef = src.split("#^")[1];
+                        const header = src.split("#")[1];
+                        const metadata =
+                            this.app.metadataCache.getFileCache(targetFile);
+                        if (blockRef) {
+                            const block = metadata.blocks[blockRef];
+                            if (block) {
+                                lineStart += block.position.start.line;
+                            }
+                        } else if (header) {
+                            const heading = metadata.headings.find(
+                                (h) => h.heading === header,
                             );
-                        const section = ctx.getSectionInfo(el);
-
-                        if (!checkboxes.length || !ctx.sourcePath || !section) {
-                            return;
-                        }
-                        const targetFile = this.app.vault.getFileByPath(
-                            ctx.sourcePath,
-                        );
-                        let { lineStart } = section;
-
-                        this.tc.logDebug(
-                            "markdown postprocessor",
-                            targetFile,
-                            lineStart,
-                            ctx,
-                            section,
-                            checkboxes,
-                        );
-
-                        let parent = ctx["containerEl"] as HTMLElement;
-                        while (
-                            parent &&
-                            !parent.classList.contains("markdown-reading-view")
-                        ) {
-                            if (parent.classList.contains("markdown-embed")) {
-                                break;
-                            }
-                            parent = parent.parentNode as HTMLElement;
-                        }
-
-                        if (parent.hasAttribute("src")) {
-                            const src = parent.getAttribute("src");
-                            const blockRef = src.split("#^")[1];
-                            const header = src.split("#")[1];
-                            const metadata =
-                                this.app.metadataCache.getFileCache(targetFile);
-                            if (blockRef) {
-                                const block = metadata.blocks[blockRef];
-                                if (block) {
-                                    lineStart += block.position.start.line;
-                                }
-                            } else if (header) {
-                                const heading = metadata.headings.find(
-                                    (h) => h.heading === header,
-                                );
-                                if (heading) {
-                                    lineStart += heading.position.start.line;
-                                }
+                            if (heading) {
+                                lineStart += heading.position.start.line;
                             }
                         }
+                    }
 
-                        for (const checkbox of Array.from(checkboxes)) {
-                            const line =
-                                Number(lineStart) +
-                                Number(checkbox.dataset.line);
+                    for (const checkbox of Array.from(checkboxes)) {
+                        const line =
+                            Number(lineStart) + Number(checkbox.dataset.line);
 
-                            if (this.tc.cache.useContextMenu) {
-                                this.registerDomEvent(
-                                    checkbox.parentElement,
-                                    "contextmenu",
-                                    (ev) => {
-                                        const view =
-                                            this.app.workspace.getActiveViewOfType(
-                                                MarkdownView,
-                                            );
-                                        if (view) {
-                                            const menu = new Menu();
-                                            this.buildContextMenu(menu, view, {
-                                                start: {
-                                                    line,
-                                                    ch: 0,
-                                                },
-                                                lines: [line],
-                                            });
-                                            menu.showAtMouseEvent(ev);
-                                        }
-                                    },
-                                );
-                            }
-
-                            if (this.tc.settings.previewClickModal) {
-                                // reading mode
-                                this.registerDomEvent(
-                                    checkbox,
-                                    "click",
-                                    async (ev) => {
-                                        ev.stopImmediatePropagation();
-                                        ev.preventDefault();
-                                        const mark = await promptForMark(
-                                            this.app,
-                                            this.tc,
+                        if (this.tc.cache.useContextMenu) {
+                            this.registerDomEvent(
+                                checkbox.parentElement,
+                                "contextmenu",
+                                (ev) => {
+                                    const view =
+                                        this.app.workspace.getActiveViewOfType(
+                                            MarkdownView,
                                         );
-                                        if (mark) {
-                                            checkbox.checked = mark !== " ";
-                                            checkbox.parentElement.dataset.task =
-                                                mark;
-                                            await this.editLinesInFile(
-                                                targetFile,
-                                                mark,
-                                                [line],
-                                            );
-                                        }
-                                    },
-                                );
-                            }
+                                    if (view) {
+                                        const menu = new Menu();
+                                        this.buildContextMenu(menu, view, {
+                                            start: {
+                                                line,
+                                                ch: 0,
+                                            },
+                                            lines: [line],
+                                        });
+                                        menu.showAtMouseEvent(ev);
+                                    }
+                                },
+                            );
                         }
-                    }),
-                );
+
+                        if (this.tc.settings.previewClickModal) {
+                            // reading mode
+                            this.registerDomEvent(
+                                checkbox,
+                                "click",
+                                async (ev) => {
+                                    ev.stopImmediatePropagation();
+                                    ev.preventDefault();
+                                    const mark = await promptForMark(
+                                        this.app,
+                                        this.tc,
+                                    );
+                                    if (mark) {
+                                        checkbox.checked = mark !== " ";
+                                        checkbox.parentElement.dataset.task =
+                                            mark;
+                                        await this.editLinesInFile(
+                                            targetFile,
+                                            mark,
+                                            [line],
+                                        );
+                                    }
+                                },
+                            );
+                        }
+                    }
+                };
+                this.registerMarkdownPostProcessor(this.postProcessor);
             }
         }
     }
@@ -638,12 +634,11 @@ export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
 
                             if (tcp.tc.anyTaskMark.test(line.text)) {
                                 return tc.markSelectedTask(source, mark, [i]);
-                            } else {
-                                const offset = Number(target.dataset.line);
-                                return tc.markSelectedTask(source, mark, [
-                                    i + offset,
-                                ]);
                             }
+                            const offset = Number(target.dataset.line);
+                            return tc.markSelectedTask(source, mark, [
+                                i + offset,
+                            ]);
                         },
                     );
 
