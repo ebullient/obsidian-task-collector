@@ -286,6 +286,16 @@ export class TaskCollectorPlugin extends Plugin {
             };
             this.addCommand(markTaskCommand);
 
+            const resetAllTaskCommand: Command = {
+                id: "task-collector-reset-all-tasks",
+                name: "Reset all tasks",
+                icon: "blocks",
+                callback: async () => {
+                    this.resetAllTasks();
+                },
+            };
+            this.addCommand(resetAllTaskCommand);
+
             if (this.tc.settings.collectionEnabled) {
                 const moveAllTaskCommand: Command = {
                     id: "task-collector-move-completed-tasks",
@@ -371,19 +381,6 @@ export class TaskCollectorPlugin extends Plugin {
                     };
                     this.addCommand(command);
                 }
-            }
-
-            // If resetAll is enabled
-            if (this.tc.settings.contextMenu.resetAllTasks) {
-                const resetAllTaskCommand: Command = {
-                    id: "task-collector-reset-all-tasks",
-                    name: "Reset all tasks",
-                    icon: "blocks",
-                    callback: async () => {
-                        this.resetAllTasks();
-                    },
-                };
-                this.addCommand(resetAllTaskCommand);
             }
         }
     }
