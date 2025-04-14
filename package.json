@@ -33,7 +33,7 @@
     "@types/node": "^22.13.14",
     "auto-changelog": "^2.5.0",
     "builtin-modules": "^5.0.0",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.5.0",
     "esbuild": "^0.25.2",
     "esbuild-sass-plugin": "^3.3.1",
     "jest": "^29.7.0",
