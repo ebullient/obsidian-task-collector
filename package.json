@@ -30,7 +30,7 @@
     "@biomejs/biome": "1.9.4",
     "@types/codemirror": "5.60.15",
     "@types/jest": "^29.5.14",
-    "@types/node": "^22.13.14",
+    "@types/node": "^22.14.1",
     "auto-changelog": "^2.5.0",
     "builtin-modules": "^5.0.0",
     "dotenv": "^16.4.5",
