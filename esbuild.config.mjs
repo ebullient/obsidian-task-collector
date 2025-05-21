@@ -1,5 +1,5 @@
 import esbuild from "esbuild";
-import process from "process";
+import process from "node:process";
 import builtins from 'builtin-modules';
 import { sassPlugin } from 'esbuild-sass-plugin'
 import { config } from "dotenv";
@@ -53,6 +53,6 @@ if (prod) {
         process.exit(1)
     });
 } else {
-    let ctx = await esbuild.context(parameters);
+    const ctx = await esbuild.context(parameters);
     await ctx.watch()
 }
