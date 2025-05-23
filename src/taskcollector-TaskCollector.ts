@@ -191,6 +191,7 @@ export class TaskCollector {
                     `${listMatch[1]}[ ] ${listMatch[2]}`,
                     chosenMark,
                 );
+                this.logDebug("task marked", n, `|${split[n]}|`);
             }
         }
         return split.join("\n");
@@ -210,6 +211,7 @@ export class TaskCollector {
         const split = source.split("\n");
         for (const n of lines) {
             split[n] = this.updateLineText(split[n], mark);
+            this.logDebug("task marked", n, `|${split[n]}|`);
         }
         return split.join("\n");
     }
@@ -311,7 +313,6 @@ export class TaskCollector {
             return lineText;
         }
 
-        this.logDebug("mark task", `|${lineText}|`);
         const oldMarkName = this.cache.marks[old]?.name || DEFAULT_NAME;
         const newMarkName = this.cache.marks[mark]?.name || DEFAULT_NAME;
 
@@ -350,7 +351,6 @@ export class TaskCollector {
         if (strictLineEnding) {
             lineText += "  ";
         }
-        this.logDebug("task marked", `|${lineText}|`);
         return lineText;
     }
 

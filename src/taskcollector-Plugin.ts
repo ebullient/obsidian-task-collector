@@ -435,17 +435,17 @@ export class TaskCollectorPlugin extends Plugin {
                     const targetFile = this.app.vault.getFileByPath(
                         ctx.sourcePath,
                     );
-                    let { lineStart } = section;
 
                     this.tc.logDebug(
                         "markdown postprocessor",
-                        targetFile,
-                        lineStart,
+                        el,
                         ctx,
                         section,
                         checkboxes,
+                        targetFile,
                     );
 
+                    // Reset the parent element for embedded elements...
                     let parent = ctx.containerEl as HTMLElement;
                     while (
                         parent &&
@@ -457,7 +457,10 @@ export class TaskCollectorPlugin extends Plugin {
                         parent = parent.parentNode as HTMLElement;
                     }
 
+                    let { lineStart } = section;
+
                     if (parent.hasAttribute("src")) {
+                        // If the parent is an embedded element, we need to adjust the line number
                         const src = parent.getAttribute("src");
                         const blockRef = src.split("#^")[1];
                         const header = src.split("#")[1];
@@ -481,6 +484,9 @@ export class TaskCollectorPlugin extends Plugin {
                     for (const checkbox of Array.from(checkboxes)) {
                         const line =
                             Number(lineStart) + Number(checkbox.dataset.line);
+
+                        this.tc.logDebug("checkbox", checkbox, line);
+                        checkbox.setAttribute("data-tc-line", line.toString());
 
                         if (this.tc.cache.useContextMenu) {
                             this.registerDomEvent(
