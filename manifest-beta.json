@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-task-collector",
 	"name": "Task Collector (TC)",
-	"version": "1.1.7",
+	"version": "1.1.8",
 	"minAppVersion": "0.13.10",
 	"description": "Change task status and collect tasks within a document using hotkeys and context menus.",
 	"author": "ebullient",
