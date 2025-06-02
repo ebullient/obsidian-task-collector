@@ -28,7 +28,7 @@
   "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@types/codemirror": "5.60.15",
+    "@types/codemirror": "5.60.16",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.21",
     "auto-changelog": "^2.5.0",
