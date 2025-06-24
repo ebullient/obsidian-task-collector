@@ -76,7 +76,7 @@ export class TaskMarkModal extends Modal {
     addTaskValues(
         list: HTMLUListElement,
         choices: string,
-        markComplete: boolean,
+        _markComplete: boolean,
     ): void {
         for (const character of choices) {
             const li = list.createEl("li", {
@@ -85,7 +85,7 @@ export class TaskMarkModal extends Modal {
                     "data-task": character,
                 },
             });
-            li.addEventListener("click", (event) => {
+            li.addEventListener("click", (_event) => {
                 this.chosenMark = character;
                 this.close();
             });

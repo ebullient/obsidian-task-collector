@@ -1,10 +1,10 @@
 import {
     type App,
     type ButtonComponent,
+    debounce,
     Notice,
     PluginSettingTab,
     Setting,
-    debounce,
 } from "obsidian";
 import type {
     ManipulationSettings,
@@ -19,7 +19,7 @@ import {
     TEXT_ONLY_NAME,
 } from "./taskcollector-Constants";
 import { Data } from "./taskcollector-Data";
-import { type TaskCollector, _regex } from "./taskcollector-TaskCollector";
+import { _regex, type TaskCollector } from "./taskcollector-TaskCollector";
 
 export class TaskCollectorSettingsTab extends PluginSettingTab {
     plugin: TaskCollectorPlugin;

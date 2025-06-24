@@ -274,7 +274,7 @@ export class TaskCollectorPlugin extends Plugin {
                 id: "task-collector-mark",
                 name: "Mark task",
                 icon: "check-square",
-                editorCallback: async (editor: Editor, view: MarkdownView) => {
+                editorCallback: async (editor: Editor, _view: MarkdownView) => {
                     const mark = await promptForMark(this.app, this.tc);
                     if (mark) {
                         const selection =

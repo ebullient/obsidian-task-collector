@@ -166,25 +166,6 @@ async function adaptSettings(
     return settings;
 }
 
-// Version 0.x settings
-type TaskCollectorSettings_v0 = {
-    appendDateFormat: string;
-    appendRemoveAllTasks: boolean;
-    completedAreaHeader: string;
-    completedAreaRemoveCheckbox: boolean;
-    incompleteTaskValues: string;
-    onlyLowercaseX: boolean;
-    previewOnClick: boolean;
-    removeExpression: string;
-    rightClickComplete: boolean;
-    rightClickMark: boolean;
-    rightClickMove: boolean;
-    rightClickResetAll: boolean;
-    rightClickResetTask: boolean;
-    rightClickToggleAll: boolean;
-    supportCanceledTasks: boolean;
-};
-
 async function migrateSettings(
     tcp: TaskCollectorPlugin,
     // biome-ignore lint/suspicious/noExplicitAny: old config formats

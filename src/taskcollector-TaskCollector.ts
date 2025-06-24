@@ -79,7 +79,7 @@ export class TaskCollector {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: purposefully generous
     logDebug(message: string, ...optionalParams: any[]): void {
         if (!this.settings || this.settings.debug) {
             console.debug(`(TC) ${message}`, ...optionalParams);
