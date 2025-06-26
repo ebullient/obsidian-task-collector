@@ -1,20 +1,27 @@
-import { App, PluginManifest } from "obsidian";
-import { TaskCollectorPlugin } from "../src/taskcollector-Plugin";
+import { App, type PluginManifest } from "obsidian";
+import type { TaskCollectorSettings } from "../src/@types/settings";
+import {
+    COMPLETE_NAME,
+    DEFAULT_NAME,
+    DEFAULT_SETTINGS_0,
+    GROUP_COMPLETE,
+    GROUP_DEFAULT,
+    TEXT_ONLY_MARK,
+} from "../src/taskcollector-Constants";
 import { Data } from "../src/taskcollector-Data";
-import { TaskCollectorSettings } from "../src/@types/settings";
+import { TaskCollectorPlugin } from "../src/taskcollector-Plugin";
 import { TaskCollector } from "../src/taskcollector-TaskCollector";
-import { COMPLETE_NAME, DEFAULT_NAME, DEFAULT_SETTINGS_0, GROUP_COMPLETE, GROUP_DEFAULT, TEXT_ONLY_MARK } from "../src/taskcollector-Constants";
 
 const MANIFEST: PluginManifest = {
     id: "obsidian-task-collector",
-	name: "Task Collector (TC)",
+    name: "Task Collector (TC)",
     author: "",
     version: "1.0.0",
     minAppVersion: "",
-    description: ""
-}
+    description: "",
+};
 
-jest.mock('obsidian', () => ({
+jest.mock("obsidian", () => ({
     App: jest.fn().mockImplementation(),
     Plugin: jest.fn().mockImplementation(() => {
         return {
@@ -24,15 +31,15 @@ jest.mock('obsidian', () => ({
             //     console.debug(message, ...optionalParams); // tests
             // }
         };
-      }),
+    }),
     PluginSettingTab: jest.fn().mockImplementation(),
-    Modal: jest.fn().mockImplementation()
+    Modal: jest.fn().mockImplementation(),
 }));
 
 const plugin = new TaskCollectorPlugin(new App(), MANIFEST);
 plugin.tc = new TaskCollector();
 
-export const DEFAULT_MIGRATION = {
+const DEFAULT_MIGRATION = {
     groups: {
         default: {
             name: DEFAULT_NAME,
@@ -54,8 +61,8 @@ export const DEFAULT_MIGRATION = {
             collection: {
                 areaHeading: "## Log",
                 removeCheckbox: false,
-            }
-        }
+            },
+        },
     },
     markCycle: "",
     markCycleRemoveTask: false,
@@ -75,26 +82,28 @@ export const DEFAULT_MIGRATION = {
         major: 1,
         minor: 0,
         patch: 0,
-    }
+    },
 };
 
-test('Migration: defaults', async () => {
+test("Migration: defaults", async () => {
     const settings = await Data.constructSettings(plugin, DEFAULT_SETTINGS_0);
     expect(settings).toEqual(DEFAULT_MIGRATION);
 });
 
-test('Migration: appendReplace all', async () => {
-    const initial = Object.assign({},
-        DEFAULT_SETTINGS_0,
-        {
-            appendDateFormat: "[(completed on ]D MMM, YYYY[)]",
-            removeExpression: "#done",
-            appendRemoveAllTasks: true
-        });
+test("Migration: appendReplace all", async () => {
+    const initial = Object.assign({}, DEFAULT_SETTINGS_0, {
+        appendDateFormat: "[(completed on ]D MMM, YYYY[)]",
+        removeExpression: "#done",
+        appendRemoveAllTasks: true,
+    });
 
-    const expected: TaskCollectorSettings = JSON.parse(JSON.stringify(DEFAULT_MIGRATION));
-    expected.groups[COMPLETE_NAME].appendDateFormat = "[(completed on ]D MMM, YYYY[)]";
-    expected.groups[DEFAULT_NAME].appendDateFormat = "[(completed on ]D MMM, YYYY[)]";
+    const expected: TaskCollectorSettings = JSON.parse(
+        JSON.stringify(DEFAULT_MIGRATION),
+    );
+    expected.groups[COMPLETE_NAME].appendDateFormat =
+        "[(completed on ]D MMM, YYYY[)]";
+    expected.groups[DEFAULT_NAME].appendDateFormat =
+        "[(completed on ]D MMM, YYYY[)]";
     expected.groups[COMPLETE_NAME].removeExpr = "#done";
     expected.groups[DEFAULT_NAME].removeExpr = "#done";
 
@@ -102,32 +111,33 @@ test('Migration: appendReplace all', async () => {
     expect(settings).toEqual(expected);
 });
 
-test('Task Marker: User configuration', async () => {
+test("Task Marker: User configuration", async () => {
     const initial = {
-        "removeExpression": "",
-        "appendDateFormat": "",
-        "appendTextFormatMark": "",
-        "appendTextFormatMarkRow2": "",
-        "appendTextFormatCreation": "",
-        "appendTextFormatAppend": " YYYY-MM-DD",
-        "appendRemoveAllTasks": false,
-        "incompleteTaskValues": " /ib?>",
-        "incompleteTaskValuesRow2": "I!",
-        "cycleTaskValues": " x/>-",
-        "onlyLowercaseX": false,
-        "supportCanceledTasks": true,
-        "previewOnClick": false,
-        "rightClickComplete": true,
-        "rightClickMark": true,
-        "rightClickCycle": true,
-        "rightClickCreate": true,
-        "rightClickAppend": true,
-        "rightClickResetTask": false,
-        "rightClickResetAll": false,
-        "rightClickToggleAll": false
-      }
+        removeExpression: "",
+        appendDateFormat: "",
+        appendTextFormatMark: "",
+        appendTextFormatMarkRow2: "",
+        appendTextFormatCreation: "",
+        appendTextFormatAppend: " YYYY-MM-DD",
+        appendRemoveAllTasks: false,
+        incompleteTaskValues: " /ib?>",
+        incompleteTaskValuesRow2: "I!",
+        cycleTaskValues: " x/>-",
+        onlyLowercaseX: false,
+        supportCanceledTasks: true,
+        previewOnClick: false,
+        rightClickComplete: true,
+        rightClickMark: true,
+        rightClickCycle: true,
+        rightClickCreate: true,
+        rightClickAppend: true,
+        rightClickResetTask: false,
+        rightClickResetAll: false,
+        rightClickToggleAll: false,
+    };
 
-    const expected: TaskCollectorSettings = Object.assign({},
+    const expected: TaskCollectorSettings = Object.assign(
+        {},
         JSON.parse(JSON.stringify(DEFAULT_MIGRATION)),
         {
             markCycle: " x/>-",
@@ -138,7 +148,7 @@ test('Task Marker: User configuration', async () => {
                 markTask: true,
                 collectTasks: false,
                 resetTask: false,
-                resetAllTasks: false
+                resetAllTasks: false,
             },
             groups: {
                 default: {
@@ -148,7 +158,7 @@ test('Task Marker: User configuration', async () => {
                 complete: {
                     ...GROUP_COMPLETE,
                     marks: "-Xx",
-                    useContextMenu: true
+                    useContextMenu: true,
                 },
                 "group-2": {
                     ...GROUP_DEFAULT,
@@ -160,10 +170,10 @@ test('Task Marker: User configuration', async () => {
                     name: "text",
                     marks: TEXT_ONLY_MARK,
                     appendDateFormat: " YYYY-MM-DD",
-                    useContextMenu: true
-                }
+                    useContextMenu: true,
+                },
             },
-        }
+        },
     );
 
     console.log(expected);

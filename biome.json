@@ -7,9 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": [
-      "**"
-    ]
+    "includes": ["src/**", "test/**", "!test/mocks/**"]
   },
   "formatter": {
     "enabled": true,
