@@ -26,13 +26,13 @@ export class TaskCollector {
     settings: TaskCollectorSettings;
     cache: TaskCollectorCache;
 
-    anyListItem = new RegExp(/^([\s>]*(?:-|\*|\d+\.) )([^\\[].*)$/);
-    anyTaskMark = new RegExp(/^([\s>]*(?:-|\*|\d+\.) \[)(.)(\] .*)$/);
+    anyListItem = new RegExp(/^([\s>]*(?:-|\+|\*|\d+\.) )([^\\[].*)$/);
+    anyTaskMark = new RegExp(/^([\s>]*(?:-|\+|\*|\d+\.) \[)(.)(\] .*)$/);
     anyText = new RegExp(/^([\s>]*)(.*)$/);
     blockQuote = new RegExp(/^(\s*>[\s>]*)(.*)$/);
     blockRef = new RegExp(/^(.*?)( \^[A-Za-z0-9-]+)?$/);
     continuation = new RegExp(/^( {2,}|\t)/);
-    stripTask = new RegExp(/^([\s>]*(?:-|\d+\.)) \[.\] (.*)$/);
+    stripTask = new RegExp(/^([\s>]*(?:-|\+|\*|\d+\.)) \[.\] (.*)$/);
 
     init(settings: TaskCollectorSettings): void {
         this.settings = settings;

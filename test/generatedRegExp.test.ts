@@ -108,32 +108,52 @@ describe('Set an append date', () => {
         config.groups[COMPLETE_NAME].appendDateFormat= '[(completed on ]D MMM, YYYY[)]';
         tc.init(config);
 
-        expect('- [x] something (completed on 6 Oct, 2021)').toMatch(tc.cache.undoExpr[COMPLETE_NAME]);
+        expect("+ [x] something (completed on 6 Oct, 2021)").toMatch(
+            tc.cache.undoExpr[COMPLETE_NAME],
+        );
 
-        expect('- [x] something (6 Oct, 2021)').not.toMatch(tc.cache.undoExpr[COMPLETE_NAME]);
-        expect('- [x] something 6 Oct, 2021').not.toMatch(tc.cache.undoExpr[COMPLETE_NAME]);
-        expect('- [x] 6 Oct, 2021, something else').not.toMatch(tc.cache.undoExpr[COMPLETE_NAME]);
-        expect('- [x] 2021-10-06 something else').not.toMatch(tc.cache.undoExpr[COMPLETE_NAME]);
+        expect("+ [x] something (6 Oct, 2021)").not.toMatch(
+            tc.cache.undoExpr[COMPLETE_NAME],
+        );
+        expect("+ [x] something 6 Oct, 2021").not.toMatch(
+            tc.cache.undoExpr[COMPLETE_NAME],
+        );
+        expect("+ [x] 6 Oct, 2021, something else").not.toMatch(
+            tc.cache.undoExpr[COMPLETE_NAME],
+        );
+        expect("+ [x] 2021-10-06 something else").not.toMatch(
+            tc.cache.undoExpr[COMPLETE_NAME],
+        );
 
-        const completed = tc.updateLineText('- [ ] something #todo', 'x');
+        const completed = tc.updateLineText("+ [ ] something #todo", "x");
         expect(completed).toMatch(tc.cache.undoExpr[COMPLETE_NAME]);
-        expect(tc.updateLineText(completed, ' ')).toEqual('- [ ] something #todo');
+        expect(tc.updateLineText(completed, " ")).toEqual("+ [ ] something #todo");
     });
 
     test('[✅ ]YYYY-MM-DDTHH:mm append string', () => {
         config.groups[COMPLETE_NAME].appendDateFormat= '[✅ ]YYYY-MM-DDTHH:mm';
         tc.init(config);
 
-        expect('- [x] something ✅ 2021-10-07T13:55').toMatch(tc.cache.undoExpr[COMPLETE_NAME]);
+        expect("* [x] something ✅ 2021-10-07T13:55").toMatch(
+            tc.cache.undoExpr[COMPLETE_NAME],
+        );
 
-        expect('- [x] something (6 Oct, 2021)').not.toMatch(tc.cache.undoExpr[COMPLETE_NAME]);
-        expect('- [x] something 6 Oct, 2021').not.toMatch(tc.cache.undoExpr[COMPLETE_NAME]);
-        expect('- [x] 6 Oct, 2021, something else').not.toMatch(tc.cache.undoExpr[COMPLETE_NAME]);
-        expect('- [x] 2021-10-06 something else').not.toMatch(tc.cache.undoExpr[COMPLETE_NAME]);
+        expect("* [x] something (6 Oct, 2021)").not.toMatch(
+            tc.cache.undoExpr[COMPLETE_NAME],
+        );
+        expect("* [x] something 6 Oct, 2021").not.toMatch(
+            tc.cache.undoExpr[COMPLETE_NAME],
+        );
+        expect("* [x] 6 Oct, 2021, something else").not.toMatch(
+            tc.cache.undoExpr[COMPLETE_NAME],
+        );
+        expect("* [x] 2021-10-06 something else").not.toMatch(
+            tc.cache.undoExpr[COMPLETE_NAME],
+        );
 
-        const completed = tc.updateLineText('- [ ] something #todo', 'x');
+        const completed = tc.updateLineText("* [ ] something #todo", "x");
         expect(completed).toMatch(tc.cache.undoExpr[COMPLETE_NAME]);
-        expect(tc.updateLineText(completed, ' ')).toEqual('- [ ] something #todo');
+        expect(tc.updateLineText(completed, " ")).toEqual("* [ ] something #todo");
     });
 
     test('Dataview annotated string [completion::2021-08-15]', () => {
