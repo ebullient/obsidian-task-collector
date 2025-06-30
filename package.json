@@ -27,7 +27,7 @@
   "repository": "github.com:ebullient/obsidian-task-collector",
   "license": "MIT",
   "devDependencies": {
-    "@biomejs/biome": "2.0.5",
+    "@biomejs/biome": "2.0.6",
     "@types/codemirror": "5.60.16",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.2",
