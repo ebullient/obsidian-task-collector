@@ -380,7 +380,6 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                         true,
                     ),
                 );
-            this.addToCache(text.inputEl, "name-setting");
         });
         nameSetting.addExtraButton((b) => {
             b.setIcon(mts.name === DEFAULT_NAME ? "info" : "trash")
@@ -501,7 +500,6 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                             true,
                         ),
                     );
-                this.addToCache(momentFormat.inputEl, "moment-format");
             });
         new Setting(itemEl)
             .setName(
@@ -754,19 +752,6 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         } else {
             this.saveButton.removeClass("data-value-error");
             this.saveButton.removeAttribute("aria-label");
-        }
-    }
-
-    private addToCache(input: HTMLInputElement, name: string) {
-        const i = Object.values(this.otherInputCache).length;
-        this.otherInputCache[`${name}-${i}`] = input;
-        input.setAttribute("cache-id", `${name}-${i}`);
-    }
-
-    private removeFromCache(input: HTMLInputElement) {
-        const id = input.getAttribute("cache-id");
-        if (id) {
-            delete this.otherInputCache[id];
         }
     }
 }
