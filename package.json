@@ -34,7 +34,7 @@
     "auto-changelog": "^2.5.0",
     "builtin-modules": "^5.0.0",
     "dotenv": "^17.2.1",
-    "esbuild": "^0.25.5",
+    "esbuild": "^0.25.9",
     "esbuild-sass-plugin": "^3.3.1",
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.2",
