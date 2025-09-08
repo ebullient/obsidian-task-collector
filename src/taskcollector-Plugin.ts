@@ -623,9 +623,7 @@ export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
                         (source): string => {
                             const position = this.view.posAtDOM(target);
                             const line = view.state.doc.lineAt(position);
-                            const i = source
-                                .split("\n")
-                                .findIndex((c) => c === line.text);
+                            const i = source.split("\n").indexOf(line.text);
 
                             tc.logDebug(
                                 "TC ViewPlugin: mark task",
