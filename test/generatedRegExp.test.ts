@@ -63,6 +63,27 @@ test("Match specified removal patterns", () => {
     );
 });
 
+test("Match multiple string removal pattern (more complicated regex)", () => {
+    config.groups[COMPLETE_NAME].removeExpr = "((#(next|waiting|someday)|\\\{\\d{4}-\\d{2}-\\d{2}\\\})\\s*)+";
+    tc.init(config);
+
+    expect("- [ ] something #next").toMatch(tc.cache.removeExpr[COMPLETE_NAME]);
+    expect("- [ ] something #waiting").toMatch(tc.cache.removeExpr[COMPLETE_NAME]);
+    expect("- [ ] something #someday").toMatch(tc.cache.removeExpr[COMPLETE_NAME]);
+    expect("- [ ] something {2025-10-25}").toMatch(tc.cache.removeExpr[COMPLETE_NAME]);
+    expect("- [ ] something #next {2025-10-25}").toMatch(tc.cache.removeExpr[COMPLETE_NAME]);
+
+    expect(tc.updateLineText("- [ ] something #next", "x")).toEqual(
+        "- [x] something",
+    );
+    expect(tc.updateLineText("- [ ] something {2025-10-25}", "x")).toEqual(
+        "- [x] something",
+    );
+    expect(tc.updateLineText("- [ ] something #next {2025-10-25}", "x")).toEqual(
+        "- [x] something",
+    );
+});
+
 describe("Set an append date", () => {
     test("YYYY-MM-DD append string", () => {
         config.groups[COMPLETE_NAME].appendDateFormat = "YYYY-MM-DD";
