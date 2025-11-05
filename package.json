@@ -52,6 +52,10 @@
   "auto-changelog": {
     "backfillLimit": false,
     "commitLimit": false,
-    "ignoreCommitPattern": "(🔖|🔨|🧹|changelog|release|Update README).*"
+    "ignoreCommitPattern": "(🔖|🔨|🧹|changelog|release|Update README).*",
+    "replaceText": {
+        "([;.,] [rR]esolves) #\\d+\\.?\\s*$": "$1",
+        "([;.,] [Ff]ixes) #\\d+\\.?\\s*$": "$1"
+    }
   }
 }
