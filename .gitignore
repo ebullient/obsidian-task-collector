@@ -4,6 +4,7 @@
 
 # VS Code
 .vscode
+.claude
 
 # npm
 node_modules

@@ -38,6 +38,10 @@
   .setting-item {
     border-top: none;
   }
+
+  .regex-test-setting.regex-hidden {
+    display: none;
+  }
 }
 
 #taskcollector-modal {

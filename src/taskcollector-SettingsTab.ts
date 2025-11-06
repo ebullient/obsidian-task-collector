@@ -326,6 +326,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
     createGroupItem(mts: ManipulationSettings) {
         const dt = this.groupList.createEl("dt");
         const itemEl = this.groupList.createEl("dd");
+        let testSetting: Setting;
 
         const nameSetting = new Setting(dt)
             .setName("Group name")
@@ -501,6 +502,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                         ),
                     );
             });
+
         new Setting(itemEl)
             .setName(
                 `Remove text matching pattern from ${this.getDescription(mts)}`,
@@ -517,27 +519,139 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     .onChange(
                         debounce(
                             (value) => {
+                                if (!value) {
+                                    testSetting.settingEl.addClass(
+                                        "regex-hidden",
+                                    );
+                                    return;
+                                }
+                                testSetting.settingEl.removeClass(
+                                    "regex-hidden",
+                                );
                                 try {
                                     // try compiling the regular expression
-                                    _regex.tryRemoveTextRegex(value);
+                                    const regex =
+                                        _regex.tryRemoveTextRegex(value);
                                     mts.removeExpr = value;
+
+                                    // Visual feedback for valid regex
+                                    text.inputEl.removeClass(
+                                        "data-value-error",
+                                    );
+                                    if (value) {
+                                        // Check for likely over-escaping (e.g., \\\\d instead of \\d)
+                                        const hasDoubleEscapes =
+                                            /\\\\[dswDSW]|\\\\[{}[\]]/u.test(
+                                                value,
+                                            );
+                                        if (hasDoubleEscapes) {
+                                            text.inputEl.addClass(
+                                                "data-value-error",
+                                            );
+                                            text.inputEl.setAttribute(
+                                                "aria-label",
+                                                `Warning: Pattern may be over-escaped. Use \\d not \\\\d, \\{ not \\\\{, etc. Current: /${regex?.source}/g`,
+                                            );
+                                        } else {
+                                            text.inputEl.setAttribute(
+                                                "aria-label",
+                                                `Valid regex: /${regex?.source || value}/g`,
+                                            );
+                                        }
+                                    } else {
+                                        text.inputEl.removeAttribute(
+                                            "aria-label",
+                                        );
+                                    }
+
                                     this.tc.logDebug(
                                         "remove regex",
                                         mts.name,
                                         mts.removeExpr,
                                     );
+
+                                    // Update test field if it exists
+                                    const testInput =
+                                        this.otherInputCache[
+                                            `removeExpr-test-${mts.name}`
+                                        ];
+                                    if (testInput && regex && testInput.value) {
+                                        this.updateTestResult(
+                                            testInput,
+                                            regex,
+                                            mts.name,
+                                        );
+                                    }
                                 } catch (e) {
+                                    // Visual feedback for invalid regex
+                                    text.inputEl.addClass("data-value-error");
+                                    text.inputEl.setAttribute(
+                                        "aria-label",
+                                        `Invalid regex: ${e.message}`,
+                                    );
                                     console.error(
                                         `Error parsing specified text replacement regular expression for ${mts.name}: ${value}`,
                                         e,
                                     );
                                 }
+                                this.testForErrors();
                             },
                             50,
                             true,
                         ),
                     ),
             );
+
+        // Add a test field below the regex input
+        testSetting = new Setting(itemEl)
+            .setClass("regex-test-setting")
+            .setDesc(
+                "Test your regex: Enter sample text to see what will be removed",
+            )
+            .addText((testInput) => {
+                testInput.setPlaceholder("- [ ] something #todo").onChange(
+                    debounce(
+                        (value) => {
+                            this.otherInputCache[
+                                `removeExpr-test-${mts.name}`
+                            ] = testInput.inputEl;
+                            if (mts.removeExpr) {
+                                try {
+                                    const regex = _regex.tryRemoveTextRegex(
+                                        mts.removeExpr,
+                                    );
+                                    if (regex && value) {
+                                        this.updateTestResult(
+                                            testInput.inputEl,
+                                            regex,
+                                            mts.name,
+                                        );
+                                    } else {
+                                        testInput.inputEl.removeAttribute(
+                                            "aria-label",
+                                        );
+                                    }
+                                } catch (_e) {
+                                    testInput.inputEl.setAttribute(
+                                        "aria-label",
+                                        "Cannot test: regex is invalid",
+                                    );
+                                }
+                            }
+                        },
+                        100,
+                        true,
+                    ),
+                );
+
+                // Cache the input element for updates when regex changes
+                this.otherInputCache[`removeExpr-test-${mts.name}`] =
+                    testInput.inputEl;
+            });
+
+        if (!mts.removeExpr) {
+            testSetting.settingEl.addClass("regex-hidden");
+        }
 
         new Setting(itemEl)
             .setName("Register '(TC) Mark with... ' command")
@@ -752,6 +866,45 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         } else {
             this.saveButton.removeClass("data-value-error");
             this.saveButton.removeAttribute("aria-label");
+        }
+    }
+
+    private updateTestResult(
+        testInput: HTMLInputElement,
+        regex: RegExp,
+        groupName: string,
+    ) {
+        const testText = testInput.value;
+        if (!testText) {
+            testInput.removeAttribute("aria-label");
+            return;
+        }
+
+        // Test what will be removed by the regex
+        const match = testText.match(regex);
+        if (match) {
+            const removed = match[0];
+            const result = testText.replace(new RegExp(regex.source, "g"), "");
+            testInput.setAttribute(
+                "aria-label",
+                `Will remove: "${removed}" → Result: "${result}"`,
+            );
+            this.tc.logDebug(
+                `removeExpr test for ${groupName}`,
+                `Input: "${testText}"`,
+                `Matched: "${removed}"`,
+                `Result: "${result}"`,
+            );
+        } else {
+            testInput.setAttribute(
+                "aria-label",
+                "No match - nothing will be removed from this text",
+            );
+            this.tc.logDebug(
+                `removeExpr test for ${groupName}`,
+                `Input: "${testText}"`,
+                "No match",
+            );
         }
     }
 }
