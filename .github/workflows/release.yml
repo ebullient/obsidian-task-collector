@@ -30,6 +30,9 @@ env:
 
 jobs:
   build:
+    permissions:
+      contents: write
+      actions: write
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.build.outputs.version }}
@@ -58,7 +61,7 @@ jobs:
         git config user.name ${{ env.GH_BOT_NAME }}
         git config user.email ${{ env.GH_BOT_EMAIL }}
 
-        npm install
+        npm ci
         if [[ "${{ github.event.inputs.retry }}" = "true" ]]; then
           npm run preversion
         else
@@ -115,7 +118,6 @@ jobs:
         gh release create "${{ steps.build.outputs.version }}" \
             -F ./release-notes.md \
             --title "Release ${{ steps.build.outputs.version }}" \
-            --discussion-category "Announcements" \
             --verify-tag \
             --prerelease=${prerelease}
 
