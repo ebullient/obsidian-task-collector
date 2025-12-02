@@ -1,6 +1,6 @@
 {
   "name": "obsidian-task-collector",
-  "version": "1.1.10",
+  "version": "1.1.11",
   "private": true,
   "description": "Manage completed tasks within a document in Obsidian (https://obsidian.md)",
   "main": "main.js",
@@ -55,8 +55,8 @@
     "commitLimit": false,
     "ignoreCommitPattern": "(🔖|🔨|🧹|changelog|release|Update README).*",
     "replaceText": {
-        "([;.,] [rR]esolves) #\\d+\\.?\\s*$": "$1",
-        "([;.,] [Ff]ixes) #\\d+\\.?\\s*$": "$1"
+      "([;.,] [rR]esolves) #\\d+\\.?\\s*$": "$1",
+      "([;.,] [Ff]ixes) #\\d+\\.?\\s*$": "$1"
     }
   }
 }
