@@ -1,10 +1,9 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "inlineSourceMap": true,
     "inlineSources": true,
-    "module": "NodeNext",
-    "target": "es6",
+    "target": "ES2022",
+    "module": "ESNext",
     "allowJs": true,
     "noImplicitAny": true,
     "moduleResolution": "nodenext",
