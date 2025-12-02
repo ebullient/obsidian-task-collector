@@ -29,7 +29,7 @@
   "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "2.2.6",
-    "@types/codemirror": "5.60.16",
+    "@types/codemirror": "5.60.17",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.6.2",
     "@typescript-eslint/parser": "^8.46.4",
