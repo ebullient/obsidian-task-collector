@@ -3,7 +3,7 @@
     "inlineSourceMap": true,
     "inlineSources": true,
     "target": "ES2022",
-    "module": "ESNext",
+    "module": "nodenext",
     "allowJs": true,
     "noImplicitAny": true,
     "moduleResolution": "nodenext",
