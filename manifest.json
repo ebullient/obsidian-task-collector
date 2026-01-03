@@ -6,5 +6,6 @@
 	"description": "Change task status and collect tasks within a document using hotkeys and context menus.",
 	"author": "ebullient",
 	"authorUrl": "https://github.com/ebullient",
+  "fundingUrl": "https://buymeacoffee.com/ebullient",
 	"isDesktopOnly": false
 }
