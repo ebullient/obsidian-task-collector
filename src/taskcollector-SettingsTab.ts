@@ -38,6 +38,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         super(app, plugin);
         this.plugin = plugin;
         this.tc = taskCollector;
+        this.icon = "tornado";
     }
 
     async save() {
