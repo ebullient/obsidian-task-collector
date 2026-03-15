@@ -249,13 +249,15 @@ export class TaskCollector {
                 mark,
             );
         }
-        if (lineText && this.settings.convertEmptyLines) {
+        if (this.settings.convertEmptyLines) {
             const indentMatch = this.anyText.exec(lineText);
-            // split line on first character
-            return this.updateLineText(
-                `${indentMatch[1]}- [ ] ${indentMatch[2]}`,
-                mark,
-            );
+            if (indentMatch) {
+                // split line on first character
+                return this.updateLineText(
+                    `${indentMatch[1]}- [ ] ${indentMatch[2]}`,
+                    mark,
+                );
+            }
         }
 
         this.logDebug("not a task or list item %s", `|${lineText}|`);

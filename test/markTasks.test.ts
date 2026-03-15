@@ -193,6 +193,12 @@ describe("Mark lines that are not tasks", () => {
         expect(tc.updateLineText("something", "-")).toEqual("something");
     });
 
+    test("Mark empty lines when convertEmptyLines is true", () => {
+        config.convertEmptyLines = true;
+        tc.init(config);
+        expect(tc.updateLineText("", "x")).toEqual("- [x]");
+    });
+
     test("Accomodate callouts for non-task/list lines when convertEmptyLines is true", () => {
         config.convertEmptyLines = true;
         tc.init(config);
