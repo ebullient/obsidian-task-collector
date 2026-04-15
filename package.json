@@ -41,6 +41,7 @@
     "eslint-plugin-obsidianmd": "^0.1.9",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
+    "jest-util": "^30.3.0",
     "moment": "^2.30.1",
     "obsidian": "^1.12.3",
     "ts-jest": "^29.4.4",
