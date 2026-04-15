@@ -128,7 +128,7 @@ jobs:
 
         gh release create "$RELEASE_VERSION" \
             -F ./release-notes.md \
-            --title "Release $RELEASE_VERSION" \
+            --title "$RELEASE_VERSION" \
             --verify-tag \
             --prerelease=${prerelease} \
             "${REPO_NAME}-${RELEASE_VERSION}.zip" \
