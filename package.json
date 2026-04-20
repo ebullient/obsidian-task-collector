@@ -4,8 +4,11 @@
   "private": true,
   "description": "Manage completed tasks within a document in Obsidian (https://obsidian.md)",
   "main": "main.js",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "dev": "node esbuild.config.mjs",
+    "dev": "node --env-file-if-exists=.env esbuild.config.mjs",
     "fix": "npx @biomejs/biome check --write ./src",
     "format": "npx @biomejs/biome format ./src",
     "eslint": "npx eslint",
@@ -34,11 +37,9 @@
     "@types/node": "^25.5.0",
     "@typescript-eslint/parser": "^8.56.1",
     "auto-changelog": "^2.5.0",
-    "builtin-modules": "^5.0.0",
-    "dotenv": "^17.2.2",
     "esbuild": "^0.27.4",
     "esbuild-sass-plugin": "^3.6.0",
-    "eslint-plugin-obsidianmd": "^0.1.9",
+    "eslint-plugin-obsidianmd": "^0.2.4",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
     "jest-util": "^30.3.0",
@@ -52,7 +53,6 @@
     "@codemirror/language": "https://github.com/lishid/cm-language"
   },
   "overrides": {
-    "ajv": "8.18.0",
     "glob": "13.0.6",
     "minimatch": "10.2.3"
   },
