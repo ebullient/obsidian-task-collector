@@ -595,7 +595,7 @@ export class TaskCollector {
         heading: string,
         order: string[],
         start: number,
-    ): number {
+    ): number | undefined {
         let wrap = false;
         for (let i = start; !wrap || i !== start; i++) {
             if (i === order.length) {

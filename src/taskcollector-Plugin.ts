@@ -31,6 +31,13 @@ declare module "obsidian" {
             removeCommand(id: string): void;
             executeCommandById: (id: string) => void;
         };
+        plugins: {
+            plugins: {
+                "obsidian-task-collector": {
+                    api: API;
+                };
+            };
+        };
     }
 
     interface MarkdownPostProcessorContext {
@@ -49,8 +56,8 @@ export class TaskCollectorPlugin extends Plugin {
     handlersRegistered = false;
     commandsRegistered = false;
 
-    editTaskContextMenu: EventRef;
-    postProcessor: MarkdownPostProcessor;
+    editTaskContextMenu: EventRef | null;
+    postProcessor: MarkdownPostProcessor | null;
 
     /** CodeMirror 6 extensions. Tracked via array to allow for dynamic updates. */
     private cmExtension: Extension[] = [];
@@ -77,18 +84,23 @@ export class TaskCollectorPlugin extends Plugin {
         this.registerHandlers();
 
         this.api = new TaskCollectorApi(this.app, this.tc);
+        this.app.plugins.plugins["obsidian-task-collector"].api = this.api;
     }
 
     async markInCycle(direction: Direction, lines?: number[]): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        await this.app.vault.process(activeFile, (source): string => {
-            return this.tc.markInCycle(source, direction, lines);
-        });
+        if (activeFile) {
+            await this.app.vault.process(activeFile, (source): string => {
+                return this.tc.markInCycle(source, direction, lines);
+            });
+        }
     }
 
     async editLines(mark: string, lines?: number[]): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        await this.editLinesInFile(activeFile, mark, lines);
+        if (activeFile) {
+            await this.editLinesInFile(activeFile, mark, lines);
+        }
     }
 
     async editLinesInFile(
@@ -103,16 +115,20 @@ export class TaskCollectorPlugin extends Plugin {
 
     async collectTasks(): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        await this.app.vault.process(activeFile, (source): string => {
-            return this.tc.moveAllTasks(source);
-        });
+        if (activeFile) {
+            await this.app.vault.process(activeFile, (source): string => {
+                return this.tc.moveAllTasks(source);
+            });
+        }
     }
 
     async resetAllTasks(): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        await this.app.vault.process(activeFile, (source): string => {
-            return this.tc.resetAllTasks(source);
-        });
+        if (activeFile) {
+            await this.app.vault.process(activeFile, (source): string => {
+                return this.tc.resetAllTasks(source);
+            });
+        }
     }
 
     getCurrentLinesFromEditor(editor: Editor): Selection {
@@ -126,7 +142,7 @@ export class TaskCollectorPlugin extends Plugin {
         );
 
         let start: EditorPosition;
-        let end: EditorPosition;
+        let end: EditorPosition | undefined;
         const lines: number[] = [];
         if (editor.somethingSelected()) {
             start = editor.getCursor("from");
@@ -275,7 +291,10 @@ export class TaskCollectorPlugin extends Plugin {
                 id: "task-collector-mark",
                 name: "Mark task",
                 icon: "check-square",
-                editorCallback: async (editor: Editor, _view: MarkdownView) => {
+                editorCallback: async (
+                    editor: Editor,
+                    _view: MarkdownView | MarkdownFileInfo,
+                ) => {
                     const mark = await promptForMark(this.app, this.tc);
                     if (mark) {
                         const selection =
@@ -316,7 +335,7 @@ export class TaskCollectorPlugin extends Plugin {
                     icon: "forward",
                     editorCallback: async (
                         editor: Editor,
-                        view: MarkdownView,
+                        view: MarkdownView | MarkdownFileInfo,
                     ) => {
                         this.tc.logDebug(
                             `${markWithNextCommand.id}: callback`,
@@ -337,7 +356,7 @@ export class TaskCollectorPlugin extends Plugin {
                     icon: "reply",
                     editorCallback: async (
                         editor: Editor,
-                        view: MarkdownView,
+                        view: MarkdownView | MarkdownFileInfo,
                     ) => {
                         this.tc.logDebug(
                             `${markWithPrevCommand.id}: callback`,
@@ -366,7 +385,7 @@ export class TaskCollectorPlugin extends Plugin {
                             k === TEXT_ONLY_MARK ? "list-plus" : "check-circle",
                         editorCallback: async (
                             editor: Editor,
-                            view: MarkdownView,
+                            view: MarkdownView | MarkdownFileInfo,
                         ) => {
                             const selection =
                                 this.getCurrentLinesFromEditor(editor);
@@ -491,7 +510,7 @@ export class TaskCollectorPlugin extends Plugin {
 
                         if (this.tc.cache.useContextMenu) {
                             this.registerDomEvent(
-                                checkbox.parentElement,
+                                checkbox.parentElement as HTMLElement,
                                 "contextmenu",
                                 (ev) => {
                                     const view =

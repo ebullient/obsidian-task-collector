@@ -10,6 +10,7 @@ import {
 import { Data } from "../src/taskcollector-Data";
 import { TaskCollector } from "../src/taskcollector-TaskCollector";
 
+activeWindow = window;
 window.moment = moment;
 jest.mock("obsidian", () => ({
     App: jest.fn().mockImplementation(),

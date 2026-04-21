@@ -16,6 +16,7 @@ import {
     COMPLETE_NAME,
     DEFAULT_COLLECTION,
     DEFAULT_NAME,
+    DEFAULT_SETTINGS,
     TEXT_ONLY_MARK,
     TEXT_ONLY_NAME,
 } from "./taskcollector-Constants";
@@ -40,6 +41,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         this.plugin = plugin;
         this.tc = taskCollector;
         this.icon = "tornado";
+        this.newSettings = DEFAULT_SETTINGS;
     }
 
     async save() {
@@ -640,7 +642,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                             "aria-label",
                                         );
                                     }
-                                } catch (_) {
+                                } catch (_e) {
                                     testInput.inputEl.setAttribute(
                                         "aria-label",
                                         "Cannot test: regex is invalid",
