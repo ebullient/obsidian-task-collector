@@ -14,6 +14,7 @@ import {
     type TFile,
 } from "obsidian";
 import type { API } from "./@types/api";
+import type { LegacySettings } from "./@types/settings";
 import { TaskCollectorApi } from "./taskcollector-Api";
 import { TEXT_ONLY_MARK } from "./taskcollector-Constants";
 import { Data } from "./taskcollector-Data";
@@ -58,7 +59,7 @@ export class TaskCollectorPlugin extends Plugin {
     public api: API;
 
     async onload(): Promise<void> {
-        console.info(`loading Task Collector (TC) v${this.manifest.version}`);
+        console.debug(`loading Task Collector (TC) v${this.manifest.version}`);
 
         this.tc = new TaskCollector();
         this.addSettingTab(
@@ -152,7 +153,7 @@ export class TaskCollectorPlugin extends Plugin {
         if (this.tc.settings.contextMenu.markTask) {
             menu.addItem((item) =>
                 item
-                    .setTitle("(TC) Mark Task")
+                    .setTitle("(TC) Mark task")
                     .setIcon("check-square")
                     .onClick(async () => {
                         this.tc.logDebug("Mark task", menu, info, selection);
@@ -291,7 +292,7 @@ export class TaskCollectorPlugin extends Plugin {
                 name: "Reset all tasks",
                 icon: "blocks",
                 callback: async () => {
-                    this.resetAllTasks();
+                    await this.resetAllTasks();
                 },
             };
             this.addCommand(resetAllTaskCommand);
@@ -302,7 +303,7 @@ export class TaskCollectorPlugin extends Plugin {
                     name: "Collect tasks",
                     icon: "tornado",
                     callback: async () => {
-                        this.collectTasks();
+                        await this.collectTasks();
                     },
                 };
                 this.addCommand(moveAllTaskCommand);
@@ -446,7 +447,7 @@ export class TaskCollectorPlugin extends Plugin {
                     );
 
                     // Reset the parent element for embedded elements...
-                    let parent = ctx.containerEl as HTMLElement;
+                    let parent: HTMLElement = ctx.containerEl;
                     while (
                         parent &&
                         !parent.classList.contains("markdown-reading-view")
@@ -560,13 +561,15 @@ export class TaskCollectorPlugin extends Plugin {
     }
 
     onunload(): void {
-        console.log("unloading Task Collector");
         this.unregisterCommands();
         this.unregisterHandlers();
     }
 
     async loadSettings(): Promise<void> {
-        const obj = Object.assign({}, await this.loadData());
+        const obj = Object.assign(
+            {},
+            (await this.loadData()) as LegacySettings,
+        );
         this.tc.init(await Data.constructSettings(this, obj));
     }
 
@@ -595,57 +598,59 @@ export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
                 this.view = view;
                 this.tcp = tcp;
 
-                this.eventHandler = async (ev: MouseEvent) => {
-                    const { target } = ev;
-                    const activeFile = this.tcp.app.workspace.getActiveFile();
-                    if (
-                        !activeFile ||
-                        !(target instanceof HTMLInputElement) ||
-                        target.type !== "checkbox" ||
-                        target.classList.contains("metadata-input-checkbox")
-                    ) {
-                        return false;
-                    }
-                    tcp.tc.logDebug(
-                        "TC ViewPlugin: click",
-                        target,
-                        target.classList,
-                    );
-                    ev.stopImmediatePropagation();
-                    ev.preventDefault();
+                this.eventHandler = (ev: MouseEvent) => {
+                    void (async () => {
+                        const { target } = ev;
+                        const activeFile =
+                            this.tcp.app.workspace.getActiveFile();
+                        if (
+                            !activeFile ||
+                            !(target instanceof HTMLInputElement) ||
+                            target.type !== "checkbox" ||
+                            target.classList.contains("metadata-input-checkbox")
+                        ) {
+                            return;
+                        }
+                        tcp.tc.logDebug(
+                            "TC ViewPlugin: click",
+                            target,
+                            target.classList,
+                        );
+                        ev.stopImmediatePropagation();
+                        ev.preventDefault();
 
-                    const mark = await promptForMark(this.tcp.app, tc);
-                    if (!mark) {
-                        return false;
-                    }
-                    await this.tcp.app.vault.process(
-                        activeFile,
-                        (source): string => {
-                            const position = this.view.posAtDOM(target);
-                            const line = view.state.doc.lineAt(position);
-                            const i = source.split("\n").indexOf(line.text);
+                        const mark = await promptForMark(this.tcp.app, tc);
+                        if (!mark) {
+                            return;
+                        }
+                        await this.tcp.app.vault.process(
+                            activeFile,
+                            (source): string => {
+                                const position = this.view.posAtDOM(target);
+                                const line = view.state.doc.lineAt(position);
+                                const i = source.split("\n").indexOf(line.text);
 
-                            tc.logDebug(
-                                "TC ViewPlugin: mark task",
-                                activeFile.path,
-                                mark,
-                                line,
-                                i,
-                            );
+                                tc.logDebug(
+                                    "TC ViewPlugin: mark task",
+                                    activeFile.path,
+                                    mark,
+                                    line,
+                                    i,
+                                );
 
-                            if (tcp.tc.anyTaskMark.test(line.text)) {
-                                return tc.markSelectedTask(source, mark, [i]);
-                            }
-                            const offset = Number(target.dataset.line);
-                            return tc.markSelectedTask(source, mark, [
-                                i + offset,
-                            ]);
-                        },
-                    );
-
-                    return true;
+                                if (tcp.tc.anyTaskMark.test(line.text)) {
+                                    return tc.markSelectedTask(source, mark, [
+                                        i,
+                                    ]);
+                                }
+                                const offset = Number(target.dataset.line);
+                                return tc.markSelectedTask(source, mark, [
+                                    i + offset,
+                                ]);
+                            },
+                        );
+                    })();
                 };
-                this.eventHandler.bind(this);
 
                 this.view.dom.addEventListener("click", this.eventHandler);
                 tcp.tc.logDebug("TC ViewPlugin: create click handler");

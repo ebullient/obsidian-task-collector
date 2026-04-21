@@ -26,8 +26,8 @@ export default defineConfig([
             "obsidianmd/ui/sentence-case": [
                 "warn",
                 {
-                    brands: ["Deck Notes", "journal/coping\nactivities/morning", "example"],
-                    acronyms: ["DN", "H2"],
+                    brands: ["Task Collector", "xX", "YYYY-MM-DD", "Live Preview", "Obsidian", "Reading", " #(todo|task)"],
+                    acronyms: ["TC"],
                     enforceCamelCaseLower: true,
                 },
             ],

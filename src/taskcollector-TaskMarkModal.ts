@@ -48,9 +48,12 @@ export class TaskMarkModal extends Modal {
 
         const footer = selector.createEl("nav");
         const esc = footer.createSpan();
-        esc.innerHTML = "<b>esc</b> to dismiss";
+        esc.createEl("b", { text: "Esc" });
+        esc.appendText(" to dismiss");
         const bksp = footer.createSpan();
-        bksp.innerHTML = "<b>bksp</b> to remove <code>[]</code>";
+        bksp.createEl("b", { text: "Bksp" });
+        bksp.appendText(" to remove ");
+        bksp.createEl("code", { text: "[]" });
 
         const keyListener = (event: KeyboardEvent) => {
             switch (event.key) {

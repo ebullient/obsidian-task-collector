@@ -4,5 +4,6 @@ module.exports = {
     moduleDirectories: ['node_modules', 'src', 'test'],
     moduleNameMapper: {
         "obsidian": "mocks/obsidian.ts"
-    }
+    },
+    setupFiles: ['./test/setup.ts'],
 }

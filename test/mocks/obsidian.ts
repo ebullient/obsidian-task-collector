@@ -1,5 +1,7 @@
 import { Workspace, Vault, MetadataCache, FileManager, UserEvent } from "obsidian";
 
+export const activeWindow = window;
+
 export class App {
 
     /** @public */

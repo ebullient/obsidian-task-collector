@@ -36,7 +36,9 @@ export class TaskCollector {
 
     init(settings: TaskCollectorSettings): void {
         this.settings = settings;
-        this.cache = JSON.parse(JSON.stringify(CACHE_DEFAULT));
+        this.cache = JSON.parse(
+            JSON.stringify(CACHE_DEFAULT),
+        ) as TaskCollectorCache;
 
         this.cache.useContextMenu =
             settings.contextMenu.markTask ||
@@ -78,9 +80,7 @@ export class TaskCollector {
         return JSON.stringify(this.settings) !== JSON.stringify(newSettings);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    // biome-ignore lint/suspicious/noExplicitAny: purposefully generous
-    logDebug(message: string, ...optionalParams: any[]): void {
+    logDebug(message: string, ...optionalParams: unknown[]): void {
         if (!this.settings || this.settings.debug) {
             console.debug(`(TC) ${message}`, ...optionalParams);
         }
@@ -88,7 +88,7 @@ export class TaskCollector {
 
     notify(message: string) {
         if (this.settings?.hideNotifications) {
-            console.log(message);
+            console.warn(message);
         } else {
             new Notice(message);
         }
@@ -291,7 +291,7 @@ export class TaskCollector {
                 if (!lineText.endsWith(" ")) {
                     lineText += " ";
                 }
-                lineText += window.moment().format(appendExpr);
+                lineText += activeWindow.moment().format(appendExpr);
             }
         }
 
@@ -345,7 +345,7 @@ export class TaskCollector {
             if (!lineText.endsWith(" ")) {
                 lineText += " ";
             }
-            lineText += window.moment().format(appendExpr);
+            lineText += activeWindow.moment().format(appendExpr);
         }
 
         // append block id & replace ending whitespace
