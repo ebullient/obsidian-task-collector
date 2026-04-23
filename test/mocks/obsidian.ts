@@ -1,4 +1,6 @@
 import { Workspace, Vault, MetadataCache, FileManager, UserEvent } from "obsidian";
+import moment from "moment-obsidian";
+export { moment };
 
 export const activeWindow = window;
 

@@ -5,6 +5,7 @@ import type {
     TaskCollectorSettings,
     TcSection,
 } from "./@types/settings";
+import { momentFn } from "./moment";
 import {
     CACHE_DEFAULT,
     DEFAULT_NAME,
@@ -291,7 +292,7 @@ export class TaskCollector {
                 if (!lineText.endsWith(" ")) {
                     lineText += " ";
                 }
-                lineText += activeWindow.moment().format(appendExpr);
+                lineText += momentFn().format(appendExpr);
             }
         }
 
@@ -345,7 +346,7 @@ export class TaskCollector {
             if (!lineText.endsWith(" ")) {
                 lineText += " ";
             }
-            lineText += activeWindow.moment().format(appendExpr);
+            lineText += momentFn().format(appendExpr);
         }
 
         // append block id & replace ending whitespace

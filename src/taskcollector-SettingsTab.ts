@@ -12,6 +12,7 @@ import type {
     TaskCollectorSettings,
 } from "./@types/settings";
 import type TaskCollectorPlugin from "./main";
+import { momentFn } from "./moment";
 import {
     COMPLETE_NAME,
     DEFAULT_COLLECTION,
@@ -478,9 +479,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                             (value) => {
                                 try {
                                     // Try formatting "now" with the specified format string
-                                    const now = activeWindow
-                                        .moment()
-                                        .format(value);
+                                    const now = momentFn().format(value);
                                     momentFormat.inputEl.removeClass(
                                         "data-value-error",
                                     );

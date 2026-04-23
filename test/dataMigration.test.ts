@@ -34,6 +34,7 @@ jest.mock("obsidian", () => ({
     }),
     PluginSettingTab: jest.fn().mockImplementation(),
     Modal: jest.fn().mockImplementation(),
+    moment: jest.requireActual("moment-obsidian"),
 }));
 
 const plugin = new TaskCollectorPlugin(new App(), MANIFEST);
