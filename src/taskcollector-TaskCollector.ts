@@ -291,7 +291,7 @@ export class TaskCollector {
                 if (!lineText.endsWith(" ")) {
                     lineText += " ";
                 }
-                lineText += activeWindow.moment().format(appendExpr);
+                lineText += momentFn().format(appendExpr);
             }
         }
 
@@ -345,7 +345,7 @@ export class TaskCollector {
             if (!lineText.endsWith(" ")) {
                 lineText += " ";
             }
-            lineText += activeWindow.moment().format(appendExpr);
+            lineText += momentFn().format(appendExpr);
         }
 
         // append block id & replace ending whitespace
