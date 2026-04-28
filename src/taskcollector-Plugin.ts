@@ -507,10 +507,11 @@ export class TaskCollectorPlugin extends Plugin {
 
                         this.tc.logDebug("checkbox", checkbox, line);
                         checkbox.setAttribute("data-tc-line", line.toString());
+                        const parent = checkbox.parentElement;
 
-                        if (this.tc.cache.useContextMenu) {
+                        if (this.tc.cache.useContextMenu && parent) {
                             this.registerDomEvent(
-                                checkbox.parentElement as HTMLElement,
+                                parent,
                                 "contextmenu",
                                 (ev) => {
                                     const view =

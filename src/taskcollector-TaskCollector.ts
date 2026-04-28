@@ -604,8 +604,8 @@ export class TaskCollector {
                 wrap = true;
             }
             if (order[i].startsWith(heading)) {
-                const [_, index] = order[i].split("%:%");
-                return Number(index);
+                const split = order[i].split("%:%");
+                return Number(split[1]);
             }
         }
         return undefined;

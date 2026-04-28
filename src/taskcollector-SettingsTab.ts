@@ -641,11 +641,12 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                             "aria-label",
                                         );
                                     }
-                                } catch (_e) {
+                                } catch (e) {
                                     testInput.inputEl.setAttribute(
                                         "aria-label",
                                         "Cannot test: regex is invalid",
                                     );
+                                    console.debug("Invalid regex", e);
                                 }
                             }
                         },
