@@ -104,7 +104,7 @@ export class TaskMarkModal extends Modal {
             if (character !== " ") {
                 input.setAttribute("checked", "");
             }
-            li.createEl("span", {
+            li.createSpan({
                 text: character === " " ? "␣" : character,
                 attr: {
                     style: "pointer-events: none;",
