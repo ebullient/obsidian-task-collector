@@ -4,6 +4,8 @@
     "module": "nodenext",
     "allowJs": true,
     "noImplicitAny": true,
+    "strictNullChecks": false,
+    "strictPropertyInitialization": false,
     "moduleResolution": "nodenext",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
