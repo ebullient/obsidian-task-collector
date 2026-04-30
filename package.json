@@ -32,7 +32,7 @@
   "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@codemirror/view": "^6.38.6",
+    "@codemirror/view": "^6.40.0",
     "@types/codemirror": "5.60.17",
     "@types/jest": "^30.0.0",
     "@types/moment": "^2.13.0",
