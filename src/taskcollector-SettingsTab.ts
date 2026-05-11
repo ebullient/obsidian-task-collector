@@ -594,7 +594,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                     const msg =
                                         e instanceof Error
                                             ? e.message
-                                            : String(e);
+                                            : JSON.stringify(e);
                                     text.inputEl.setAttribute(
                                         "aria-label",
                                         `Invalid regex: ${msg}`,

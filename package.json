@@ -49,7 +49,8 @@
     "typescript": "6.0.2"
   },
   "dependencies": {
-    "@codemirror/language": "https://github.com/lishid/cm-language"
+    "@codemirror/language": "https://github.com/lishid/cm-language",
+    "@codemirror/view": "^6.23.0"
   },
   "overrides": {
     "glob": "13.0.6",
