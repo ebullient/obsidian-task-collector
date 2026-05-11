@@ -56,8 +56,8 @@ export class TaskCollectorPlugin extends Plugin {
     handlersRegistered = false;
     commandsRegistered = false;
 
-    editTaskContextMenu: EventRef | null;
-    postProcessor: MarkdownPostProcessor | null;
+    editTaskContextMenu?: EventRef;
+    postProcessor?: MarkdownPostProcessor;
 
     /** CodeMirror 6 extensions. Tracked via array to allow for dynamic updates. */
     private cmExtension: Extension[] = [];
@@ -141,29 +141,30 @@ export class TaskCollectorPlugin extends Plugin {
             editor.getCursor(),
         );
 
-        let start: EditorPosition;
-        let end: EditorPosition | undefined;
-        const lines: number[] = [];
         if (editor.somethingSelected()) {
-            start = editor.getCursor("from");
-            end = editor.getCursor("to");
+            const start = editor.getCursor("from");
+            const end = editor.getCursor("to");
+            const lines: number[] = [];
             for (let i = start.line; i <= end.line; i++) {
                 lines.push(i);
             }
-        } else {
-            start = editor.getCursor();
-            lines.push(start.line);
+            return {
+                start,
+                end,
+                lines,
+            };
         }
+
+        const start = editor.getCursor();
         return {
             start,
-            end,
-            lines,
+            lines: [start.line],
         };
     }
 
     buildContextMenu(
         menu: Menu,
-        info: MarkdownView | MarkdownFileInfo,
+        info: MarkdownFileInfo,
         selection: Selection,
     ): void {
         if (this.tc.settings.contextMenu.markTask) {
@@ -293,7 +294,7 @@ export class TaskCollectorPlugin extends Plugin {
                 icon: "check-square",
                 editorCallback: async (
                     editor: Editor,
-                    _view: MarkdownView | MarkdownFileInfo,
+                    _view: MarkdownFileInfo,
                 ) => {
                     const mark = await promptForMark(this.app, this.tc);
                     if (mark) {
@@ -335,7 +336,7 @@ export class TaskCollectorPlugin extends Plugin {
                     icon: "forward",
                     editorCallback: async (
                         editor: Editor,
-                        view: MarkdownView | MarkdownFileInfo,
+                        view: MarkdownFileInfo,
                     ) => {
                         this.tc.logDebug(
                             `${markWithNextCommand.id}: callback`,
@@ -356,7 +357,7 @@ export class TaskCollectorPlugin extends Plugin {
                     icon: "reply",
                     editorCallback: async (
                         editor: Editor,
-                        view: MarkdownView | MarkdownFileInfo,
+                        view: MarkdownFileInfo,
                     ) => {
                         this.tc.logDebug(
                             `${markWithPrevCommand.id}: callback`,
@@ -385,7 +386,7 @@ export class TaskCollectorPlugin extends Plugin {
                             k === TEXT_ONLY_MARK ? "list-plus" : "check-circle",
                         editorCallback: async (
                             editor: Editor,
-                            view: MarkdownView | MarkdownFileInfo,
+                            view: MarkdownFileInfo,
                         ) => {
                             const selection =
                                 this.getCurrentLinesFromEditor(editor);

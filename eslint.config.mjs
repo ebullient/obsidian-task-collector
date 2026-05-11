@@ -13,13 +13,10 @@ export default defineConfig([
         "package.json"
     ]),
     {
-        files: ["src/**/*.ts"],
+        files: ["**/*.ts"],
         languageOptions: {
             parser: tsparser,
-            parserOptions: {
-                project: "./tsconfig.json"
-            },
-            globals: { ...globals.node, ...globals.browser },
+            parserOptions: { project: "./tsconfig.json" },
         },
         // Optional project overrides
         rules: {

@@ -24,6 +24,10 @@ import {
 import { Data } from "./taskcollector-Data";
 import { _regex, type TaskCollector } from "./taskcollector-TaskCollector";
 
+export function uniqueMarkCycleChars(value: string): string {
+    return Array.from(new Set(value.split(""))).join("");
+}
+
 export class TaskCollectorSettingsTab extends PluginSettingTab {
     plugin: TaskCollectorPlugin;
     tc: TaskCollector;
@@ -134,9 +138,8 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     .setPlaceholder("")
                     .setValue(this.newSettings.markCycle.replace("§", ""))
                     .onChange(async (value) => {
-                        this.newSettings.markCycle = [...new Set(value)].join(
-                            "",
-                        );
+                        this.newSettings.markCycle =
+                            uniqueMarkCycleChars(value);
                     }),
             )
             .addExtraButton((button) => {
@@ -594,7 +597,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                     const msg =
                                         e instanceof Error
                                             ? e.message
-                                            : String(e);
+                                            : JSON.stringify(e);
                                     text.inputEl.setAttribute(
                                         "aria-label",
                                         `Invalid regex: ${msg}`,

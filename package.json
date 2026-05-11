@@ -35,7 +35,6 @@
     "@types/jest": "^30.0.0",
     "@types/moment": "^2.13.0",
     "@types/node": "^25.5.0",
-    "@typescript-eslint/parser": "^8.57.2",
     "auto-changelog": "^2.5.0",
     "esbuild": "^0.27.4",
     "esbuild-sass-plugin": "^3.7.0",
@@ -45,11 +44,11 @@
     "jest-util": "^30.3.0",
     "obsidian": "^1.12.3",
     "ts-jest": "^29.4.9",
-    "tslib": "^2.8.1",
-    "typescript": "6.0.2"
+    "tslib": "^2.8.1"
   },
   "dependencies": {
-    "@codemirror/language": "https://github.com/lishid/cm-language"
+    "@codemirror/language": "https://github.com/lishid/cm-language",
+    "@codemirror/view": "^6.23.0"
   },
   "overrides": {
     "glob": "13.0.6",
