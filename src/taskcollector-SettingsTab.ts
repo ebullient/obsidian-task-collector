@@ -1,28 +1,17 @@
 import {
     type App,
-    type ButtonComponent,
-    debounce,
     Notice,
     PluginSettingTab,
-    Setting,
+    type Setting,
+    type SettingDefinitionItem,
+    type SettingGroupItem,
 } from "obsidian";
-import type {
-    CollectionSettings,
-    ManipulationSettings,
-    TaskCollectorSettings,
-} from "./@types/settings";
+import type { ManipulationSettings } from "./@types/settings";
 import type TaskCollectorPlugin from "./main";
-import { momentFn } from "./moment";
-import {
-    COMPLETE_NAME,
-    DEFAULT_COLLECTION,
-    DEFAULT_NAME,
-    DEFAULT_SETTINGS,
-    TEXT_ONLY_MARK,
-    TEXT_ONLY_NAME,
-} from "./taskcollector-Constants";
+import { DEFAULT_NAME, TEXT_ONLY_NAME } from "./taskcollector-Constants";
 import { Data } from "./taskcollector-Data";
-import { _regex, type TaskCollector } from "./taskcollector-TaskCollector";
+import { TaskCollectorGroupModal } from "./taskcollector-GroupModal";
+import type { TaskCollector } from "./taskcollector-TaskCollector";
 
 export function uniqueMarkCycleChars(value: string): string {
     return Array.from(new Set(value.split(""))).join("");
@@ -31,11 +20,6 @@ export function uniqueMarkCycleChars(value: string): string {
 export class TaskCollectorSettingsTab extends PluginSettingTab {
     plugin: TaskCollectorPlugin;
     tc: TaskCollector;
-    newSettings: TaskCollectorSettings;
-    groupList: HTMLDListElement;
-    markInputCache: Record<string, Set<HTMLInputElement>> = {};
-    otherInputCache: Record<string, HTMLInputElement> = {};
-    saveButton: HTMLElement;
 
     constructor(
         app: App,
@@ -46,881 +30,286 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         this.plugin = plugin;
         this.tc = taskCollector;
         this.icon = "tornado";
-        this.newSettings = DEFAULT_SETTINGS;
     }
 
-    async save() {
-        Data.sanitize(this.plugin, this.newSettings);
-        if (this.tc.isDirty(this.newSettings)) {
-            if (this.tc.handlerChanged(this.newSettings)) {
-                new Notice(
-                    "Updated Live Preview settings; restart Obsidian to apply changes.",
-                );
-            }
-            this.tc.init(this.newSettings);
-            await this.plugin.saveSettings();
-            this.tc.notify("(TC) Configuration saved");
+    getControlValue(key: string): unknown {
+        return (this.tc.settings as Record<string, unknown>)[key];
+    }
+
+    async setControlValue(key: string, value: unknown): Promise<void> {
+        (this.tc.settings as Record<string, unknown>)[key] = value;
+        if (key === "previewClickModal") {
+            new Notice(
+                "Updated live preview settings; restart Obsidian to apply changes.",
+            );
+        }
+        this.tc.init(this.tc.settings);
+        await this.plugin.saveSettings();
+        if (key === "collectionEnabled") {
+            this.update();
         }
     }
 
-    /** Save on exit */
-    hide(): void {
-        void this.save();
-    }
+    getSettingDefinitions(): SettingDefinitionItem[] {
+        const s = this.tc.settings;
 
-    /** Show/validate setting changes */
-    display(): void {
-        this.newSettings = JSON.parse(
-            JSON.stringify(this.tc.settings),
-        ) as TaskCollectorSettings;
-        this.drawElements();
-    }
-
-    drawElements(): void {
-        this.containerEl.empty();
-        this.containerEl.addClass("task-collector-settings");
-
-        new Setting(this.containerEl).setHeading().setName("Task Collector");
-
-        new Setting(this.containerEl)
-            .setName("Save settings")
-            .setClass("task-collector-save-reset")
-            .addButton((button) =>
-                button
-                    .setIcon("reset")
-                    .setTooltip(
-                        "Reset to previously saved (or generated) values",
-                    )
-                    .onClick(() => {
-                        this.newSettings = JSON.parse(
-                            JSON.stringify(this.tc.settings),
-                        ) as TaskCollectorSettings;
-                        this.display();
-                        const message = "(TC) Configuration reset";
-                        this.tc.notify(message);
-                    }),
-            )
-            .addButton((button) => {
-                button
-                    .setIcon("save")
-                    .setTooltip("Save current values")
-                    .onClick(async () => {
-                        await this.save();
-                    });
-                this.saveButton = button.buttonEl;
-            });
-
-        new Setting(this.containerEl)
-            .setName("Task collection")
-            .setDesc(
-                "Enable task collection (additional task group settings when enabled)",
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.newSettings.collectionEnabled)
-                    .onChange(async (value) => {
-                        const redraw =
-                            value !== this.newSettings.collectionEnabled;
-                        this.newSettings.collectionEnabled = value;
-                        if (redraw) {
-                            this.drawElements();
-                        }
-                    }),
-            );
-
-        new Setting(this.containerEl)
-            .setName("Define task mark cycle")
-            .setDesc(
-                "Specify characters (as a string) for previous/next commands. Use the button to include checkbox removal in the cycle.",
-            )
-            .addText((input) =>
-                input
-                    .setPlaceholder("")
-                    .setValue(this.newSettings.markCycle.replace("§", ""))
-                    .onChange(async (value) => {
-                        this.newSettings.markCycle =
-                            uniqueMarkCycleChars(value);
-                    }),
-            )
-            .addExtraButton((button) => {
-                const el = button
-                    .setTooltip(
-                        `Include checkbox removal in the cycle: ${this.newSettings.markCycleRemoveTask}`,
-                    )
-                    .setIcon("cross-in-box")
-                    .onClick(() => {
-                        this.newSettings.markCycleRemoveTask =
-                            !this.newSettings.markCycleRemoveTask;
-                        el.classList.toggle(
-                            "is-active",
-                            this.newSettings.markCycleRemoveTask,
-                        );
-                        button.setTooltip(
-                            `Include checkbox removal in the cycle: ${this.newSettings.markCycleRemoveTask}`,
-                        );
-                    }).extraSettingsEl;
-                el.classList.toggle(
-                    "is-active",
-                    this.newSettings.markCycleRemoveTask,
-                );
-            });
-
-        new Setting(this.containerEl)
-            .setName("Convert non-list lines")
-            .setDesc("Converts non-list lines when marking tasks")
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.newSettings.convertEmptyLines)
-                    .onChange(async (value) => {
-                        this.newSettings.convertEmptyLines = value;
-                    }),
-            );
-
-        new Setting(this.containerEl)
-            .setName("Skip matching sections")
-            .setDesc(
-                "When collecting tasks, skip content of sections that match the specified pattern",
-            )
-            .addText((input) =>
-                input
-                    .setPlaceholder("")
-                    .setValue(this.newSettings.skipSectionMatch)
-                    .onChange(async (value) => {
-                        this.newSettings.skipSectionMatch = value;
-                    }),
-            );
-
-        new Setting(this.containerEl).setHeading().setName("Task groups");
-
-        this.containerEl.createEl("p", {
-            text:
-                "Task collector configures tasks in groups. " +
-                "Each group can be associated with one or more task marks ('x' or '>'). " +
-                "The default group configuration will apply to any mark not otherwise assigned to a group.",
-        });
-
-        this.containerEl.createEl("p", {
-            text:
-                "Marks that you define within the following groups appear in the selection modal. " +
-                "Those marks that 'complete' a task will appear in the top row.",
-        });
-
-        this.groupList = this.containerEl.createEl("dl");
-        this.showTaskGroups();
-
-        new Setting(this.containerEl)
-            .setClass("tc-create-task-group")
-            .addButton((button: ButtonComponent) =>
-                button
-                    .setTooltip("Add a new task group")
-                    .setButtonText("+")
-                    .onClick(() => {
-                        const name = `group-${
-                            Object.values(this.newSettings.groups).length
-                        }`;
-                        Data.createSettingsGroup(
-                            this.newSettings.groups,
-                            name,
-                            {},
-                        );
-                        this.showTaskGroups();
-                    }),
-            );
-
-        new Setting(this.containerEl).setHeading().setName("Menus and modals");
-
-        this.containerEl.createEl("p", {
-            text:
-                "Task Collector creates commands that can be bound to hotkeys or accessed using slash commands for marking tasks. " +
-                "The following settings add right click context menu items for those commands.",
-        });
-
-        new Setting(this.containerEl)
-            .setName("Click handling: prompt when the checkbox is clicked")
-            .setDesc(
-                "When you click a checkbox, display a panel that allows you to select (with mouse or keyboard) the value to assign.",
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.newSettings.previewClickModal)
-                    .onChange(async (value) => {
-                        this.newSettings.previewClickModal = value;
-                    }),
-            );
-
-        new Setting(this.containerEl)
-            .setName("Add '(TC) Mark task' menu item")
-            .setDesc(
-                "Add an item to the right-click menu to mark the task on the current line (or within the current selection). This menu item will trigger a quick pop-up modal to select the desired mark value.",
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.newSettings.contextMenu.markTask)
-                    .onChange(async (value) => {
-                        this.newSettings.contextMenu.markTask = value;
-                    }),
-            );
-
-        new Setting(this.containerEl)
-            .setName("Add `(TC) Collect tasks` menu item")
-            .setDesc(
-                "Add an item to the right-click menu to collect tasks (based on task configuration).",
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.newSettings.contextMenu.collectTasks)
-                    .onChange(async (value) => {
-                        this.newSettings.contextMenu.collectTasks = value;
-                    }),
-            );
-
-        new Setting(this.containerEl)
-            .setName("Add '(TC) Reset all tasks' command and menu item")
-            .setDesc(
-                "Add a command and an item to the right-click menu to reset/clear all tasks in the current file.",
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.newSettings.contextMenu.resetAllTasks)
-                    .onChange(async (value) => {
-                        this.newSettings.contextMenu.resetAllTasks = value;
-                    }),
-            );
-
-        new Setting(this.containerEl).setHeading().setName("Other settings");
-
-        new Setting(this.containerEl)
-            .setName("Hide notifications")
-            .setDesc(
-                "Hide pop-up notification messages (messages will be logged in the developer console)",
-            )
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.newSettings.hideNotifications)
-                    .onChange(async (value) => {
-                        this.newSettings.hideNotifications = value;
-                    }),
-            );
-
-        new Setting(this.containerEl)
-            .setName("Debug")
-            .setDesc("Enable debug messages")
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.newSettings.debug)
-                    .onChange(async (value) => {
-                        this.newSettings.debug = value;
-                    }),
-            );
-    }
-
-    showTaskGroups() {
-        this.markInputCache = {};
-        this.otherInputCache = {};
-        this.groupList.empty();
-        this.clearButtonErrors();
-
-        // default always comes first
-        this.createGroupItem(this.newSettings.groups[DEFAULT_NAME]);
-
-        // any/everything else
-        for (const mts of Object.values(this.newSettings.groups)) {
-            if (mts.name !== DEFAULT_NAME) {
-                this.createGroupItem(mts);
-            }
-        }
-    }
-
-    createGroupItem(mts: ManipulationSettings) {
-        const dt = this.groupList.createEl("dt");
-        const itemEl = this.groupList.createEl("dd");
-        let testSetting: Setting;
-
-        const nameSetting = new Setting(dt)
-            .setName("Group name")
-            .setDesc("Name for this group")
-            .setClass("task-group-name");
-        if (mts.name === TEXT_ONLY_NAME) {
-            nameSetting.addExtraButton((b) => {
-                b.setIcon("info")
-                    .setTooltip(
-                        "This is a special group that supports appending text to arbitrary lines of text",
-                    )
-                    .setDisabled(true);
-            });
-        }
-        nameSetting.addText((text) => {
-            text.setPlaceholder(COMPLETE_NAME)
-                .setValue(mts.name)
-                .setDisabled(mts.name === DEFAULT_NAME)
-                .onChange(
-                    debounce(
-                        (value) => {
-                            const target = this.newSettings.groups[value];
-                            if (!value) {
-                                text.inputEl.addClass("data-value-error");
-                                text.inputEl.setAttribute(
-                                    "aria-label",
-                                    "A group name is required.",
-                                );
-                            } else if (target && target !== mts) {
-                                text.inputEl.addClass("data-value-error");
-                                text.inputEl.setAttribute(
-                                    "aria-label",
-                                    "This name is already used by another group",
-                                );
-                            } else {
-                                text.inputEl.removeClass("data-value-error");
-                                text.inputEl.removeAttribute("aria-label");
-                                Data.moveGroup(
-                                    this.plugin,
-                                    this.newSettings.groups,
-                                    mts.name,
-                                    value,
-                                );
-                                if (value === TEXT_ONLY_NAME) {
-                                    mts.marks = TEXT_ONLY_MARK;
-                                    // we just created the text group, redraw / rebuild cache
-                                    this.drawElements();
-                                }
-                            }
-                            this.testForErrors();
-                        },
-                        50,
-                        true,
-                    ),
-                );
-        });
-        nameSetting.addExtraButton((b) => {
-            b.setIcon(mts.name === DEFAULT_NAME ? "info" : "trash")
-                .setTooltip(
-                    mts.name === DEFAULT_NAME
-                        ? "Default task settings"
-                        : "Delete this group",
-                )
-                .setDisabled(mts.name === DEFAULT_NAME)
-                .onClick(async () => {
-                    delete this.newSettings.groups[mts.name];
-                    this.showTaskGroups();
-                });
-        });
-        if (mts.name === DEFAULT_NAME) {
-            nameSetting.controlEl.addClass("default-group");
-        } else if (mts.name === TEXT_ONLY_NAME) {
-            nameSetting.controlEl.addClass("text-only-group");
-        }
-
-        if (mts.name !== TEXT_ONLY_NAME) {
-            const taskMarks = new Setting(itemEl)
-                .setName("Task marks")
-                .setClass("task-marks");
-
-            if (mts.name !== DEFAULT_NAME) {
-                taskMarks.addToggle((t) => {
-                    t.setValue(mts.complete);
-                    t.setTooltip(
-                        "If enabled, this group represents completed items. Completed items appear in the top row of the selection menu.",
-                    ).onChange(async (value) => {
-                        mts.complete = value;
-                    });
-                });
-                taskMarks.setDesc(
-                    "Set marks associated with this group as a string, for example: '>?!'. Use a space for unmarked tasks. " +
-                        "Enable the toggle if this group represents completed tasks.",
-                );
-            } else {
-                taskMarks.setDesc(
-                    "Set marks associated with this group as a string, for example: '>?!'. Use a space for unmarked tasks. ",
-                );
-            }
-
-            taskMarks.addText((input) => {
-                input.setPlaceholder("xX").onChange(
-                    debounce(
-                        (value) => {
-                            const newMarks = Data.sanitizeMarks(value);
-                            if (newMarks !== value) {
-                                input.inputEl.value = newMarks;
-                            }
-                            if (newMarks !== mts.marks) {
-                                this.removeMarks(mts.marks, input.inputEl);
-
-                                mts.marks = newMarks;
-                                taskMarks.controlEl.setAttribute(
-                                    "marks",
-                                    mts.marks,
-                                );
-
-                                this.findDuplicates(input.inputEl);
-                            }
-                        },
-                        50,
-                        true,
-                    ),
-                );
-                // sanitize and display initial value
-                mts.marks = Data.sanitizeMarks(mts.marks);
-                input.setValue(mts.marks);
-                taskMarks.controlEl.setAttribute("marks", mts.marks);
-                this.findDuplicates(input.inputEl);
-            });
-        }
-
-        new Setting(itemEl)
-            .setName(`Append date to ${this.getDescription(mts)}`)
-            .setDesc(
-                `Append today's date in the given moment.js format to the end of the ${this.getDescription(
-                    mts,
-                )}`,
-            )
-            .addMomentFormat((momentFormat) => {
-                momentFormat
-                    .setPlaceholder("YYYY-MM-DD")
-                    .setValue(mts.appendDateFormat)
-                    .onChange(
-                        debounce(
-                            (value) => {
-                                try {
-                                    // Try formatting "now" with the specified format string
-                                    const now = momentFn().format(value);
-                                    momentFormat.inputEl.removeClass(
-                                        "data-value-error",
-                                    );
-                                    momentFormat.inputEl.setAttribute(
-                                        "aria-label",
-                                        now,
-                                    );
-                                    mts.appendDateFormat = value;
-                                } catch (e) {
-                                    momentFormat.inputEl.addClass(
-                                        "data-value-error",
-                                    );
-                                    momentFormat.inputEl.setAttribute(
-                                        "aria-label",
-                                        "An error occurred parsing this moment string. See log for details.",
-                                    );
-                                    console.error(
-                                        `Error parsing specified date format for ${mts.name}: ${value}`,
-                                        e,
-                                    );
-                                }
-                                this.testForErrors();
-                            },
-                            200,
-                            true,
-                        ),
+        const groupItems: SettingGroupItem[] = [
+            {
+                name: "",
+                searchable: false,
+                render: (setting: Setting) => {
+                    setting.descEl.replaceWith(
+                        createFragment((f) => {
+                            f.createEl("p", {
+                                text:
+                                    "Task collector configures tasks in groups. " +
+                                    "Each group can be associated with one or more task marks ('x' or '>'). " +
+                                    "The default group configuration will apply to any mark not otherwise assigned to a group.",
+                            });
+                            f.createEl("p", {
+                                text:
+                                    "Marks that you define within the following groups appear in the selection modal. " +
+                                    "Those marks that 'complete' a task will appear in the top row.",
+                            });
+                        }),
                     );
-            });
+                },
+            },
+        ];
 
-        new Setting(itemEl)
-            .setName(
-                `Remove text matching pattern from ${this.getDescription(mts)}`,
-            )
-            .setDesc(
-                `Text matching this regular expression will be removed from ${this.getDescription(
-                    mts,
-                )}. Be careful! Test your expression first. The global flag ('g') is used for a per-line match.`,
-            )
-            .addText((text) =>
-                text
-                    .setPlaceholder(" #(todo|task)")
-                    .setValue(mts.removeExpr)
-                    .onChange(
-                        debounce(
-                            (value) => {
-                                if (!value) {
-                                    testSetting.settingEl.addClass(
-                                        "regex-hidden",
-                                    );
-                                    return;
-                                }
-                                testSetting.settingEl.removeClass(
-                                    "regex-hidden",
-                                );
-                                try {
-                                    // try compiling the regular expression
-                                    const regex =
-                                        _regex.tryRemoveTextRegex(value);
-                                    mts.removeExpr = value;
+        // Default group first, then others
+        const groups = [
+            s.groups[DEFAULT_NAME],
+            ...Object.values(s.groups).filter((g) => g.name !== DEFAULT_NAME),
+        ];
 
-                                    // Visual feedback for valid regex
-                                    text.inputEl.removeClass(
-                                        "data-value-error",
-                                    );
-                                    if (value) {
-                                        // Check for likely over-escaping (e.g., \\\\d instead of \\d)
-                                        const hasDoubleEscapes =
-                                            /\\\\[dswDSW]|\\\\[{}[\]]/u.test(
-                                                value,
-                                            );
-                                        if (hasDoubleEscapes) {
-                                            text.inputEl.addClass(
-                                                "data-value-error",
-                                            );
-                                            text.inputEl.setAttribute(
-                                                "aria-label",
-                                                `Warning: Pattern may be over-escaped. Use \\d not \\\\d, \\{ not \\\\{, etc. Current: /${regex?.source}/g`,
-                                            );
-                                        } else {
-                                            text.inputEl.setAttribute(
-                                                "aria-label",
-                                                `Valid regex: /${regex?.source || value}/g`,
-                                            );
-                                        }
-                                    } else {
-                                        text.inputEl.removeAttribute(
-                                            "aria-label",
-                                        );
-                                    }
-
-                                    this.tc.logDebug(
-                                        "remove regex",
-                                        mts.name,
-                                        mts.removeExpr,
-                                    );
-
-                                    // Update test field if it exists
-                                    const testInput =
-                                        this.otherInputCache[
-                                            `removeExpr-test-${mts.name}`
-                                        ];
-                                    if (testInput && regex && testInput.value) {
-                                        this.updateTestResult(
-                                            testInput,
-                                            regex,
-                                            mts.name,
-                                        );
-                                    }
-                                } catch (e) {
-                                    // Visual feedback for invalid regex
-                                    text.inputEl.addClass("data-value-error");
-                                    const msg =
-                                        e instanceof Error
-                                            ? e.message
-                                            : JSON.stringify(e);
-                                    text.inputEl.setAttribute(
-                                        "aria-label",
-                                        `Invalid regex: ${msg}`,
-                                    );
-                                    console.error(
-                                        `Error parsing specified text replacement regular expression for ${mts.name}: ${value}`,
-                                        e,
-                                    );
-                                }
-                                this.testForErrors();
-                            },
-                            50,
-                            true,
-                        ),
-                    ),
-            );
-
-        // Add a test field below the regex input
-        testSetting = new Setting(itemEl)
-            .setClass("regex-test-setting")
-            .setDesc(
-                "Test your regex: Enter sample text to see what will be removed",
-            )
-            .addText((testInput) => {
-                testInput.setPlaceholder("- [ ] something #todo").onChange(
-                    debounce(
-                        (value) => {
-                            this.otherInputCache[
-                                `removeExpr-test-${mts.name}`
-                            ] = testInput.inputEl;
-                            if (mts.removeExpr) {
-                                try {
-                                    const regex = _regex.tryRemoveTextRegex(
-                                        mts.removeExpr,
-                                    );
-                                    if (regex && value) {
-                                        this.updateTestResult(
-                                            testInput.inputEl,
-                                            regex,
-                                            mts.name,
-                                        );
-                                    } else {
-                                        testInput.inputEl.removeAttribute(
-                                            "aria-label",
-                                        );
-                                    }
-                                } catch (e) {
-                                    testInput.inputEl.setAttribute(
-                                        "aria-label",
-                                        "Cannot test: regex is invalid",
-                                    );
-                                    console.debug("Invalid regex", e);
-                                }
-                            }
-                        },
-                        100,
-                        true,
-                    ),
-                );
-
-                // Cache the input element for updates when regex changes
-                this.otherInputCache[`removeExpr-test-${mts.name}`] =
-                    testInput.inputEl;
-            });
-
-        if (!mts.removeExpr) {
-            testSetting.settingEl.addClass("regex-hidden");
+        for (const mts of groups) {
+            groupItems.push(this.groupSummaryDefinition(mts));
         }
 
-        new Setting(itemEl)
-            .setName("Register '(TC) Mark with... ' command")
-            .setDesc(
-                mts.name === TEXT_ONLY_NAME
-                    ? "A command will be registered to append text to selected lines"
-                    : "A command will be registered for each mark in the group.",
-            )
-            .addToggle((toggle) =>
-                toggle.setValue(mts.registerCommand).onChange((value) => {
-                    mts.registerCommand = value;
-                }),
-            );
-
-        new Setting(itemEl)
-            .setName("Add '(TC) Mark with... ' menu item")
-            .setDesc(
-                "A right-click menu item will be added for each mark in the group.",
-            )
-            .addToggle((toggle) =>
-                toggle.setValue(mts.useContextMenu).onChange(async (value) => {
-                    mts.useContextMenu = value;
-                }),
-            );
-
-        if (this.newSettings.collectionEnabled && mts.name !== TEXT_ONLY_NAME) {
-            if (!mts.collection) {
-                mts.collection = JSON.parse(
-                    JSON.stringify(DEFAULT_COLLECTION),
-                ) as CollectionSettings;
-            }
-            new Setting(itemEl)
-                .setName("Area heading")
-                .setClass("area-heading")
-                .setDesc(
-                    "Marked tasks will be collected and moved under the specified heading. Task collection for a group only occurs when an area heading is configured.",
-                )
-                .addText((text) =>
-                    text
-                        .setPlaceholder("## Example")
-                        .setValue(mts.collection.areaHeading)
-                        .onChange(async (value) => {
-                            mts.collection.areaHeading = value;
+        // Add group button
+        groupItems.push({
+            name: "",
+            searchable: false,
+            render: (setting: Setting) => {
+                setting.settingEl.addClass("tc-create-task-group");
+                setting.addButton((btn) =>
+                    btn
+                        .setTooltip("Add a new task group")
+                        .setButtonText("+")
+                        .onClick(() => {
+                            const name = `group-${Object.values(s.groups).length}`;
+                            Data.createSettingsGroup(s.groups, name, {});
+                            this.update();
                         }),
                 );
-            new Setting(itemEl)
-                .setName("Remove checkbox")
-                .setClass("remove-checkbox")
-                .setDesc("When a task is collected, remove the checkbox")
-                .addToggle((toggle) =>
-                    toggle
-                        .setValue(mts.collection.removeCheckbox)
-                        .onChange(async (value) => {
-                            mts.collection.removeCheckbox = value;
+            },
+        });
+
+        return [
+            {
+                name: "Task collection",
+                desc: "Enable task collection (additional task group settings when enabled)",
+                control: { type: "toggle", key: "collectionEnabled" },
+            },
+            {
+                name: "Define task mark cycle",
+                desc: "Specify characters (as a string) for previous/next commands. Use the button to include checkbox removal in the cycle.",
+                render: (setting: Setting) => {
+                    setting.addText((input) =>
+                        input
+                            .setPlaceholder("")
+                            .setValue(s.markCycle.replace("§", ""))
+                            .onChange(async (value) => {
+                                s.markCycle = uniqueMarkCycleChars(value);
+                                this.tc.init(s);
+                                await this.plugin.saveSettings();
+                            }),
+                    );
+                    setting.addExtraButton((button) => {
+                        const el = button
+                            .setTooltip(
+                                `Include checkbox removal in the cycle: ${s.markCycleRemoveTask}`,
+                            )
+                            .setIcon("cross-in-box")
+                            .onClick(async () => {
+                                s.markCycleRemoveTask = !s.markCycleRemoveTask;
+                                el.classList.toggle(
+                                    "is-active",
+                                    s.markCycleRemoveTask,
+                                );
+                                button.setTooltip(
+                                    `Include checkbox removal in the cycle: ${s.markCycleRemoveTask}`,
+                                );
+                                this.tc.init(s);
+                                await this.plugin.saveSettings();
+                            }).extraSettingsEl;
+                        el.classList.toggle("is-active", s.markCycleRemoveTask);
+                    });
+                },
+            },
+            {
+                name: "Convert non-list lines",
+                desc: "Converts non-list lines when marking tasks",
+                control: { type: "toggle", key: "convertEmptyLines" },
+            },
+            {
+                name: "Skip matching sections",
+                desc: "When collecting tasks, skip content of sections that match the specified pattern",
+                control: { type: "text", key: "skipSectionMatch" },
+            },
+            {
+                type: "group",
+                heading: "Task groups",
+                items: groupItems,
+            },
+            {
+                type: "group",
+                heading: "Menus and modals",
+                items: [
+                    {
+                        name: "",
+                        searchable: false,
+                        render: (setting: Setting) => {
+                            setting.descEl.replaceWith(
+                                createFragment((f) => {
+                                    f.createEl("p", {
+                                        text:
+                                            "Task Collector creates commands that can be bound to hotkeys or accessed using slash commands for marking tasks. " +
+                                            "The following settings add right click context menu items for those commands.",
+                                    });
+                                }),
+                            );
+                        },
+                    },
+                    {
+                        name: "Click handling: prompt when the checkbox is clicked",
+                        desc: "When you click a checkbox, display a panel that allows you to select (with mouse or keyboard) the value to assign.",
+                        control: { type: "toggle", key: "previewClickModal" },
+                    },
+                    {
+                        name: "Add '(TC) Mark task' menu item",
+                        desc: "Add an item to the right-click menu to mark the task on the current line (or within the current selection). This menu item will trigger a quick pop-up modal to select the desired mark value.",
+                        render: (setting: Setting) => {
+                            setting.addToggle((t) =>
+                                t
+                                    .setValue(s.contextMenu.markTask)
+                                    .onChange(async (value) => {
+                                        s.contextMenu.markTask = value;
+                                        this.tc.init(s);
+                                        await this.plugin.saveSettings();
+                                    }),
+                            );
+                        },
+                    },
+                    {
+                        name: "Add '(TC) Collect tasks' menu item",
+                        desc: "Add an item to the right-click menu to collect tasks (based on task configuration).",
+                        render: (setting: Setting) => {
+                            setting.addToggle((t) =>
+                                t
+                                    .setValue(s.contextMenu.collectTasks)
+                                    .onChange(async (value) => {
+                                        s.contextMenu.collectTasks = value;
+                                        this.tc.init(s);
+                                        await this.plugin.saveSettings();
+                                    }),
+                            );
+                        },
+                    },
+                    {
+                        name: "Add '(TC) Reset all tasks' command and menu item",
+                        desc: "Add a command and an item to the right-click menu to reset/clear all tasks in the current file.",
+                        render: (setting: Setting) => {
+                            setting.addToggle((t) =>
+                                t
+                                    .setValue(s.contextMenu.resetAllTasks)
+                                    .onChange(async (value) => {
+                                        s.contextMenu.resetAllTasks = value;
+                                        this.tc.init(s);
+                                        await this.plugin.saveSettings();
+                                    }),
+                            );
+                        },
+                    },
+                ],
+            },
+            {
+                type: "group",
+                heading: "Other settings",
+                items: [
+                    {
+                        name: "Hide notifications",
+                        desc: "Hide pop-up notification messages (messages will be logged in the developer console)",
+                        control: { type: "toggle", key: "hideNotifications" },
+                    },
+                    {
+                        name: "Debug",
+                        desc: "Enable debug messages",
+                        control: { type: "toggle", key: "debug" },
+                    },
+                ],
+            },
+        ];
+    }
+
+    private groupSummaryDefinition(
+        mts: ManipulationSettings,
+    ): SettingGroupItem {
+        return {
+            name: mts.name === DEFAULT_NAME ? "Default group" : mts.name,
+            desc: createFragment((f) => {
+                const entries: [string, string][] = [];
+                if (mts.name !== TEXT_ONLY_NAME && mts.marks) {
+                    entries.push(["Marks", mts.marks]);
+                }
+                if (mts.appendDateFormat) {
+                    entries.push(["Date format", mts.appendDateFormat]);
+                }
+                if (mts.removeExpr) {
+                    entries.push(["Remove", `/${mts.removeExpr}/`]);
+                }
+                if (mts.collection?.areaHeading) {
+                    entries.push(["Collects to", mts.collection.areaHeading]);
+                }
+                if (entries.length > 0) {
+                    const ul = f.createEl("ul");
+                    for (const [label, value] of entries) {
+                        const li = ul.createEl("li");
+                        li.createEl("b", { text: `${label}: ` });
+                        li.createEl("code", { text: value });
+                    }
+                }
+            }),
+            render: (setting: Setting) => {
+                setting.addExtraButton((btn) =>
+                    btn
+                        .setIcon("pencil")
+                        .setTooltip("Edit group settings")
+                        .onClick(() => {
+                            new TaskCollectorGroupModal(
+                                this.app,
+                                this.plugin,
+                                this.tc,
+                                mts,
+                                () => this.update(),
+                            ).open();
                         }),
                 );
-        }
-    }
-
-    private removeMarks(oldValue: string, input: HTMLInputElement) {
-        const marks = oldValue ? oldValue.split("") : [];
-        this.tc.logDebug(
-            `removeMarks begin: '${oldValue}'`,
-            this.markInputCache,
-        );
-
-        if (input.hasClass("no-marks-defined")) {
-            input.removeClass("no-marks-defined");
-            input.removeClass("data-value-error");
-            input.removeAttribute("aria-label");
-        }
-
-        for (const x of marks) {
-            this.tc.logDebug(
-                `(TC): remove mark '${x}'`,
-                this.markInputCache[x],
-            );
-            if (this.markInputCache[x]) {
-                const set = this.markInputCache[x];
-                set.delete(input);
-                this.tryRemoveConflict(x, input);
-
-                // if there is only one element left in the array,
-                // remove the current character from the list of conflicts
-                if (set.size === 1) {
-                    for (const i of set) {
-                        this.tryRemoveConflict(x, i);
-                    }
-                }
-            }
-        }
-
-        this.tc.logDebug(`removeMarks end: '${oldValue}'`, this.markInputCache);
-    }
-
-    private findDuplicates(input: HTMLInputElement) {
-        const marks = input.value ? input.value.split("") : [];
-        this.tc.logDebug(
-            `findDuplicates begin: '${input.value}'`,
-            marks,
-            input,
-            this.markInputCache,
-        );
-
-        // add input element into the cache (new marks)
-        for (const x of marks) {
-            if (this.markInputCache[x]) {
-                const set = this.markInputCache[x];
-                set.add(input);
-
-                if (set.size > 1) {
-                    // we have a conflict over a defined task mark
-                    for (const i of set) {
-                        this.trySetConflict(x, i);
-                    }
-                    console.error(
-                        `(TC) More then one group uses task mark ${this.showMark(
-                            x,
-                        )}`,
+                if (mts.name !== DEFAULT_NAME) {
+                    setting.addExtraButton((btn) =>
+                        btn
+                            .setIcon("trash")
+                            .setTooltip("Delete this group")
+                            .onClick(() => {
+                                delete this.tc.settings.groups[mts.name];
+                                this.tc.init(this.tc.settings);
+                                void this.plugin.saveSettings();
+                                this.update();
+                            }),
                     );
                 }
-            } else {
-                // no conflict, all is well.
-                this.markInputCache[x] = new Set();
-                this.markInputCache[x].add(input);
-            }
-        }
-
-        if (marks.length === 0) {
-            input.addClass("no-marks-defined");
-            input.addClass("data-value-error");
-            input.setAttribute(
-                "aria-label",
-                this.newSettings.groups[TEXT_ONLY_NAME]
-                    ? "Must define one or more marks for this group."
-                    : `Must define one or more marks for this group. Change the name to '${TEXT_ONLY_NAME}' for special text-only behavior.`,
-            );
-            this.tc.logDebug(
-                `findDuplicates end (empty): '${input.value}'`,
-                input,
-                this.markInputCache,
-            );
-        }
-
-        this.tc.logDebug(
-            `findDuplicates end: '${input.value}'`,
-            input,
-            this.markInputCache,
-        );
-        this.testForErrors();
-    }
-
-    private trySetConflict(mark: string, input: HTMLInputElement) {
-        const existing = input.getAttribute("conflict") || "";
-        const conflict = Data.sanitizeMarks(existing + mark);
-
-        input.setAttribute("conflict", conflict);
-        input.addClass("data-value-error");
-        input.setAttribute(
-            "aria-label",
-            `More than one task group uses ${this.showMark(conflict)}`,
-        );
-        this.tc.logDebug(
-            `conflicts for '${input.value}': '${this.showMark(conflict)}'`,
-        );
-    }
-
-    private tryRemoveConflict(mark: string, input: HTMLInputElement) {
-        if (!input.hasAttribute("conflict")) {
-            return;
-        }
-        const remaining = input.getAttribute("conflict").replace(mark, "");
-        if (remaining.length === 0) {
-            // all conflicting marks have been removed
-            input.removeAttribute("conflict");
-            input.removeClass("data-value-error");
-            input.removeAttribute("aria-label");
-        } else {
-            input.removeAttribute("conflict");
-            this.trySetConflict(remaining, input);
-        }
-    }
-
-    private getDescription(mts: ManipulationSettings) {
-        return mts.name === TEXT_ONLY_NAME
-            ? "selected lines of text"
-            : "selected task(s)";
-    }
-
-    private showMark(x: string) {
-        return x === TEXT_ONLY_MARK ? "(empty)" : x;
-    }
-
-    private clearButtonErrors() {
-        // Modal create or reset
-        this.saveButton.removeClass("data-value-error");
-        this.saveButton.removeAttribute("aria-label");
-    }
-
-    private testForErrors() {
-        const hasMarkErrors = Object.values(this.markInputCache)
-            .flatMap((s) => Array.from(s.values()))
-            .find((i) => i.hasClass("data-value-error"));
-        const hasMomentErrors = Object.values(this.otherInputCache).find((i) =>
-            i.hasClass("data-value-error"),
-        );
-
-        if (hasMarkErrors || hasMomentErrors) {
-            this.saveButton.addClass("data-value-error");
-            this.saveButton.setAttribute(
-                "aria-label",
-                "There are configuration errors. Correct those before saving.",
-            );
-        } else {
-            this.saveButton.removeClass("data-value-error");
-            this.saveButton.removeAttribute("aria-label");
-        }
-    }
-
-    private updateTestResult(
-        testInput: HTMLInputElement,
-        regex: RegExp,
-        groupName: string,
-    ) {
-        const testText = testInput.value;
-        if (!testText) {
-            testInput.removeAttribute("aria-label");
-            return;
-        }
-
-        // Test what will be removed by the regex
-        const match = testText.match(regex);
-        if (match) {
-            const removed = match[0];
-            const result = testText.replace(new RegExp(regex.source, "g"), "");
-            testInput.setAttribute(
-                "aria-label",
-                `Will remove: "${removed}" → Result: "${result}"`,
-            );
-            this.tc.logDebug(
-                `removeExpr test for ${groupName}`,
-                `Input: "${testText}"`,
-                `Matched: "${removed}"`,
-                `Result: "${result}"`,
-            );
-        } else {
-            testInput.setAttribute(
-                "aria-label",
-                "No match - nothing will be removed from this text",
-            );
-            this.tc.logDebug(
-                `removeExpr test for ${groupName}`,
-                `Input: "${testText}"`,
-                "No match",
-            );
-        }
+            },
+        };
     }
 }

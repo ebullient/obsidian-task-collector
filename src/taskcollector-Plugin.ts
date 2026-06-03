@@ -69,10 +69,10 @@ export class TaskCollectorPlugin extends Plugin {
         console.debug(`loading Task Collector (TC) v${this.manifest.version}`);
 
         this.tc = new TaskCollector();
+        await this.loadSettings();
         this.addSettingTab(
             new TaskCollectorSettingsTab(this.app, this, this.tc),
         );
-        await this.loadSettings();
 
         // Live Preview: register input handler
         if (this.tc.settings.previewClickModal) {

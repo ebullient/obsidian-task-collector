@@ -1,5 +1,6 @@
 jest.mock("obsidian", () => ({
     App: jest.fn().mockImplementation(),
+    Modal: class {},
     PluginSettingTab: class {},
     Notice: jest.fn(),
     Setting: class {},
