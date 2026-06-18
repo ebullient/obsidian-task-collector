@@ -35,7 +35,7 @@
     "@types/moment": "^2.13.0",
     "@types/node": "^25.5.0",
     "auto-changelog": "^2.5.0",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.1",
     "esbuild-sass-plugin": "^3.7.0",
     "eslint-plugin-obsidianmd": "^0.3.0",
     "happy-dom": "^20.8.9",
@@ -48,6 +48,7 @@
   },
   "overrides": {
     "@codemirror/view": "6.38.6",
+    "esbuild": "^0.28.1",
     "glob": "13.0.6",
     "minimatch": "10.2.3"
   },
