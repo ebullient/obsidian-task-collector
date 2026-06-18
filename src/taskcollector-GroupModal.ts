@@ -28,7 +28,7 @@ export class TaskCollectorGroupModal extends Modal {
     onSave: () => void;
 
     private draft: ManipulationSettings;
-    private saveButton: ButtonComponent;
+    private saveButton: ButtonComponent | undefined;
     private hasError = false;
     private markInputCache: Record<string, Set<HTMLInputElement>> = {};
 
@@ -67,7 +67,7 @@ export class TaskCollectorGroupModal extends Modal {
     }
 
     private renderSettings(containerEl: HTMLElement): void {
-        const settings = this.tc.settings as TaskCollectorSettings;
+        const settings = this.tc.settings;
 
         // Group name
         const nameSetting = new Setting(containerEl)
@@ -87,7 +87,7 @@ export class TaskCollectorGroupModal extends Modal {
         }
 
         nameSetting.addText((text) => {
-            text.setPlaceholder("group name")
+            text.setPlaceholder("Group name")
                 .setValue(this.draft.name)
                 .setDisabled(this.draft.name === DEFAULT_NAME)
                 .onChange(
@@ -437,9 +437,7 @@ export class TaskCollectorGroupModal extends Modal {
     private updateSaveButton(): void {
         const hasErrors = this.contentEl.querySelector(".data-value-error");
         this.hasError = !!hasErrors;
-        if (this.saveButton) {
-            this.saveButton.setDisabled(this.hasError);
-        }
+        this.saveButton?.setDisabled(this.hasError);
     }
 
     private setInputError(el: HTMLInputElement, message: string): void {

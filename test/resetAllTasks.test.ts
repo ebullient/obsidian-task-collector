@@ -7,9 +7,9 @@ import {
 } from "../src/taskcollector-Constants";
 import { TaskCollector } from "../src/taskcollector-TaskCollector";
 
-jest.mock("obsidian", () => ({
-    App: jest.fn().mockImplementation(),
-    moment: jest.requireActual("moment-obsidian"),
+vi.mock("obsidian", async () => ({
+    App: vi.fn().mockImplementation(),
+    moment: (await vi.importActual<typeof import("moment-obsidian")>("moment-obsidian")).default,
 }));
 
 let tc = new TaskCollector();

@@ -21,20 +21,17 @@ const MANIFEST: PluginManifest = {
     description: "",
 };
 
-jest.mock("obsidian", () => ({
-    App: jest.fn().mockImplementation(),
-    Plugin: jest.fn().mockImplementation(() => {
+vi.mock("obsidian", async () => ({
+    App: vi.fn().mockImplementation(),
+    Plugin: vi.fn().mockImplementation(() => {
         return {
             manifest: MANIFEST,
             saveData: () => Promise.resolve(),
-            // debug: (message: string, ...optionalParams: any[]) => {
-            //     console.debug(message, ...optionalParams); // tests
-            // }
         };
     }),
-    PluginSettingTab: jest.fn().mockImplementation(),
-    Modal: jest.fn().mockImplementation(),
-    moment: jest.requireActual("moment-obsidian"),
+    PluginSettingTab: vi.fn().mockImplementation(),
+    Modal: vi.fn().mockImplementation(),
+    moment: (await vi.importActual<typeof import("moment-obsidian")>("moment-obsidian")).default,
 }));
 
 const plugin = new TaskCollectorPlugin(new App(), MANIFEST);

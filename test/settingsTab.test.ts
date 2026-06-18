@@ -1,11 +1,11 @@
-jest.mock("obsidian", () => ({
-    App: jest.fn().mockImplementation(),
+vi.mock("obsidian", () => ({
+    App: vi.fn().mockImplementation(),
     Modal: class {},
     PluginSettingTab: class {},
-    Notice: jest.fn(),
+    Notice: vi.fn(),
     Setting: class {},
-    debounce: jest.fn(),
-    moment: jest.fn(),
+    debounce: vi.fn(),
+    moment: vi.fn(),
 }));
 
 import { uniqueMarkCycleChars } from "../src/taskcollector-SettingsTab";

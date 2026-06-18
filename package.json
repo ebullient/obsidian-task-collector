@@ -16,7 +16,7 @@
     "prebuild": "npx @biomejs/biome check ./src && npm run test",
     "build": "node esbuild.config.mjs production",
     "postbuild": "cp -v manifest.json README.md build",
-    "test": "npx jest",
+    "test": "vitest run",
     "preversion": "npm run build",
     "version": "auto-changelog -p",
     "brat-notes": "run() { auto-changelog --stdout --hide-credit --hide-empty-releases --template .github/changelog.hbs -v $1 --starting-version $1  > release-notes.md; }; run"
@@ -32,18 +32,15 @@
   "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "2.4.14",
-    "@types/jest": "^30.0.0",
     "@types/moment": "^2.13.0",
     "@types/node": "^25.5.0",
     "auto-changelog": "^2.5.0",
     "esbuild": "^0.28.0",
     "esbuild-sass-plugin": "^3.7.0",
     "eslint-plugin-obsidianmd": "^0.2.9",
-    "jest": "^30.3.0",
-    "jest-environment-jsdom": "^30.3.0",
-    "jest-util": "^30.3.0",
+    "happy-dom": "^20.8.9",
     "obsidian": "^1.13.1",
-    "ts-jest": "^29.4.9",
+    "vitest": "^3.0.0",
     "tslib": "^2.8.1"
   },
   "dependencies": {
