@@ -37,7 +37,7 @@
     "auto-changelog": "^2.5.0",
     "esbuild": "^0.28.0",
     "esbuild-sass-plugin": "^3.7.0",
-    "eslint-plugin-obsidianmd": "^0.2.9",
+    "eslint-plugin-obsidianmd": "^0.3.0",
     "happy-dom": "^20.8.9",
     "obsidian": "^1.13.1",
     "vitest": "^3.0.0",
