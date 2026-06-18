@@ -44,10 +44,10 @@
     "vitest": "^3.0.0"
   },
   "dependencies": {
-    "@codemirror/view": "6.38.6"
+    "@codemirror/view": "6.43.0"
   },
   "overrides": {
-    "@codemirror/view": "6.38.6",
+    "@codemirror/view": "6.43.0",
     "esbuild": "^0.28.1",
     "glob": "13.0.6",
     "minimatch": "10.2.3"
