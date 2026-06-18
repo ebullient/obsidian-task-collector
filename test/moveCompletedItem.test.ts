@@ -1,4 +1,3 @@
-import moment from "moment";
 import type { TaskCollectorSettings } from "../src/@types/settings";
 import {
     COMPLETE_NAME,
@@ -9,9 +8,9 @@ import {
 } from "../src/taskcollector-Constants";
 import { TaskCollector } from "../src/taskcollector-TaskCollector";
 
-window.moment = moment;
 jest.mock("obsidian", () => ({
     App: jest.fn().mockImplementation(),
+    moment: jest.requireActual("moment-obsidian"),
 }));
 
 let tc = new TaskCollector();

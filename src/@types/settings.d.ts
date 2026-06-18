@@ -51,6 +51,32 @@ export type TaskCollectorCache = {
     headingToMark: Record<string, string>; // heading to string of marks
 };
 
+export type LegacySettings = {
+    completedAreaHeader?: string;
+    removeExpression?: string;
+    appendDateFormat?: string;
+    appendRemoveAllTasks?: boolean;
+    incompleteTaskValues?: string;
+    onlyLowercaseX?: boolean;
+    supportCanceledTasks?: boolean;
+    previewOnClick?: boolean;
+    rightClickComplete?: boolean;
+    rightClickMark?: boolean;
+    rightClickMove?: boolean;
+    rightClickResetTask?: boolean;
+    rightClickResetAll?: boolean;
+    rightClickToggleAll?: boolean;
+    completedAreaRemoveCheckbox?: boolean;
+    // Task Marker migration fields
+    cycleTaskValues?: string;
+    incompleteTaskValuesRow2?: string;
+    appendTextFormatMarkRow2?: string;
+    appendTextFormatMark?: string;
+    appendTextFormatAppend?: string;
+    rightClickAppend?: boolean;
+    version?: TcVersion;
+};
+
 export type TcSectionBlock = {
     existing: string[];
     newTasks: string[];

@@ -14,6 +14,7 @@ import {
     type TFile,
 } from "obsidian";
 import type { API } from "./@types/api";
+import type { LegacySettings } from "./@types/settings";
 import { TaskCollectorApi } from "./taskcollector-Api";
 import { TEXT_ONLY_MARK } from "./taskcollector-Constants";
 import { Data } from "./taskcollector-Data";
@@ -29,6 +30,13 @@ declare module "obsidian" {
             };
             removeCommand(id: string): void;
             executeCommandById: (id: string) => void;
+        };
+        plugins: {
+            plugins: {
+                "obsidian-task-collector": {
+                    api: API;
+                };
+            };
         };
     }
 
@@ -48,8 +56,8 @@ export class TaskCollectorPlugin extends Plugin {
     handlersRegistered = false;
     commandsRegistered = false;
 
-    editTaskContextMenu: EventRef;
-    postProcessor: MarkdownPostProcessor;
+    editTaskContextMenu?: EventRef;
+    postProcessor?: MarkdownPostProcessor;
 
     /** CodeMirror 6 extensions. Tracked via array to allow for dynamic updates. */
     private cmExtension: Extension[] = [];
@@ -58,7 +66,7 @@ export class TaskCollectorPlugin extends Plugin {
     public api: API;
 
     async onload(): Promise<void> {
-        console.info(`loading Task Collector (TC) v${this.manifest.version}`);
+        console.debug(`loading Task Collector (TC) v${this.manifest.version}`);
 
         this.tc = new TaskCollector();
         this.addSettingTab(
@@ -76,18 +84,23 @@ export class TaskCollectorPlugin extends Plugin {
         this.registerHandlers();
 
         this.api = new TaskCollectorApi(this.app, this.tc);
+        this.app.plugins.plugins["obsidian-task-collector"].api = this.api;
     }
 
     async markInCycle(direction: Direction, lines?: number[]): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        await this.app.vault.process(activeFile, (source): string => {
-            return this.tc.markInCycle(source, direction, lines);
-        });
+        if (activeFile) {
+            await this.app.vault.process(activeFile, (source): string => {
+                return this.tc.markInCycle(source, direction, lines);
+            });
+        }
     }
 
     async editLines(mark: string, lines?: number[]): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        await this.editLinesInFile(activeFile, mark, lines);
+        if (activeFile) {
+            await this.editLinesInFile(activeFile, mark, lines);
+        }
     }
 
     async editLinesInFile(
@@ -102,16 +115,20 @@ export class TaskCollectorPlugin extends Plugin {
 
     async collectTasks(): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        await this.app.vault.process(activeFile, (source): string => {
-            return this.tc.moveAllTasks(source);
-        });
+        if (activeFile) {
+            await this.app.vault.process(activeFile, (source): string => {
+                return this.tc.moveAllTasks(source);
+            });
+        }
     }
 
     async resetAllTasks(): Promise<void> {
         const activeFile = this.app.workspace.getActiveFile();
-        await this.app.vault.process(activeFile, (source): string => {
-            return this.tc.resetAllTasks(source);
-        });
+        if (activeFile) {
+            await this.app.vault.process(activeFile, (source): string => {
+                return this.tc.resetAllTasks(source);
+            });
+        }
     }
 
     getCurrentLinesFromEditor(editor: Editor): Selection {
@@ -124,35 +141,36 @@ export class TaskCollectorPlugin extends Plugin {
             editor.getCursor(),
         );
 
-        let start: EditorPosition;
-        let end: EditorPosition;
-        const lines: number[] = [];
         if (editor.somethingSelected()) {
-            start = editor.getCursor("from");
-            end = editor.getCursor("to");
+            const start = editor.getCursor("from");
+            const end = editor.getCursor("to");
+            const lines: number[] = [];
             for (let i = start.line; i <= end.line; i++) {
                 lines.push(i);
             }
-        } else {
-            start = editor.getCursor();
-            lines.push(start.line);
+            return {
+                start,
+                end,
+                lines,
+            };
         }
+
+        const start = editor.getCursor();
         return {
             start,
-            end,
-            lines,
+            lines: [start.line],
         };
     }
 
     buildContextMenu(
         menu: Menu,
-        info: MarkdownView | MarkdownFileInfo,
+        info: MarkdownFileInfo,
         selection: Selection,
     ): void {
         if (this.tc.settings.contextMenu.markTask) {
             menu.addItem((item) =>
                 item
-                    .setTitle("(TC) Mark Task")
+                    .setTitle("(TC) Mark task")
                     .setIcon("check-square")
                     .onClick(async () => {
                         this.tc.logDebug("Mark task", menu, info, selection);
@@ -274,7 +292,10 @@ export class TaskCollectorPlugin extends Plugin {
                 id: "task-collector-mark",
                 name: "Mark task",
                 icon: "check-square",
-                editorCallback: async (editor: Editor, _view: MarkdownView) => {
+                editorCallback: async (
+                    editor: Editor,
+                    _view: MarkdownFileInfo,
+                ) => {
                     const mark = await promptForMark(this.app, this.tc);
                     if (mark) {
                         const selection =
@@ -291,7 +312,7 @@ export class TaskCollectorPlugin extends Plugin {
                 name: "Reset all tasks",
                 icon: "blocks",
                 callback: async () => {
-                    this.resetAllTasks();
+                    await this.resetAllTasks();
                 },
             };
             this.addCommand(resetAllTaskCommand);
@@ -302,7 +323,7 @@ export class TaskCollectorPlugin extends Plugin {
                     name: "Collect tasks",
                     icon: "tornado",
                     callback: async () => {
-                        this.collectTasks();
+                        await this.collectTasks();
                     },
                 };
                 this.addCommand(moveAllTaskCommand);
@@ -315,7 +336,7 @@ export class TaskCollectorPlugin extends Plugin {
                     icon: "forward",
                     editorCallback: async (
                         editor: Editor,
-                        view: MarkdownView,
+                        view: MarkdownFileInfo,
                     ) => {
                         this.tc.logDebug(
                             `${markWithNextCommand.id}: callback`,
@@ -336,7 +357,7 @@ export class TaskCollectorPlugin extends Plugin {
                     icon: "reply",
                     editorCallback: async (
                         editor: Editor,
-                        view: MarkdownView,
+                        view: MarkdownFileInfo,
                     ) => {
                         this.tc.logDebug(
                             `${markWithPrevCommand.id}: callback`,
@@ -365,7 +386,7 @@ export class TaskCollectorPlugin extends Plugin {
                             k === TEXT_ONLY_MARK ? "list-plus" : "check-circle",
                         editorCallback: async (
                             editor: Editor,
-                            view: MarkdownView,
+                            view: MarkdownFileInfo,
                         ) => {
                             const selection =
                                 this.getCurrentLinesFromEditor(editor);
@@ -446,7 +467,7 @@ export class TaskCollectorPlugin extends Plugin {
                     );
 
                     // Reset the parent element for embedded elements...
-                    let parent = ctx.containerEl as HTMLElement;
+                    let parent: HTMLElement = ctx.containerEl;
                     while (
                         parent &&
                         !parent.classList.contains("markdown-reading-view")
@@ -487,10 +508,11 @@ export class TaskCollectorPlugin extends Plugin {
 
                         this.tc.logDebug("checkbox", checkbox, line);
                         checkbox.setAttribute("data-tc-line", line.toString());
+                        const parent = checkbox.parentElement;
 
-                        if (this.tc.cache.useContextMenu) {
+                        if (this.tc.cache.useContextMenu && parent) {
                             this.registerDomEvent(
-                                checkbox.parentElement,
+                                parent,
                                 "contextmenu",
                                 (ev) => {
                                     const view =
@@ -560,13 +582,15 @@ export class TaskCollectorPlugin extends Plugin {
     }
 
     onunload(): void {
-        console.log("unloading Task Collector");
         this.unregisterCommands();
         this.unregisterHandlers();
     }
 
     async loadSettings(): Promise<void> {
-        const obj = Object.assign({}, await this.loadData());
+        const obj = Object.assign(
+            {},
+            (await this.loadData()) as LegacySettings,
+        );
         this.tc.init(await Data.constructSettings(this, obj));
     }
 
@@ -595,57 +619,59 @@ export function inlinePlugin(tcp: TaskCollectorPlugin, tc: TaskCollector) {
                 this.view = view;
                 this.tcp = tcp;
 
-                this.eventHandler = async (ev: MouseEvent) => {
-                    const { target } = ev;
-                    const activeFile = this.tcp.app.workspace.getActiveFile();
-                    if (
-                        !activeFile ||
-                        !(target instanceof HTMLInputElement) ||
-                        target.type !== "checkbox" ||
-                        target.classList.contains("metadata-input-checkbox")
-                    ) {
-                        return false;
-                    }
-                    tcp.tc.logDebug(
-                        "TC ViewPlugin: click",
-                        target,
-                        target.classList,
-                    );
-                    ev.stopImmediatePropagation();
-                    ev.preventDefault();
+                this.eventHandler = (ev: MouseEvent) => {
+                    void (async () => {
+                        const { target } = ev;
+                        const activeFile =
+                            this.tcp.app.workspace.getActiveFile();
+                        if (
+                            !activeFile ||
+                            !(target instanceof HTMLInputElement) ||
+                            target.type !== "checkbox" ||
+                            target.classList.contains("metadata-input-checkbox")
+                        ) {
+                            return;
+                        }
+                        tcp.tc.logDebug(
+                            "TC ViewPlugin: click",
+                            target,
+                            target.classList,
+                        );
+                        ev.stopImmediatePropagation();
+                        ev.preventDefault();
 
-                    const mark = await promptForMark(this.tcp.app, tc);
-                    if (!mark) {
-                        return false;
-                    }
-                    await this.tcp.app.vault.process(
-                        activeFile,
-                        (source): string => {
-                            const position = this.view.posAtDOM(target);
-                            const line = view.state.doc.lineAt(position);
-                            const i = source.split("\n").indexOf(line.text);
+                        const mark = await promptForMark(this.tcp.app, tc);
+                        if (!mark) {
+                            return;
+                        }
+                        await this.tcp.app.vault.process(
+                            activeFile,
+                            (source): string => {
+                                const position = this.view.posAtDOM(target);
+                                const line = view.state.doc.lineAt(position);
+                                const i = source.split("\n").indexOf(line.text);
 
-                            tc.logDebug(
-                                "TC ViewPlugin: mark task",
-                                activeFile.path,
-                                mark,
-                                line,
-                                i,
-                            );
+                                tc.logDebug(
+                                    "TC ViewPlugin: mark task",
+                                    activeFile.path,
+                                    mark,
+                                    line,
+                                    i,
+                                );
 
-                            if (tcp.tc.anyTaskMark.test(line.text)) {
-                                return tc.markSelectedTask(source, mark, [i]);
-                            }
-                            const offset = Number(target.dataset.line);
-                            return tc.markSelectedTask(source, mark, [
-                                i + offset,
-                            ]);
-                        },
-                    );
-
-                    return true;
+                                if (tcp.tc.anyTaskMark.test(line.text)) {
+                                    return tc.markSelectedTask(source, mark, [
+                                        i,
+                                    ]);
+                                }
+                                const offset = Number(target.dataset.line);
+                                return tc.markSelectedTask(source, mark, [
+                                    i + offset,
+                                ]);
+                            },
+                        );
+                    })();
                 };
-                this.eventHandler.bind(this);
 
                 this.view.dom.addEventListener("click", this.eventHandler);
                 tcp.tc.logDebug("TC ViewPlugin: create click handler");

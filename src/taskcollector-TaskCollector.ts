@@ -5,6 +5,7 @@ import type {
     TaskCollectorSettings,
     TcSection,
 } from "./@types/settings";
+import { momentFn } from "./moment";
 import {
     CACHE_DEFAULT,
     DEFAULT_NAME,
@@ -36,7 +37,9 @@ export class TaskCollector {
 
     init(settings: TaskCollectorSettings): void {
         this.settings = settings;
-        this.cache = JSON.parse(JSON.stringify(CACHE_DEFAULT));
+        this.cache = JSON.parse(
+            JSON.stringify(CACHE_DEFAULT),
+        ) as TaskCollectorCache;
 
         this.cache.useContextMenu =
             settings.contextMenu.markTask ||
@@ -78,9 +81,7 @@ export class TaskCollector {
         return JSON.stringify(this.settings) !== JSON.stringify(newSettings);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    // biome-ignore lint/suspicious/noExplicitAny: purposefully generous
-    logDebug(message: string, ...optionalParams: any[]): void {
+    logDebug(message: string, ...optionalParams: unknown[]): void {
         if (!this.settings || this.settings.debug) {
             console.debug(`(TC) ${message}`, ...optionalParams);
         }
@@ -88,7 +89,7 @@ export class TaskCollector {
 
     notify(message: string) {
         if (this.settings?.hideNotifications) {
-            console.log(message);
+            console.warn(message);
         } else {
             new Notice(message);
         }
@@ -291,7 +292,7 @@ export class TaskCollector {
                 if (!lineText.endsWith(" ")) {
                     lineText += " ";
                 }
-                lineText += window.moment().format(appendExpr);
+                lineText += momentFn().format(appendExpr);
             }
         }
 
@@ -345,7 +346,7 @@ export class TaskCollector {
             if (!lineText.endsWith(" ")) {
                 lineText += " ";
             }
-            lineText += window.moment().format(appendExpr);
+            lineText += momentFn().format(appendExpr);
         }
 
         // append block id & replace ending whitespace
@@ -595,7 +596,7 @@ export class TaskCollector {
         heading: string,
         order: string[],
         start: number,
-    ): number {
+    ): number | undefined {
         let wrap = false;
         for (let i = start; !wrap || i !== start; i++) {
             if (i === order.length) {
@@ -603,8 +604,8 @@ export class TaskCollector {
                 wrap = true;
             }
             if (order[i].startsWith(heading)) {
-                const [_, index] = order[i].split("%:%");
-                return Number(index);
+                const split = order[i].split("%:%");
+                return Number(split[1]);
             }
         }
         return undefined;

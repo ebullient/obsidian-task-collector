@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
-    "inlineSourceMap": true,
-    "inlineSources": true,
     "target": "ES2022",
     "module": "nodenext",
     "allowJs": true,
     "noImplicitAny": true,
+    "strictNullChecks": false,
+    "strictPropertyInitialization": false,
     "moduleResolution": "nodenext",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -14,7 +14,7 @@
       "dom",
       "es5",
       "scripthost",
-      "es2019"
+      "es2022"
     ],
     "types": [
       "jest"

@@ -5,29 +5,26 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import obsidianmd from "eslint-plugin-obsidianmd";
 
 export default defineConfig([
-    ...obsidianmd.configs.recommended,
     globalIgnores([
         "test/",
         "*.js",
         "*.mjs",
         "package.json"
     ]),
+    ...obsidianmd.configs.recommended,
     {
-        files: ["src/**/*.ts"],
+        files: ["**/*.ts"],
         languageOptions: {
             parser: tsparser,
-            parserOptions: {
-                project: "./tsconfig.json"
-            },
-            globals: { ...globals.node, ...globals.browser },
+            parserOptions: { project: "./tsconfig.json" },
         },
         // Optional project overrides
         rules: {
             "obsidianmd/ui/sentence-case": [
                 "warn",
                 {
-                    brands: ["Deck Notes", "journal/coping\nactivities/morning", "example"],
-                    acronyms: ["DN", "H2"],
+                    brands: ["Task Collector", "xX", "YYYY-MM-DD", "Live Preview", "Obsidian", "Reading", " #(todo|task)"],
+                    acronyms: ["TC"],
                     enforceCamelCaseLower: true,
                 },
             ],

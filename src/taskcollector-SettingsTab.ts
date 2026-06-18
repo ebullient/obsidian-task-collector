@@ -7,19 +7,26 @@ import {
     Setting,
 } from "obsidian";
 import type {
+    CollectionSettings,
     ManipulationSettings,
     TaskCollectorSettings,
 } from "./@types/settings";
 import type TaskCollectorPlugin from "./main";
+import { momentFn } from "./moment";
 import {
     COMPLETE_NAME,
     DEFAULT_COLLECTION,
     DEFAULT_NAME,
+    DEFAULT_SETTINGS,
     TEXT_ONLY_MARK,
     TEXT_ONLY_NAME,
 } from "./taskcollector-Constants";
 import { Data } from "./taskcollector-Data";
 import { _regex, type TaskCollector } from "./taskcollector-TaskCollector";
+
+export function uniqueMarkCycleChars(value: string): string {
+    return Array.from(new Set(value.split(""))).join("");
+}
 
 export class TaskCollectorSettingsTab extends PluginSettingTab {
     plugin: TaskCollectorPlugin;
@@ -39,6 +46,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         this.plugin = plugin;
         this.tc = taskCollector;
         this.icon = "tornado";
+        this.newSettings = DEFAULT_SETTINGS;
     }
 
     async save() {
@@ -46,7 +54,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         if (this.tc.isDirty(this.newSettings)) {
             if (this.tc.handlerChanged(this.newSettings)) {
                 new Notice(
-                    "Updated Live Preview settings. Restart Obsidian to apply changes.",
+                    "Updated Live Preview settings; restart Obsidian to apply changes.",
                 );
             }
             this.tc.init(this.newSettings);
@@ -57,12 +65,14 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
 
     /** Save on exit */
     hide(): void {
-        this.save();
+        void this.save();
     }
 
     /** Show/validate setting changes */
     display(): void {
-        this.newSettings = JSON.parse(JSON.stringify(this.tc.settings));
+        this.newSettings = JSON.parse(
+            JSON.stringify(this.tc.settings),
+        ) as TaskCollectorSettings;
         this.drawElements();
     }
 
@@ -84,7 +94,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     .onClick(() => {
                         this.newSettings = JSON.parse(
                             JSON.stringify(this.tc.settings),
-                        );
+                        ) as TaskCollectorSettings;
                         this.display();
                         const message = "(TC) Configuration reset";
                         this.tc.notify(message);
@@ -121,16 +131,15 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         new Setting(this.containerEl)
             .setName("Define task mark cycle")
             .setDesc(
-                "Specify characters (as a string) for Previous/Next commands. Use the button to include checkbox removal in the cycle.",
+                "Specify characters (as a string) for previous/next commands. Use the button to include checkbox removal in the cycle.",
             )
             .addText((input) =>
                 input
                     .setPlaceholder("")
                     .setValue(this.newSettings.markCycle.replace("§", ""))
                     .onChange(async (value) => {
-                        this.newSettings.markCycle = [...new Set(value)].join(
-                            "",
-                        );
+                        this.newSettings.markCycle =
+                            uniqueMarkCycleChars(value);
                     }),
             )
             .addExtraButton((button) => {
@@ -227,9 +236,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         });
 
         new Setting(this.containerEl)
-            .setName(
-                "Click handling: Prompt when the checkbox is clicked in Reading or Live preview mode",
-            )
+            .setName("Click handling: prompt when the checkbox is clicked")
             .setDesc(
                 "When you click a checkbox, display a panel that allows you to select (with mouse or keyboard) the value to assign.",
             )
@@ -366,6 +373,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                 text.inputEl.removeClass("data-value-error");
                                 text.inputEl.removeAttribute("aria-label");
                                 Data.moveGroup(
+                                    this.plugin,
                                     this.newSettings.groups,
                                     mts.name,
                                     value,
@@ -417,12 +425,12 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     });
                 });
                 taskMarks.setDesc(
-                    "Set one or marks associated with this group as a string. e.g. '>?!'. Use a space for unmarked tasks. " +
+                    "Set marks associated with this group as a string, for example: '>?!'. Use a space for unmarked tasks. " +
                         "Enable the toggle if this group represents completed tasks.",
                 );
             } else {
                 taskMarks.setDesc(
-                    "Set one or marks associated with this group as a string. e.g. '>?!'. Use a space for unmarked tasks. ",
+                    "Set marks associated with this group as a string, for example: '>?!'. Use a space for unmarked tasks. ",
                 );
             }
 
@@ -474,7 +482,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                             (value) => {
                                 try {
                                     // Try formatting "now" with the specified format string
-                                    const now = window.moment().format(value);
+                                    const now = momentFn().format(value);
                                     momentFormat.inputEl.removeClass(
                                         "data-value-error",
                                     );
@@ -586,9 +594,13 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                 } catch (e) {
                                     // Visual feedback for invalid regex
                                     text.inputEl.addClass("data-value-error");
+                                    const msg =
+                                        e instanceof Error
+                                            ? e.message
+                                            : JSON.stringify(e);
                                     text.inputEl.setAttribute(
                                         "aria-label",
-                                        `Invalid regex: ${e.message}`,
+                                        `Invalid regex: ${msg}`,
                                     );
                                     console.error(
                                         `Error parsing specified text replacement regular expression for ${mts.name}: ${value}`,
@@ -632,11 +644,12 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                                             "aria-label",
                                         );
                                     }
-                                } catch (_e) {
+                                } catch (e) {
                                     testInput.inputEl.setAttribute(
                                         "aria-label",
                                         "Cannot test: regex is invalid",
                                     );
+                                    console.debug("Invalid regex", e);
                                 }
                             }
                         },
@@ -680,7 +693,9 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
 
         if (this.newSettings.collectionEnabled && mts.name !== TEXT_ONLY_NAME) {
             if (!mts.collection) {
-                mts.collection = JSON.parse(JSON.stringify(DEFAULT_COLLECTION));
+                mts.collection = JSON.parse(
+                    JSON.stringify(DEFAULT_COLLECTION),
+                ) as CollectionSettings;
             }
             new Setting(itemEl)
                 .setName("Area heading")

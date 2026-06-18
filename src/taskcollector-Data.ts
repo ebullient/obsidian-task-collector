@@ -1,5 +1,5 @@
-// eslint-disable-file @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
 import type {
+    LegacySettings,
     ManipulationSettings,
     TaskCollectorSettings,
     TcVersion,
@@ -52,13 +52,13 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
         if (name !== mts.name) {
             dirty = true; // ensure name & mts.name agree
             if (settings.groups[mts.name]) {
-                console.warn(
-                    `(TC) Group named ${mts.name} already exists. Reverting group name to ${name}`,
+                tcp.tc.logDebug(
+                    `Group named ${mts.name} already exists. Reverting group name to ${name}`,
                 );
                 mts.name = name;
             } else {
                 // move to the new name
-                moveGroup(settings.groups, name, mts.name);
+                moveGroup(tcp, settings.groups, name, mts.name);
             }
         }
     }
@@ -74,15 +74,16 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
     );
     if (textOnlyGroups.length > 1) {
         dirty = true;
-        console.warn(
-            `(TC) There can be only one group for text-only settings (${TEXT_ONLY_NAME}).`,
+        tcp.tc.logDebug(
+            `There can be only one group for text-only settings (${TEXT_ONLY_NAME}).`,
         );
         if (!settings.groups[TEXT_ONLY_NAME]) {
             // There is no text only group. Use the first found
-            console.info(
-                `(TC) Configuration: renamed group ${textOnlyGroups[0][1].name} to ${TEXT_ONLY_NAME}.`,
+            tcp.tc.logDebug(
+                `Configuration: renamed group ${textOnlyGroups[0][1].name} to ${TEXT_ONLY_NAME}.`,
             );
             moveGroup(
+                tcp,
                 settings.groups,
                 textOnlyGroups[0][1].name,
                 TEXT_ONLY_NAME,
@@ -102,10 +103,15 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
         textOnlyGroups[0][1].name !== TEXT_ONLY_NAME
     ) {
         // Make sure the text only group has the required name
-        console.info(
-            `(TC) Configuration: renamed group ${textOnlyGroups[0][1].name} to ${TEXT_ONLY_NAME}.`,
+        tcp.tc.logDebug(
+            `Configuration: renamed group ${textOnlyGroups[0][1].name} to ${TEXT_ONLY_NAME}.`,
         );
-        moveGroup(settings.groups, textOnlyGroups[0][1].name, TEXT_ONLY_NAME);
+        moveGroup(
+            tcp,
+            settings.groups,
+            textOnlyGroups[0][1].name,
+            TEXT_ONLY_NAME,
+        );
     }
 
     // The text-only group is not subject to task collection
@@ -131,8 +137,7 @@ function sanitize(tcp: TaskCollectorPlugin, settings: TaskCollectorSettings) {
  */
 async function constructSettings(
     tcp: TaskCollectorPlugin,
-    // biome-ignore lint/suspicious/noExplicitAny: : old config formats
-    orig: any,
+    orig: LegacySettings,
 ): Promise<TaskCollectorSettings> {
     return orig.version
         ? await adaptSettings(tcp, orig)
@@ -146,11 +151,11 @@ async function constructSettings(
  */
 async function adaptSettings(
     tcp: TaskCollectorPlugin,
-    obj: Partial<TaskCollectorSettings>,
+    obj: LegacySettings,
 ): Promise<TaskCollectorSettings> {
     const settings: TaskCollectorSettings = {
         ...DEFAULT_SETTINGS,
-        ...obj,
+        ...(obj as Partial<TaskCollectorSettings>),
     };
 
     sanitize(tcp, settings);
@@ -168,16 +173,22 @@ async function adaptSettings(
 
 async function migrateSettings(
     tcp: TaskCollectorPlugin,
-    // biome-ignore lint/suspicious/noExplicitAny: old config formats
-    orig: any,
+    orig: LegacySettings,
 ): Promise<TaskCollectorSettings> {
-    const old = {
+    const old: Required<LegacySettings> = {
         ...DEFAULT_SETTINGS_0,
+        version: { major: 0, minor: 0, patch: 0 },
+        cycleTaskValues: "",
+        incompleteTaskValuesRow2: "",
+        appendTextFormatMarkRow2: "",
+        appendTextFormatMark: "",
+        appendTextFormatAppend: "",
+        rightClickAppend: false,
         ...orig,
     };
-    const settings: TaskCollectorSettings = JSON.parse(
+    const settings = JSON.parse(
         JSON.stringify(DEFAULT_SETTINGS),
-    ); // deep copy
+    ) as TaskCollectorSettings; // deep copy
 
     // Menus and Modals
 
@@ -249,7 +260,7 @@ async function migrateSettings(
     settings.version = toVersion(tcp.manifest.version);
     tcp.tc.logDebug("migrated settings", settings);
     await tcp.saveData(settings);
-    return settings as TaskCollectorSettings;
+    return settings;
 }
 
 function createSettingsGroup(
@@ -291,6 +302,7 @@ function hasMark(group: ManipulationSettings) {
 }
 
 function moveGroup(
+    tcp: TaskCollectorPlugin,
     groups: Record<string, ManipulationSettings>,
     oldName: string,
     newName: string,
@@ -299,7 +311,7 @@ function moveGroup(
         return;
     }
     if (groups[newName]) {
-        console.warn(`(TC) Can not move group, ${newName} already exists`);
+        tcp.tc.logDebug(`Can not move group, ${newName} already exists`);
     } else {
         groups[oldName].name = newName;
         groups[newName] = groups[oldName];

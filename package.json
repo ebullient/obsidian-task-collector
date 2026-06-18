@@ -4,17 +4,20 @@
   "private": true,
   "description": "Manage completed tasks within a document in Obsidian (https://obsidian.md)",
   "main": "main.js",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "dev": "node esbuild.config.mjs",
+    "dev": "node --env-file-if-exists=.env esbuild.config.mjs",
     "fix": "npx @biomejs/biome check --write ./src",
     "format": "npx @biomejs/biome format ./src",
     "eslint": "npx eslint",
     "lint": "npx @biomejs/biome lint ./src",
-    "prebuild": "npx @biomejs/biome check ./src",
+    "prebuild": "npx @biomejs/biome check ./src && npm run test",
     "build": "node esbuild.config.mjs production",
     "postbuild": "cp -v manifest.json README.md build",
     "test": "npx jest",
-    "preversion": "npm run test && npm run build",
+    "preversion": "npm run build",
     "version": "auto-changelog -p",
     "brat-notes": "run() { auto-changelog --stdout --hide-credit --hide-empty-releases --template .github/changelog.hbs -v $1 --starting-version $1  > release-notes.md; }; run"
   },
@@ -28,31 +31,26 @@
   "repository": "github.com:ebullient/obsidian-task-collector",
   "license": "MIT",
   "devDependencies": {
-    "@biomejs/biome": "2.4.7",
-    "@types/codemirror": "5.60.17",
+    "@biomejs/biome": "2.4.11",
     "@types/jest": "^30.0.0",
+    "@types/moment": "^2.13.0",
     "@types/node": "^25.5.0",
-    "@typescript-eslint/parser": "^8.56.1",
     "auto-changelog": "^2.5.0",
-    "builtin-modules": "^5.0.0",
-    "dotenv": "^17.2.2",
-    "esbuild": "^0.27.4",
-    "esbuild-sass-plugin": "^3.6.0",
-    "eslint-plugin-obsidianmd": "^0.1.9",
+    "esbuild": "^0.28.0",
+    "esbuild-sass-plugin": "^3.7.0",
+    "eslint-plugin-obsidianmd": "^0.2.9",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
     "jest-util": "^30.3.0",
-    "moment": "^2.30.1",
     "obsidian": "^1.12.3",
-    "ts-jest": "^29.4.4",
-    "tslib": "^2.8.1",
-    "typescript": "5.9.3"
+    "ts-jest": "^29.4.9",
+    "tslib": "^2.8.1"
   },
   "dependencies": {
-    "@codemirror/language": "https://github.com/lishid/cm-language"
+    "@codemirror/language": "https://github.com/lishid/cm-language",
+    "@codemirror/view": "^6.23.0"
   },
   "overrides": {
-    "ajv": "8.18.0",
     "glob": "13.0.6",
     "minimatch": "10.2.3"
   },
