@@ -23,12 +23,10 @@ const MANIFEST: PluginManifest = {
 
 vi.mock("obsidian", async () => ({
     App: vi.fn().mockImplementation(),
-    Plugin: vi.fn().mockImplementation(() => {
-        return {
-            manifest: MANIFEST,
-            saveData: () => Promise.resolve(),
-        };
-    }),
+    Plugin: class {
+        manifest = MANIFEST;
+        saveData = () => Promise.resolve();
+    },
     PluginSettingTab: vi.fn().mockImplementation(),
     Modal: vi.fn().mockImplementation(),
     moment: (await vi.importActual<typeof import("moment-obsidian")>("moment-obsidian")).default,
