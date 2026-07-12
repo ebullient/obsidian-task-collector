@@ -8,7 +8,11 @@ import {
 } from "obsidian";
 import type { ManipulationSettings } from "./@types/settings";
 import type TaskCollectorPlugin from "./main";
-import { DEFAULT_NAME, TEXT_ONLY_NAME } from "./taskcollector-Constants";
+import {
+    DEFAULT_NAME,
+    TEXT_ONLY_MARK,
+    TEXT_ONLY_NAME,
+} from "./taskcollector-Constants";
 import { Data } from "./taskcollector-Data";
 import { TaskCollectorGroupModal } from "./taskcollector-GroupModal";
 import type { TaskCollector } from "./taskcollector-TaskCollector";
@@ -103,6 +107,23 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                             this.update();
                         }),
                 );
+                if (!s.groups[TEXT_ONLY_NAME]) {
+                    setting.addButton((btn) =>
+                        btn
+                            .setTooltip(
+                                "Add the special text-only group (append/remove text on arbitrary lines, no task mark)",
+                            )
+                            .setIcon("type")
+                            .onClick(() => {
+                                Data.createSettingsGroup(
+                                    s.groups,
+                                    TEXT_ONLY_NAME,
+                                    { marks: TEXT_ONLY_MARK },
+                                );
+                                this.update();
+                            }),
+                    );
+                }
             },
         });
 

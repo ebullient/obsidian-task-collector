@@ -9,6 +9,7 @@ export const TEXT_ONLY_MARK = "Ø";
 export const TEXT_ONLY_NAME = "text";
 export const DEFAULT_NAME = "default";
 export const COMPLETE_NAME = "complete";
+export const PLACEHOLDER_MARK = "⨀";
 
 export const DEFAULT_SETTINGS: TaskCollectorSettings = {
     groups: {

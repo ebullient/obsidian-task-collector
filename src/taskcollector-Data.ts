@@ -10,6 +10,7 @@ import {
     DEFAULT_SETTINGS,
     DEFAULT_SETTINGS_0,
     GROUP_DEFAULT,
+    PLACEHOLDER_MARK,
     TEXT_ONLY_MARK,
     TEXT_ONLY_NAME,
 } from "./taskcollector-Constants";
@@ -274,7 +275,7 @@ function createSettingsGroup(
         ...data,
     };
     if (groups[name].marks === "") {
-        groups[name].marks = TEXT_ONLY_MARK;
+        groups[name].marks = PLACEHOLDER_MARK;
     }
 }
 

@@ -15,6 +15,7 @@ import { momentFn } from "./moment";
 import {
     DEFAULT_COLLECTION,
     DEFAULT_NAME,
+    PLACEHOLDER_MARK,
     TEXT_ONLY_MARK,
     TEXT_ONLY_NAME,
 } from "./taskcollector-Constants";
@@ -89,7 +90,10 @@ export class TaskCollectorGroupModal extends Modal {
         nameSetting.addText((text) => {
             text.setPlaceholder("Group name")
                 .setValue(this.draft.name)
-                .setDisabled(this.draft.name === DEFAULT_NAME)
+                .setDisabled(
+                    this.draft.name === DEFAULT_NAME ||
+                        this.draft.name === TEXT_ONLY_NAME,
+                )
                 .onChange(
                     debounce(
                         (value) => {
@@ -103,6 +107,11 @@ export class TaskCollectorGroupModal extends Modal {
                                 this.setInputError(
                                     text.inputEl,
                                     "This name is already used by another group.",
+                                );
+                            } else if (value === TEXT_ONLY_NAME) {
+                                this.setInputError(
+                                    text.inputEl,
+                                    `'${TEXT_ONLY_NAME}' is a reserved name for the special text-only group.`,
                                 );
                             } else {
                                 this.clearInputError(text.inputEl);
@@ -145,8 +154,12 @@ export class TaskCollectorGroupModal extends Modal {
 
             taskMarks.addText((input) => {
                 this.draft.marks = Data.sanitizeMarks(this.draft.marks);
-                input.setPlaceholder("xX").setValue(this.draft.marks);
-                taskMarks.controlEl.setAttribute("marks", this.draft.marks);
+                const displayMarks =
+                    this.draft.marks === PLACEHOLDER_MARK
+                        ? ""
+                        : this.draft.marks;
+                input.setPlaceholder("xX").setValue(displayMarks);
+                taskMarks.controlEl.setAttribute("marks", displayMarks);
                 this.findDuplicates(input.inputEl, settings);
 
                 input.onChange(
@@ -524,8 +537,15 @@ export class TaskCollectorGroupModal extends Modal {
                 "aria-label",
                 settings.groups[TEXT_ONLY_NAME]
                     ? "Must define one or more marks for this group."
-                    : `Must define one or more marks for this group. Change the name to '${TEXT_ONLY_NAME}' for special text-only behavior.`,
+                    : "Must define one or more marks for this group. " +
+                          "Use the text-only button in Task groups for special text-only behavior.",
             );
+        } else if (input.hasClass("no-marks-defined")) {
+            input.removeClass("no-marks-defined");
+            if (!input.hasAttribute("conflict")) {
+                input.removeClass("data-value-error");
+                input.removeAttribute("aria-label");
+            }
         }
 
         this.updateSaveButton();
