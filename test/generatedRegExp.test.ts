@@ -349,6 +349,35 @@ describe("Set an append date", () => {
         expect(marked).toMatch(tc.cache.undoExpr[TEXT_ONLY_NAME]);
     });
 
+    test("Mark plain text removes configured text before appending", () => {
+        Data.createSettingsGroup(config.groups, TEXT_ONLY_NAME, {
+            marks: TEXT_ONLY_MARK,
+            removeExpr: "#(task|todo)",
+            appendDateFormat: "[(]D MMM, YYYY[)]",
+        });
+        tc.init(config);
+
+        const marked = tc.updateLineText("something #todo", "");
+        expect(marked).not.toMatch(tc.cache.removeExpr[TEXT_ONLY_NAME]);
+        expect(marked).toMatch(tc.cache.undoExpr[TEXT_ONLY_NAME]);
+        expect(marked).toMatch(/^something \(\d+ \S+, \d+\)$/);
+    });
+
+    test("Marking plain text twice replaces the previous appended date", () => {
+        Data.createSettingsGroup(config.groups, TEXT_ONLY_NAME, {
+            marks: TEXT_ONLY_MARK,
+            appendDateFormat: "[(]D MMM, YYYY[)]",
+        });
+        tc.init(config);
+
+        const marked = tc.updateLineText("something", "");
+        expect(marked).toMatch(tc.cache.undoExpr[TEXT_ONLY_NAME]);
+
+        const remarked = tc.updateLineText(marked, "");
+        // exactly one date annotation remains, not two
+        expect(remarked).toMatch(/^something \(\d+ \S+, \d+\)$/);
+    });
+
     test("Convert text-only marked line to a task, stripping text-only formatting", () => {
         Data.createSettingsGroup(config.groups, TEXT_ONLY_NAME, {
             marks: TEXT_ONLY_MARK,

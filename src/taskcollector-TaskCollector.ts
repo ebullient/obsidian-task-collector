@@ -235,7 +235,7 @@ export class TaskCollector {
 
         if (mark === TEXT_ONLY_MARK && this.cache.marks[TEXT_ONLY_MARK]) {
             // append general text. Do not convert to or mess with the task-nature
-            return this.doAppendText(lineText);
+            return this.doTextOnly(lineText);
         }
         const taskMatch = this.anyTaskMark.exec(lineText);
         if (taskMatch) {
@@ -278,32 +278,17 @@ export class TaskCollector {
         return lineText;
     }
 
-    private doAppendText(existingLine: string, append = true): string {
+    /**
+     * Apply the text-only group's formatting to an arbitrary line.
+     */
+    private doTextOnly(existingLine: string): string {
         const { text, blockid, strictLineEnding } =
             this.stripBlockRef(existingLine);
-        let lineText = text;
-
-        // Apply text-only configuration
-        const undoExpr = this.cache.undoExpr[TEXT_ONLY_NAME];
-        if (undoExpr) {
-            lineText = lineText.replace(undoExpr, "");
-        }
-        if (append) {
-            const removeExpr = this.cache.removeExpr[TEXT_ONLY_NAME];
-            if (removeExpr) {
-                lineText = lineText.replace(removeExpr, "");
-            }
-            const appendExpr =
-                this.settings.groups[TEXT_ONLY_NAME].appendDateFormat;
-            if (appendExpr) {
-                if (!lineText.endsWith(" ")) {
-                    lineText += " ";
-                }
-                lineText += momentFn().format(appendExpr);
-            }
-        }
-
-        lineText = this.restoreBlockRef(lineText, blockid, strictLineEnding);
+        const lineText = this.restoreBlockRef(
+            this.applyGroupFormatting(text, TEXT_ONLY_NAME, TEXT_ONLY_NAME),
+            blockid,
+            strictLineEnding,
+        );
         this.logDebug("text updated", `|${lineText}|`);
         return lineText;
     }
@@ -325,27 +310,41 @@ export class TaskCollector {
         const marked = existingLine.replace(this.anyTaskMark, `$1${mark}$3`);
 
         const { text, blockid, strictLineEnding } = this.stripBlockRef(marked);
-        let lineText = text;
+        return this.restoreBlockRef(
+            this.applyGroupFormatting(text, oldMarkName, newMarkName),
+            blockid,
+            strictLineEnding,
+        );
+    }
 
-        const undoExpr = this.cache.undoExpr[oldMarkName];
+    /**
+     * Undo the previous group's appended text, strip the new group's
+     * configured removeExpr, then append the new group's date format.
+     */
+    private applyGroupFormatting(
+        lineText: string,
+        undoName: string,
+        formatName: string,
+    ): string {
+        let text = lineText;
+        const undoExpr = this.cache.undoExpr[undoName];
         if (undoExpr) {
-            lineText = lineText.replace(undoExpr, "");
+            text = text.replace(undoExpr, "");
         }
 
-        const removeExpr = this.cache.removeExpr[newMarkName];
+        const removeExpr = this.cache.removeExpr[formatName];
         if (removeExpr) {
-            lineText = lineText.replace(removeExpr, "");
+            text = text.replace(removeExpr, "");
         }
 
-        const appendExpr = this.settings.groups[newMarkName].appendDateFormat;
+        const appendExpr = this.settings.groups[formatName].appendDateFormat;
         if (appendExpr) {
-            if (!lineText.endsWith(" ")) {
-                lineText += " ";
+            if (!text.endsWith(" ")) {
+                text += " ";
             }
-            lineText += momentFn().format(appendExpr);
+            text += momentFn().format(appendExpr);
         }
-
-        return this.restoreBlockRef(lineText, blockid, strictLineEnding);
+        return text;
     }
 
     /**
