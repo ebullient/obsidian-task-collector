@@ -348,6 +348,21 @@ describe("Set an append date", () => {
         const marked = tc.updateLineText("something  ", "");
         expect(marked).toMatch(tc.cache.undoExpr[TEXT_ONLY_NAME]);
     });
+
+    test("Convert text-only marked line to a task, stripping text-only formatting", () => {
+        Data.createSettingsGroup(config.groups, TEXT_ONLY_NAME, {
+            marks: TEXT_ONLY_MARK,
+            appendDateFormat: "[(]D MMM, YYYY[)]",
+        });
+        config.convertEmptyLines = true;
+        tc.init(config);
+
+        const marked = tc.updateLineText("something", "");
+        expect(marked).toMatch(tc.cache.undoExpr[TEXT_ONLY_NAME]);
+
+        const converted = tc.updateLineText(marked, "x");
+        expect(converted).toEqual("- [x] something");
+    });
 });
 
 test("Apply text stripping/reset rules between task groups", () => {

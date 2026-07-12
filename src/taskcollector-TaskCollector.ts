@@ -251,6 +251,18 @@ export class TaskCollector {
                 mark,
             );
         }
+        const undoTextOnlyExpr = this.cache.undoExpr[TEXT_ONLY_NAME];
+        if (
+            mark !== TEXT_ONLY_MARK &&
+            undoTextOnlyExpr &&
+            undoTextOnlyExpr.test(lineText)
+        ) {
+            // undo text-only configuration, then convert/mark (recurse)
+            return this.updateLineText(
+                lineText.replace(undoTextOnlyExpr, ""),
+                mark,
+            );
+        }
         if (this.settings.convertEmptyLines) {
             const indentMatch = this.anyText.exec(lineText);
             if (indentMatch) {
