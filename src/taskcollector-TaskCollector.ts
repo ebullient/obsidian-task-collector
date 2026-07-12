@@ -637,7 +637,7 @@ export class TaskCollector {
         heading: string,
         order: string[],
         start: number,
-    ): number | undefined {
+    ): number {
         let wrap = false;
         for (let i = start; !wrap || i !== start; i++) {
             if (i === order.length) {
@@ -649,7 +649,7 @@ export class TaskCollector {
                 return Number(split[1]);
             }
         }
-        return undefined;
+        throw new Error(`No section found for heading: ${heading}`);
     }
 
     private createCompletionArea(
