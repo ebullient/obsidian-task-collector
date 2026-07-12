@@ -250,6 +250,21 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                     },
                 ],
             },
+            {
+                name: "",
+                render: (setting: Setting) => {
+                    setting.descEl.addClass("task-collector-coffee");
+                    setting.descEl
+                        .createEl("a", {
+                            href: "https://www.buymeacoffee.com/ebullient",
+                        })
+                        .createEl("img", {
+                            attr: {
+                                src: "https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=ebullient&button_colour=8e6787&font_colour=ebebeb&font_family=Inter&outline_colour=392a37&coffee_colour=ecc986",
+                            },
+                        });
+                },
+            },
         ];
     }
 
