@@ -303,15 +303,15 @@ export class TaskCollector {
             return existingLine;
         }
 
-        const oldMarkName = this.cache.marks[old]?.name || DEFAULT_NAME;
-        const newMarkName = this.cache.marks[mark]?.name || DEFAULT_NAME;
+        const undoName = this.cache.marks[old]?.name || DEFAULT_NAME;
+        const formatName = this.cache.marks[mark]?.name || DEFAULT_NAME;
 
         // replace the task mark
         const marked = existingLine.replace(this.anyTaskMark, `$1${mark}$3`);
 
         const { text, blockid, strictLineEnding } = this.stripBlockRef(marked);
         return this.restoreBlockRef(
-            this.applyGroupFormatting(text, oldMarkName, newMarkName),
+            this.applyGroupFormatting(text, undoName, formatName),
             blockid,
             strictLineEnding,
         );
@@ -747,8 +747,6 @@ function indexFromLine(lineText: string): number {
 }
 
 export const _regex = {
-    tryCompleteRegex,
-    tryIncompleteRegex,
     tryUndoRegex,
     tryRemoveTextRegex,
     trySkipSectionRegex,
@@ -756,14 +754,6 @@ export const _regex = {
 
 function trySkipSectionRegex(param: string): RegExp {
     return param ? new RegExp(param) : null;
-}
-
-function tryCompleteRegex(param: string): RegExp {
-    return new RegExp(`^([\\s>]*- \\[)[${param}](\\] .*)$`);
-}
-
-function tryIncompleteRegex(param: string): RegExp {
-    return new RegExp(`^([\\s>]*- \\[)[${param}](\\] .*)$`);
 }
 
 function tryRemoveTextRegex(param: string): RegExp {
