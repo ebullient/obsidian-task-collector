@@ -17,6 +17,7 @@ import { Data } from "./taskcollector-Data";
 const DATE_FORMATTING_TOKENS = /^(Y|D|M|H|h|m)+$/;
 const ALL_FORMATTING_TOKENS =
     /(\[[^[]*\])|(\\)?([Hh]mm(ss)?|Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Qo?|N{1,5}|YYYYYY|YYYYY|YYYY|YY|y{2,4}|yo?|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|kk?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g;
+const TC_MARKER_EXPR = /%%--TC--(.*)--(\d+)--%%/;
 
 export enum Direction {
     PREV = "PREV",
@@ -168,14 +169,14 @@ export class TaskCollector {
                 // already a task: change from old to new
                 const old = taskMatch[2];
                 const i = this.settings.markCycle.indexOf(old);
-                const next =
-                    i < 0
-                        ? d === Direction.NEXT // i < 0
-                            ? 0 // NEXT
-                            : len - 1 // PREV
-                        : d === Direction.NEXT // i >= 0
-                          ? (i + 1) % len // NEXT
-                          : (i + len - 1) % len; // PREV
+                let next: number;
+                if (i < 0) {
+                    next = d === Direction.NEXT ? 0 : len - 1;
+                } else if (d === Direction.NEXT) {
+                    next = (i + 1) % len;
+                } else {
+                    next = (i + len - 1) % len;
+                }
 
                 const chosenMark = this.settings.markCycle[next];
                 if (chosenMark === "§") {
@@ -266,15 +267,9 @@ export class TaskCollector {
     }
 
     private doAppendText(existingLine: string, append = true): string {
-        let lineText = existingLine;
-        // remember line ending: block id and strict line ending whitespace
-        let blockid = "";
-        const strictLineEnding = lineText.endsWith("  ");
-        const match = this.blockRef.exec(lineText);
-        if (match?.[2]) {
-            lineText = match[1];
-            blockid = match[2];
-        }
+        const { text, blockid, strictLineEnding } =
+            this.stripBlockRef(existingLine);
+        let lineText = text;
 
         // Apply text-only configuration
         const undoExpr = this.cache.undoExpr[TEXT_ONLY_NAME];
@@ -296,11 +291,7 @@ export class TaskCollector {
             }
         }
 
-        // restore block id & trailing whitespace
-        lineText = lineText.replace(/\s*$/, blockid);
-        if (strictLineEnding) {
-            lineText += "  ";
-        }
+        lineText = this.restoreBlockRef(lineText, blockid, strictLineEnding);
         this.logDebug("text updated", `|${lineText}|`);
         return lineText;
     }
@@ -310,26 +301,19 @@ export class TaskCollector {
         old: string,
         mark: string,
     ): string {
-        let lineText = existingLine;
         if (old === mark) {
-            this.logDebug("task already marked", `|${lineText}|`);
-            return lineText;
+            this.logDebug("task already marked", `|${existingLine}|`);
+            return existingLine;
         }
 
         const oldMarkName = this.cache.marks[old]?.name || DEFAULT_NAME;
         const newMarkName = this.cache.marks[mark]?.name || DEFAULT_NAME;
 
         // replace the task mark
-        lineText = lineText.replace(this.anyTaskMark, `$1${mark}$3`);
+        const marked = existingLine.replace(this.anyTaskMark, `$1${mark}$3`);
 
-        // remember line ending: block id and strict line ending whitespace
-        let blockid = "";
-        const strictLineEnding = lineText.endsWith("  ");
-        const match = this.blockRef.exec(lineText);
-        if (match?.[2]) {
-            lineText = match[1];
-            blockid = match[2];
-        }
+        const { text, blockid, strictLineEnding } = this.stripBlockRef(marked);
+        let lineText = text;
 
         const undoExpr = this.cache.undoExpr[oldMarkName];
         if (undoExpr) {
@@ -349,12 +333,38 @@ export class TaskCollector {
             lineText += momentFn().format(appendExpr);
         }
 
-        // append block id & replace ending whitespace
-        lineText = lineText.replace(/\s*$/, blockid);
-        if (strictLineEnding) {
-            lineText += "  ";
+        return this.restoreBlockRef(lineText, blockid, strictLineEnding);
+    }
+
+    /**
+     * Peel off a trailing block reference (e.g. " ^abc123") and remember
+     * whether the line used a strict (two-trailing-space) line break, so
+     * both can be reapplied after the line text is modified.
+     */
+    private stripBlockRef(lineText: string): {
+        text: string;
+        blockid: string;
+        strictLineEnding: boolean;
+    } {
+        const strictLineEnding = lineText.endsWith("  ");
+        const match = this.blockRef.exec(lineText);
+        if (match?.[2]) {
+            return { text: match[1], blockid: match[2], strictLineEnding };
         }
-        return lineText;
+        return { text: lineText, blockid: "", strictLineEnding };
+    }
+
+    /** Reapply a block id and strict line ending stripped by {@link stripBlockRef}. */
+    private restoreBlockRef(
+        lineText: string,
+        blockid: string,
+        strictLineEnding: boolean,
+    ): string {
+        let result = lineText.replace(/\s*$/, blockid);
+        if (strictLineEnding) {
+            result += "  ";
+        }
+        return result;
     }
 
     private doRemoveTask(lineText: string): string {
@@ -375,13 +385,11 @@ export class TaskCollector {
                 if (line.startsWith("#") || trimmed === "---") {
                     inSkippedSection = this.isSkippedSection(line);
                     inCompletedSection =
-                        contains(this.cache.areaHeadings, trimmed) !==
-                        undefined;
+                        this.cache.areaHeadings.includes(trimmed);
                 }
                 result.push(line);
             } else if (trimmed.startsWith("#") || trimmed === "---") {
-                inCompletedSection =
-                    contains(this.cache.areaHeadings, trimmed) !== undefined;
+                inCompletedSection = this.cache.areaHeadings.includes(trimmed);
                 inSkippedSection = this.isSkippedSection(line);
                 result.push(line);
             } else if (!(inCompletedSection || inSkippedSection)) {
@@ -428,7 +436,7 @@ export class TaskCollector {
 
         return result
             .flatMap((l) => {
-                const match = l.match(/%%--TC--(.*)--(\d+)--%%/);
+                const match = l.match(TC_MARKER_EXPR);
                 if (match) {
                     const h = match[1];
                     const i = Number(match[2]);
@@ -458,7 +466,7 @@ export class TaskCollector {
 
             if (
                 line.startsWith("#") &&
-                contains(this.cache.areaHeadings, trimmed)
+                this.cache.areaHeadings.includes(trimmed)
             ) {
                 parsed.push(line); // push heading to parsed lines
                 const index = this.createCompletionArea(trimmed, sections);
@@ -651,7 +659,7 @@ export class TaskCollector {
 
     private ensureHeadings(split: string[]) {
         for (const h of this.cache.areaHeadings) {
-            if (!contains(split, h)) {
+            if (!split.includes(h)) {
                 if (split[split.length - 1].trim() !== "") {
                     split.push("");
                 }
@@ -719,12 +727,8 @@ export class TaskCollector {
     }
 }
 
-function contains(haystack: string[], needle: string) {
-    return haystack.find((s) => s === needle);
-}
-
 function indexFromLine(lineText: string): number {
-    const match = lineText.match(/%%--TC--(.*)--(\d+)--%%/);
+    const match = lineText.match(TC_MARKER_EXPR);
     if (match) {
         return Number(match[2]);
     }
