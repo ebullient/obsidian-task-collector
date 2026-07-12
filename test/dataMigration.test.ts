@@ -63,6 +63,7 @@ const DEFAULT_MIGRATION = {
     markCycle: "",
     markCycleRemoveTask: false,
     collectionEnabled: true,
+    collectNestedTasks: false,
     previewClickModal: false,
     contextMenu: {
         markTask: false,

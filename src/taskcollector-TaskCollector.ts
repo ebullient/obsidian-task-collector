@@ -493,6 +493,8 @@ export class TaskCollector {
 
         let markToMove = null;
         let taskToBeMoved = null;
+        let rootIndent = -1;
+        let atomicRoot = false;
         let inCallout = false;
         let inSkippedSection = false;
         let i = -1;
@@ -503,10 +505,26 @@ export class TaskCollector {
                 inSkippedSection = this.isSkippedSection(line);
                 this.logDebug("TC: section", line, inSkippedSection);
             }
+            const nestedTaskInAtomicRoot =
+                taskToBeMoved &&
+                atomicRoot &&
+                this.isTaskLine(line) &&
+                this.taskIndent(line) > rootIndent;
             if (
                 taskToBeMoved &&
-                !this.isTaskLine(line) &&
-                this.isContinuation(line, inCallout, source, i)
+                nestedTaskInAtomicRoot &&
+                this.removeCheckbox(markToMove)
+            ) {
+                // cascade checkbox removal to descendants of a collected,
+                // atomic-mode parent, regardless of the descendant's own mark
+                taskToBeMoved.push(this.doRemoveTask(line));
+                continue;
+            }
+            if (
+                taskToBeMoved &&
+                (nestedTaskInAtomicRoot ||
+                    (!this.isTaskLine(line) &&
+                        this.isContinuation(line, inCallout, source, i)))
             ) {
                 // keep task lines together
                 taskToBeMoved.push(line);
@@ -522,6 +540,8 @@ export class TaskCollector {
                 );
                 markToMove = null;
                 taskToBeMoved = null;
+                rootIndent = -1;
+                atomicRoot = false;
                 inCallout = false;
             }
             if (line.startsWith("%%--TC--")) {
@@ -548,6 +568,8 @@ export class TaskCollector {
                     markToMove = mark;
                     taskToBeMoved = [];
                     taskToBeMoved.push(line);
+                    rootIndent = this.taskIndent(source[i]);
+                    atomicRoot = this.settings.collectNestedTasks;
                     inCallout = this.isCallout(line); // is the task inside a callout
                 } else {
                     // mark not configured for collection
@@ -645,6 +667,15 @@ export class TaskCollector {
 
     private removeCheckbox(mark: string) {
         return this.cache.marks[mark]?.collection?.removeCheckbox;
+    }
+
+    /**
+     * Length of the list/blockquote prefix before a task's `[ ]` marker,
+     * used as a depth proxy to tell whether one task line is nested under another.
+     */
+    private taskIndent(lineText: string): number {
+        const match = this.anyTaskMark.exec(lineText);
+        return match ? match[1].length : -1;
     }
 
     private isSkippedSection(lineText: string): boolean {

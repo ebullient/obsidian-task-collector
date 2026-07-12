@@ -158,6 +158,8 @@ describe("Test move with collection enabled", () => {
     });
 });
 
+// Exercises the default (collectNestedTasks: false) behavior. See "Test move
+// with collectNestedTasks enabled" below for the opt-in cascading behavior (#132).
 test("Test move lists with mixed completion", () => {
     tc.init(config);
 
@@ -190,6 +192,149 @@ test("Test move lists with mixed completion", () => {
         "    > Nested blockquotes associated with it would also be moved.\n";
 
     expect(tc.moveAllTasks(start)).toEqual(result);
+});
+
+describe("Test move with collectNestedTasks enabled", () => {
+    beforeEach(() => {
+        config.collectNestedTasks = true;
+    });
+
+    test("Remove checkbox cascades to children (#132)", () => {
+        config.groups[COMPLETE_NAME].collection.removeCheckbox = true;
+        tc.init(config);
+
+        const start = "" + "- [x] A\n" + "  - [ ] B\n" + "  - [ ] C\n";
+
+        const result = "" + "\n" + "## Log\n" + "- A\n" + "  - B\n" + "  - C\n";
+
+        expect(tc.moveAllTasks(start)).toEqual(result);
+    });
+
+    test("Mixed-mark subtree moves as a whole unit under collected parent", () => {
+        tc.init(config);
+
+        const start =
+            "" +
+            "- [x] Parent done\n" +
+            "  - [x] Child also done\n" +
+            "  - [ ] Child not done\n";
+
+        const result =
+            "" +
+            "\n" +
+            "## Log\n" +
+            "- [x] Parent done\n" +
+            "  - [x] Child also done\n" +
+            "  - [ ] Child not done\n";
+
+        expect(tc.moveAllTasks(start)).toEqual(result);
+    });
+
+    test("Cascades through 3+ levels of nesting", () => {
+        config.groups[COMPLETE_NAME].collection.removeCheckbox = true;
+        tc.init(config);
+
+        const start =
+            "" +
+            "- [x] Grandparent\n" +
+            "  - [ ] Parent\n" +
+            "    - [ ] Child\n";
+
+        const result =
+            "" +
+            "\n" +
+            "## Log\n" +
+            "- Grandparent\n" +
+            "  - Parent\n" +
+            "    - Child\n";
+
+        expect(tc.moveAllTasks(start)).toEqual(result);
+    });
+
+    test("Callout nested under a child task travels with the subtree", () => {
+        tc.init(config);
+
+        const start =
+            "" +
+            "- [x] Parent done\n" +
+            "  - [x] Child with a callout\n" +
+            "    > [!note]\n" +
+            "    > Nested under the child, not the parent.\n";
+
+        const result =
+            "" +
+            "\n" +
+            "## Log\n" +
+            "- [x] Parent done\n" +
+            "  - [x] Child with a callout\n" +
+            "    > [!note]\n" +
+            "    > Nested under the child, not the parent.\n";
+
+        expect(tc.moveAllTasks(start)).toEqual(result);
+    });
+
+    test("Ordered list markers mixed with bullet markers", () => {
+        tc.init(config);
+
+        const start = "" + "- [x] Parent done\n" + "  1. [ ] Ordered child\n";
+
+        const result =
+            "" +
+            "\n" +
+            "## Log\n" +
+            "- [x] Parent done\n" +
+            "  1. [ ] Ordered child\n";
+
+        expect(tc.moveAllTasks(start)).toEqual(result);
+    });
+
+    test("Blockquote-wrapped task tree with nested children", () => {
+        tc.init(config);
+
+        const start =
+            "" + "> - [x] Parent done\n" + ">   - [ ] Child not done\n";
+
+        const result =
+            "" +
+            "\n" +
+            "## Log\n" +
+            "> - [x] Parent done\n" +
+            ">   - [ ] Child not done\n";
+
+        expect(tc.moveAllTasks(start)).toEqual(result);
+    });
+
+    test("Parent's decision governs a child from a different group, ignoring the child's own heading/mark", () => {
+        // collectNestedTasks is a global setting, not a per-group one: the
+        // child is marked for its own group ("deferred", -> ## Deferred),
+        // but once nested under a collected parent, the whole visual
+        // subtree is treated as one unit and the parent's destination and
+        // removeCheckbox win for every descendant, regardless of which
+        // group the descendant's own mark belongs to.
+        config.groups[COMPLETE_NAME].collection.removeCheckbox = true;
+        config.groups["deferred"] = {
+            ...JSON.parse(JSON.stringify(GROUP_COMPLETE)),
+            marks: ">",
+            collection: {
+                areaHeading: "## Deferred",
+                removeCheckbox: false,
+            },
+        };
+        tc.init(config);
+
+        const start = "" + "- [x] Parent done\n" + "  - [>] Deferred child\n";
+
+        const result =
+            "" +
+            "\n" +
+            "## Deferred\n" +
+            "\n" +
+            "## Log\n" +
+            "- Parent done\n" +
+            "  - Deferred child\n";
+
+        expect(tc.moveAllTasks(start)).toEqual(result);
+    });
 });
 
 describe("Test move with multiple sections", () => {

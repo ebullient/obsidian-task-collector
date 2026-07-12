@@ -170,7 +170,7 @@ export class TaskCollectorPlugin extends Plugin {
         if (this.tc.settings.contextMenu.markTask) {
             menu.addItem((item) =>
                 item
-                    .setTitle("(TC) Mark task")
+                    .setTitle("(TC) mark task")
                     .setIcon("check-square")
                     .onClick(async () => {
                         this.tc.logDebug("Mark task", menu, info, selection);
@@ -184,7 +184,7 @@ export class TaskCollectorPlugin extends Plugin {
             if (this.tc.settings.markCycle) {
                 menu.addItem((item) =>
                     item
-                        .setTitle("(TC) Mark with next")
+                        .setTitle("(TC) mark with next")
                         .setIcon("forward")
                         .onClick(async () => {
                             this.tc.logDebug(
@@ -203,7 +203,7 @@ export class TaskCollectorPlugin extends Plugin {
 
                 menu.addItem((item) =>
                     item
-                        .setTitle("(TC) Mark with previous")
+                        .setTitle("(TC) mark with previous")
                         .setIcon("reply")
                         .onClick(async () => {
                             this.tc.logDebug(
@@ -249,7 +249,7 @@ export class TaskCollectorPlugin extends Plugin {
         if (this.tc.settings.contextMenu.resetAllTasks) {
             menu.addItem((item) =>
                 item
-                    .setTitle("(TC) Reset all tasks")
+                    .setTitle("(TC) reset all tasks")
                     .setIcon("blocks")
                     .onClick(async () => {
                         this.tc.logDebug("Reset all tasks", menu, info);
@@ -265,7 +265,7 @@ export class TaskCollectorPlugin extends Plugin {
         ) {
             menu.addItem((item) =>
                 item
-                    .setTitle("(TC) Collect tasks")
+                    .setTitle("(TC) collect tasks")
                     .setIcon("tornado")
                     .onClick(async () => {
                         await this.collectTasks();

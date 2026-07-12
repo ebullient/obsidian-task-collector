@@ -40,7 +40,7 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
         (this.tc.settings as Record<string, unknown>)[key] = value;
         if (key === "previewClickModal") {
             new Notice(
-                "Updated live preview settings; restart Obsidian to apply changes.",
+                "Task Collector settings updated. Restart Obsidian to apply changes.",
             );
         }
         this.tc.init(this.tc.settings);
@@ -157,6 +157,11 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 name: "Skip matching sections",
                 desc: "When collecting tasks, skip content of sections that match the specified pattern",
                 control: { type: "text", key: "skipSectionMatch" },
+            },
+            {
+                name: "Collect nested tasks",
+                desc: "When a task is collected, move its sub-tasks with it and apply the same checkbox/collection settings, regardless of their own mark",
+                control: { type: "toggle", key: "collectNestedTasks" },
             },
             {
                 type: "group",

@@ -1,4 +1,5 @@
 import type {
+    CollectionSettings,
     ManipulationSettings,
     TaskCollectorCache,
     TaskCollectorSettings,
@@ -33,6 +34,7 @@ export const DEFAULT_SETTINGS: TaskCollectorSettings = {
     markCycle: "",
     markCycleRemoveTask: false,
     collectionEnabled: false,
+    collectNestedTasks: false,
     previewClickModal: true,
     contextMenu: {
         markTask: true,
@@ -71,7 +73,7 @@ export const GROUP_COMPLETE: ManipulationSettings = {
     useContextMenu: false,
 };
 
-export const DEFAULT_COLLECTION = {
+export const DEFAULT_COLLECTION: CollectionSettings = {
     areaHeading: "## Log",
     removeCheckbox: false,
 };

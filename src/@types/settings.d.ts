@@ -1,6 +1,7 @@
 export type TaskCollectorSettings = {
     groups: Record<string, ManipulationSettings>;
     collectionEnabled: boolean;
+    collectNestedTasks: boolean;
     previewClickModal: boolean;
     markCycle: string;
     markCycleRemoveTask: boolean;

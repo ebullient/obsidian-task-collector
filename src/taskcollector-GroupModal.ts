@@ -330,7 +330,7 @@ export class TaskCollectorGroupModal extends Modal {
 
         // Register command
         new Setting(containerEl)
-            .setName("Register '(TC) Mark with...' command")
+            .setName("Register '(TC) mark with...' command")
             .setDesc(
                 this.draft.name === TEXT_ONLY_NAME
                     ? "A command will be registered to append text to selected lines"
@@ -346,7 +346,7 @@ export class TaskCollectorGroupModal extends Modal {
 
         // Add menu item
         new Setting(containerEl)
-            .setName("Add '(TC) Mark with...' menu item")
+            .setName("Add '(TC) mark with...' menu item")
             .setDesc(
                 "A right-click menu item will be added for each mark in the group.",
             )
