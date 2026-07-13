@@ -304,21 +304,37 @@ export class TaskCollectorSettingsTab extends PluginSettingTab {
                 if (mts.name !== TEXT_ONLY_NAME && mts.marks) {
                     entries.push(["Marks", mts.marks]);
                 }
+                if (mts.complete) {
+                    entries.push(["Completed items", ""]);
+                }
                 if (mts.appendDateFormat) {
-                    entries.push(["Date format", mts.appendDateFormat]);
+                    entries.push([
+                        "Append date using format",
+                        mts.appendDateFormat,
+                    ]);
                 }
                 if (mts.removeExpr) {
-                    entries.push(["Remove", `/${mts.removeExpr}/`]);
+                    entries.push([
+                        "Remove text matching",
+                        `/${mts.removeExpr}/`,
+                    ]);
                 }
                 if (mts.collection?.areaHeading) {
                     entries.push(["Collects to", mts.collection.areaHeading]);
+                }
+                if (mts.collection?.removeCheckbox) {
+                    entries.push(["Remove checkbox", ""]);
                 }
                 if (entries.length > 0) {
                     const ul = f.createEl("ul");
                     for (const [label, value] of entries) {
                         const li = ul.createEl("li");
-                        li.createEl("b", { text: `${label}: ` });
-                        li.createEl("code", { text: value });
+                        li.createEl("b", {
+                            text: `${label}${value ? ":" : ""} `,
+                        });
+                        if (value) {
+                            li.createEl("code", { text: value });
+                        }
                     }
                 }
             }),
