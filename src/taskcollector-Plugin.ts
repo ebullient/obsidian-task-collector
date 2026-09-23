@@ -323,6 +323,12 @@ export class TaskCollectorPlugin extends Plugin {
                     name: "Collect tasks",
                     icon: "tornado",
                     callback: async () => {
+                        // Collecting rewrites the whole file out of band.
+                        // Collapse selection first to avoid stray selection.
+                        const editor = this.app.workspace.activeEditor?.editor;
+                        if (editor?.somethingSelected()) {
+                            editor.setCursor(editor.getCursor("from"));
+                        }
                         await this.collectTasks();
                     },
                 };
