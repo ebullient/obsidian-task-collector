@@ -11,10 +11,7 @@ export default defineConfig({
         setupFiles: ["./test/setup.ts"],
         alias: {
             obsidian: path.resolve(__dirname, "test/mocks/obsidian.ts"),
-            "moment-obsidian": path.resolve(
-                __dirname,
-                "node_modules/obsidian/node_modules/moment/moment.js",
-            ),
+            "moment-obsidian": path.resolve(__dirname, "node_modules/moment/moment.js"),
         },
     },
 });
