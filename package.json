@@ -50,7 +50,8 @@
     "@codemirror/view": "6.38.6",
     "esbuild": "^0.28.1",
     "glob": "13.0.6",
-    "minimatch": "10.2.3"
+    "minimatch": "10.2.3",
+    "moment": "2.31.0"
   },
   "auto-changelog": {
     "backfillLimit": false,
