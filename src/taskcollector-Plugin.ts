@@ -51,6 +51,25 @@ interface Selection {
     lines: number[];
 }
 
+/**
+ * Minimal shape of Obsidian's internal Canvas node/view objects that this plugin
+ * reads from. Entirely undocumented (not part of the public `obsidian` package) -
+ * these fields were confirmed live against a running Obsidian instance, not from
+ * any published type definition, and may change without notice across versions.
+ */
+interface CanvasNode {
+    nodeEl?: HTMLElement;
+    subpath?: string;
+}
+
+interface Canvas {
+    nodes?: Map<string, CanvasNode>;
+}
+
+interface CanvasView {
+    canvas?: Canvas;
+}
+
 export class TaskCollectorPlugin extends Plugin {
     tc: TaskCollector;
     handlersRegistered = false;
@@ -160,6 +179,85 @@ export class TaskCollectorPlugin extends Plugin {
             start,
             lines: [start.line],
         };
+    }
+
+    /**
+     * Maps a rendered .canvas-node element to its live Canvas node object via
+     * nodeEl reference equality - there's no id in the rendered DOM to key on.
+     */
+    private findCanvasNode(canvasNodeEl: HTMLElement): CanvasNode | undefined {
+        const canvasLeaves = this.app.workspace.getLeavesOfType("canvas");
+        for (const leaf of canvasLeaves) {
+            const canvas = (leaf.view as unknown as CanvasView).canvas;
+            const nodes = canvas?.nodes;
+            if (!nodes) continue;
+            for (const node of nodes.values()) {
+                if (node.nodeEl === canvasNodeEl) {
+                    return node;
+                }
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * File-relative starting line of a Canvas card's subpath scope (heading or
+     * block ref), or 0 for a whole-file card. Must be called at event time, not
+     * from a markdown post-processor - canvasNodeEl's DOM may not be ready yet,
+     * and the node may not be tracked by the live Canvas view until interacted with.
+     */
+    resolveCanvasSubpathOffset(
+        canvasNodeEl: HTMLElement,
+        targetFile: TFile,
+    ): number {
+        return this.resolveCanvasSubpathOffsetDetailed(canvasNodeEl, targetFile)
+            .offset;
+    }
+
+    private resolveCanvasSubpathOffsetDetailed(
+        canvasNodeEl: HTMLElement,
+        targetFile: TFile,
+    ): { offset: number; isHeadingScoped: boolean } {
+        const node = this.findCanvasNode(canvasNodeEl);
+        const subpath = node?.subpath;
+        if (!subpath) {
+            return { offset: 0, isHeadingScoped: false };
+        }
+
+        const metadata = this.app.metadataCache.getFileCache(targetFile);
+        const blockRef = subpath.split("#^")[1];
+        const header = subpath.split("#")[1];
+        let offset = 0;
+        let isHeadingScoped = false;
+        if (blockRef) {
+            const block = metadata?.blocks?.[blockRef];
+            offset = block?.position.start.line ?? 0;
+        } else if (header) {
+            const heading = metadata?.headings?.find(
+                (h) => h.heading === header,
+            );
+            offset = heading?.position.start.line ?? 0;
+            isHeadingScoped = !!heading;
+        }
+        this.tc.logDebug("resolveCanvasSubpathOffset", subpath, offset);
+        return { offset, isHeadingScoped };
+    }
+
+    /**
+     * Canvas subpath offset for the currently-focused editor (0 if not in Canvas).
+     * +1 for heading-scoped cards: their CM6 editor excludes the heading line
+     * itself, so editor line numbers start one line later than the raw offset.
+     */
+    resolveActiveCanvasOffset(targetFile: TFile): number {
+        const canvasNodeEl = (
+            document.activeElement as HTMLElement | null
+        )?.closest(".canvas-node") as HTMLElement | null;
+        if (!canvasNodeEl) {
+            return 0;
+        }
+        const { offset, isHeadingScoped } =
+            this.resolveCanvasSubpathOffsetDetailed(canvasNodeEl, targetFile);
+        return isHeadingScoped ? offset + 1 : offset;
     }
 
     buildContextMenu(
@@ -283,6 +381,27 @@ export class TaskCollectorPlugin extends Plugin {
         }
     }
 
+    /**
+     * Like restoreCursor, but also re-applies after a delay when isInCanvas is
+     * true: Canvas rebuilds the card's editor after a write, resetting its cursor.
+     */
+    private restoreCursorWithCanvasRetry(
+        selection: Selection,
+        editor: Editor,
+        isInCanvas: boolean,
+    ) {
+        this.restoreCursor(selection, editor);
+        if (isInCanvas) {
+            setTimeout(() => this.restoreCursor(selection, editor), 250);
+        }
+    }
+
+    private isCursorInCanvas(): boolean {
+        return !!(document.activeElement as HTMLElement | null)?.closest(
+            ".canvas-node",
+        );
+    }
+
     registerCommands(): void {
         if (!this.commandsRegistered) {
             this.tc.logDebug("register commands");
@@ -296,12 +415,31 @@ export class TaskCollectorPlugin extends Plugin {
                     editor: Editor,
                     _view: MarkdownFileInfo,
                 ) => {
+                    // Resolve before the modal opens - it steals focus, so
+                    // document.activeElement is wrong once it's open.
+                    const selection = this.getCurrentLinesFromEditor(editor);
+                    const isInCanvas = this.isCursorInCanvas();
+                    const activeFile = this.app.workspace.getActiveFile();
+                    const canvasOffset = activeFile
+                        ? this.resolveActiveCanvasOffset(activeFile)
+                        : 0;
                     const mark = await promptForMark(this.app, this.tc);
                     if (mark) {
-                        const selection =
-                            this.getCurrentLinesFromEditor(editor);
-                        await this.editLines(mark, selection.lines);
-                        this.restoreCursor(selection, editor);
+                        const lines = canvasOffset
+                            ? selection.lines.map((n) => n + canvasOffset)
+                            : selection.lines;
+                        if (canvasOffset) {
+                            this.tc.logDebug(
+                                "editor command: canvas offset",
+                                lines,
+                            );
+                        }
+                        await this.editLines(mark, lines);
+                        this.restoreCursorWithCanvasRetry(
+                            selection,
+                            editor,
+                            isInCanvas,
+                        );
                     }
                 },
             };
@@ -351,8 +489,26 @@ export class TaskCollectorPlugin extends Plugin {
                         );
                         const selection =
                             this.getCurrentLinesFromEditor(editor);
-                        await this.markInCycle(Direction.NEXT, selection.lines);
-                        this.restoreCursor(selection, editor);
+                        const isInCanvas = this.isCursorInCanvas();
+                        const activeFile = this.app.workspace.getActiveFile();
+                        const canvasOffset = activeFile
+                            ? this.resolveActiveCanvasOffset(activeFile)
+                            : 0;
+                        const lines = canvasOffset
+                            ? selection.lines.map((n) => n + canvasOffset)
+                            : selection.lines;
+                        if (canvasOffset) {
+                            this.tc.logDebug(
+                                "editor command: canvas offset",
+                                lines,
+                            );
+                        }
+                        await this.markInCycle(Direction.NEXT, lines);
+                        this.restoreCursorWithCanvasRetry(
+                            selection,
+                            editor,
+                            isInCanvas,
+                        );
                     },
                 };
                 this.addCommand(markWithNextCommand);
@@ -372,8 +528,26 @@ export class TaskCollectorPlugin extends Plugin {
                         );
                         const selection =
                             this.getCurrentLinesFromEditor(editor);
-                        await this.markInCycle(Direction.PREV, selection.lines);
-                        this.restoreCursor(selection, editor);
+                        const isInCanvas = this.isCursorInCanvas();
+                        const activeFile = this.app.workspace.getActiveFile();
+                        const canvasOffset = activeFile
+                            ? this.resolveActiveCanvasOffset(activeFile)
+                            : 0;
+                        const lines = canvasOffset
+                            ? selection.lines.map((n) => n + canvasOffset)
+                            : selection.lines;
+                        if (canvasOffset) {
+                            this.tc.logDebug(
+                                "editor command: canvas offset",
+                                lines,
+                            );
+                        }
+                        await this.markInCycle(Direction.PREV, lines);
+                        this.restoreCursorWithCanvasRetry(
+                            selection,
+                            editor,
+                            isInCanvas,
+                        );
                     },
                 };
                 this.addCommand(markWithPrevCommand);
@@ -396,14 +570,33 @@ export class TaskCollectorPlugin extends Plugin {
                         ) => {
                             const selection =
                                 this.getCurrentLinesFromEditor(editor);
+                            const isInCanvas = this.isCursorInCanvas();
                             this.tc.logDebug(
                                 `${command.id}: callback`,
                                 selection,
                                 editor,
                                 view,
                             );
-                            await this.editLines(k, selection.lines);
-                            this.restoreCursor(selection, editor);
+                            const activeFile =
+                                this.app.workspace.getActiveFile();
+                            const canvasOffset = activeFile
+                                ? this.resolveActiveCanvasOffset(activeFile)
+                                : 0;
+                            const lines = canvasOffset
+                                ? selection.lines.map((n) => n + canvasOffset)
+                                : selection.lines;
+                            if (canvasOffset) {
+                                this.tc.logDebug(
+                                    "editor command: canvas offset",
+                                    lines,
+                                );
+                            }
+                            await this.editLines(k, lines);
+                            this.restoreCursorWithCanvasRetry(
+                                selection,
+                                editor,
+                                isInCanvas,
+                            );
                         },
                     };
                     this.addCommand(command);
@@ -435,11 +628,23 @@ export class TaskCollectorPlugin extends Plugin {
                     "editor-menu",
                     async (menu, editor, info) => {
                         //get line selections here
-                        this.buildContextMenu(
-                            menu,
-                            info,
-                            this.getCurrentLinesFromEditor(editor),
-                        );
+                        const selection =
+                            this.getCurrentLinesFromEditor(editor);
+                        const canvasOffset = info.file
+                            ? this.resolveActiveCanvasOffset(info.file)
+                            : 0;
+                        if (canvasOffset) {
+                            this.tc.logDebug(
+                                "editor command: canvas offset",
+                                selection.lines.map((n) => n + canvasOffset),
+                            );
+                        }
+                        this.buildContextMenu(menu, info, {
+                            ...selection,
+                            lines: canvasOffset
+                                ? selection.lines.map((n) => n + canvasOffset)
+                                : selection.lines,
+                        });
                     },
                 );
                 this.registerEvent(this.editTaskContextMenu);
@@ -508,12 +713,53 @@ export class TaskCollectorPlugin extends Plugin {
                         }
                     }
 
+                    // Resolved at event time, not here: the postprocessor runs
+                    // on a detached fragment with no real Canvas-node ancestry yet,
+                    // and checkbox.dataset.line can go stale if Obsidian reuses
+                    // this same DOM node across a later re-render.
+                    const resolveLineForEvent = (
+                        startEl: HTMLElement,
+                        checkboxEl: HTMLInputElement,
+                    ): { line: number; canvasNode?: CanvasNode } => {
+                        const base =
+                            Number(lineStart) + Number(checkboxEl.dataset.line);
+                        const canvasNodeEl = startEl.closest(
+                            ".canvas-node",
+                        ) as HTMLElement | null;
+                        const canvasNode = canvasNodeEl
+                            ? this.findCanvasNode(canvasNodeEl)
+                            : undefined;
+                        let canvasOffset = 0;
+                        if (canvasNodeEl) {
+                            const detailed =
+                                this.resolveCanvasSubpathOffsetDetailed(
+                                    canvasNodeEl,
+                                    targetFile,
+                                );
+                            // The reading-mode section's own lineStart does not
+                            // include the heading line, same as the CM6 editor
+                            // used by editor commands - see resolveActiveCanvasOffset.
+                            canvasOffset = detailed.isHeadingScoped
+                                ? detailed.offset + 1
+                                : detailed.offset;
+                        }
+                        if (canvasOffset) {
+                            this.tc.logDebug(
+                                "reading-mode: canvas offset",
+                                canvasOffset,
+                            );
+                        }
+                        return { line: base + canvasOffset, canvasNode };
+                    };
+
                     for (const checkbox of Array.from(checkboxes)) {
-                        const line =
+                        const baseLine =
                             Number(lineStart) + Number(checkbox.dataset.line);
 
-                        this.tc.logDebug("checkbox", checkbox, line);
-                        checkbox.setAttribute("data-tc-line", line.toString());
+                        checkbox.setAttribute(
+                            "data-tc-line",
+                            baseLine.toString(),
+                        );
                         const parent = checkbox.parentElement;
 
                         if (this.tc.cache.useContextMenu && parent) {
@@ -521,21 +767,26 @@ export class TaskCollectorPlugin extends Plugin {
                                 parent,
                                 "contextmenu",
                                 (ev) => {
+                                    const { line } = resolveLineForEvent(
+                                        parent,
+                                        checkbox,
+                                    );
                                     const view =
                                         this.app.workspace.getActiveViewOfType(
                                             MarkdownView,
                                         );
-                                    if (view) {
-                                        const menu = new Menu();
-                                        this.buildContextMenu(menu, view, {
-                                            start: {
-                                                line,
-                                                ch: 0,
-                                            },
-                                            lines: [line],
-                                        });
-                                        menu.showAtMouseEvent(ev);
-                                    }
+                                    const info = {
+                                        editor: view?.editor,
+                                    } as MarkdownFileInfo;
+                                    const menu = new Menu();
+                                    this.buildContextMenu(menu, info, {
+                                        start: {
+                                            line,
+                                            ch: 0,
+                                        },
+                                        lines: [line],
+                                    });
+                                    menu.showAtMouseEvent(ev);
                                 },
                             );
                         }
@@ -548,6 +799,10 @@ export class TaskCollectorPlugin extends Plugin {
                                 async (ev) => {
                                     ev.stopImmediatePropagation();
                                     ev.preventDefault();
+                                    const { line } = resolveLineForEvent(
+                                        checkbox,
+                                        checkbox,
+                                    );
                                     const mark = await promptForMark(
                                         this.app,
                                         this.tc,
