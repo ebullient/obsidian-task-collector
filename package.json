@@ -34,7 +34,7 @@
     "@biomejs/biome": "2.5.15",
     "@types/moment": "^2.13.0",
     "@types/node": "^26.6.5",
-    "auto-changelog": "^2.6.1",
+    "auto-changelog": "^2.7.0",
     "esbuild": "^0.28.1",
     "esbuild-sass-plugin": "^3.7.0",
     "eslint-plugin-obsidianmd": "^0.4.2",
